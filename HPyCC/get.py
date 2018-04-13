@@ -1,7 +1,9 @@
 import os
 import re
 
-from HPyCC import getECLquery
+from hpycc import getECLquery
+from hpycc import syntaxCheck
+
 
 
 def get_parsed_outputs(script, server, port="8010", repo=None,
@@ -36,6 +38,9 @@ def get_parsed_outputs(script, server, port="8010", repo=None,
         List of processed tuples in the form
         [(output_name, output_xml)].
     """
+    
+    syntaxCheck.syntax_check(script, repo=repo)
+    
     if repo:
         repo_flag = " -I {}".format(repo)
     else:
@@ -98,7 +103,10 @@ def get_output(script, server, port="8010", repo=None,
     parsed_data_frames = [
         (name, getECLquery.parse_XML(xml)) for name, xml in outputs]
 
-    first_parsed_result = parsed_data_frames[0][1]
+    try:
+        first_parsed_result = parsed_data_frames[0][1]
+    except IndexError:
+        print('Unable to parse response, printing first 500 characters: %s' (str(first_parsed_result)[:500])) 
 
     return first_parsed_result
 

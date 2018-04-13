@@ -1,6 +1,6 @@
-from HPyCC import getHPCCfile
-from HPyCC import getECLquery
-from HPyCC import getHPCC
+from hpycc import getHPCCfile
+from hpycc import getECLquery
+from hpycc import getHPCC
 import os
 import re
 import xml.etree.ElementTree as ET
@@ -17,7 +17,7 @@ def saveFile(df, output_path, zip=False):
     df.to_csv(output_path, index=False, encoding = 'utf-8', 
                   compression=compress)#, compression='gzip'   
 
-def get_script_result(scriptLoc, hpcc_addr='10.53.57.31:8010', hpcc_repo='', 
+def get_script_result(scriptLoc, hpcc_addr, hpcc_repo='', 
                       output_path='', 
                       username='DS_extractinator', password='" "'):
     """
@@ -78,7 +78,7 @@ def get_script_result(scriptLoc, hpcc_addr='10.53.57.31:8010', hpcc_repo='',
     else:
         return results
     
-def get_file(inFileName, hpcc_addr = 'http://10.53.57.31:8010', 
+def get_file(inFileName, hpcc_addr), 
              CSVlogicalFile = False, output_path = ''):
     """Main call to process an HPCC file.
 

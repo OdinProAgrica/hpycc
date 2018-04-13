@@ -8,7 +8,7 @@ GET_FILE_URL = """WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s
 USELESS_COLS = ['updateddatetime', '__fileposition__', 'createddatetime']
 
 
-def run_command(cmd, silent=True):
+def run_command(cmd, silent=True, return_error=False):
     """
     Return stdout and optionally print stderr from shell command.
     
@@ -27,7 +27,7 @@ def run_command(cmd, silent=True):
     result = subprocess.run(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         stdin=subprocess.PIPE, shell=True)
-                            
+                                    
     stderr = result.stderr.decode('utf-8')
     stdout = result.stdout.decode("utf-8")
 
@@ -44,7 +44,10 @@ def run_command(cmd, silent=True):
         print('The following errors were generated:'.format(cmd))
         print("\n".join(errors))
 
-    return stdout
+    if return_error:
+        return stdout, stderr
+    else:
+        return stdout
 
 
 def parse_XML(xml, silent=True):

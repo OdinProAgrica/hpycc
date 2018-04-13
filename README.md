@@ -1,4 +1,4 @@
-# HPyCC
+# hpycc
 
 To install, open the root directory and run 
 pip install -e . 
