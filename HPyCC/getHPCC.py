@@ -78,7 +78,7 @@ def get_script_result(scriptLoc, hpcc_addr, hpcc_repo='',
     else:
         return results
     
-def get_file(inFileName, hpcc_addr), 
+def get_file(inFileName, hpcc_addr,
              CSVlogicalFile = False, output_path = ''):
     """Main call to process an HPCC file.
 
