@@ -1,16 +1,14 @@
 import json
-import sys
-import traceback
 import urllib.request
 from time import sleep
 from urllib.error import HTTPError
 
-from hpycc.getfiles.getfiles import GET_FILE_URL
+GET_FILE_URL = """/WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s&Count=%s"""
 
 
-def make_url_request(hpcc_addr, fileName, last, split):
+def make_url_request(hpcc_addr, port, file_name, last, split):
 
-    request = hpcc_addr + GET_FILE_URL % (fileName, last, split)
+    request = hpcc_addr + ':' + port + GET_FILE_URL % (file_name, last, split)
     response = _run_url_request(request)
     try:
         response = response['WUResultResponse']
@@ -33,8 +31,9 @@ def _run_url_request(request):
 
     while attempts < max_attempts:
         try:
-            with urllib.request.urlopen(request) as response:
-                return json.loads(response.read().decode('utf-8'))
+            print(request)
+            response = urllib.request.urlopen(request)
+            return json.loads(response.read().decode('utf-8'))
         except HTTPError as e:
             attempts += 1
             print('Error encountered in URL request: %s\n\n retry %s of %s' % (e, attempts, max_attempts))
@@ -43,30 +42,30 @@ def _run_url_request(request):
     raise HTTPError('Unable to get response from HPCC for request: %s' % request)
 
 
-def parse_json_output(results, columnNames, CSVlogicalFile):
+def parse_json_output(results, column_names, csv_file):
     """
 
     :param results:
-    :param columnNames:
+    :param column_names:
     :param out_info:
-    :param CSVlogicalFile:
+    :param csv_file:
     :return:
     """
-    out_info = {col: [] for col in columnNames}
+    out_info = {col: [] for col in column_names}
 
-    for i, resIN in enumerate(results):
-        if CSVlogicalFile:
-            res = resIN['line']
+    for i, result in enumerate(results):
+        if csv_file:
+            res = result['line']
             if res is None:
                 print('Line', str(i), 'is blank')
-                print(resIN)
+                print(result)
                 continue
             res = res.split(',')
-            for j, col in enumerate(columnNames):
+            for j, col in enumerate(column_names):
                 out_info[col].append(res[j])
         else:
-            cols = resIN.keys()
+            cols = result.keys()
             for col in cols:
-                out_info[col].append(resIN[col])
+                out_info[col].append(result[col])
 
     return out_info

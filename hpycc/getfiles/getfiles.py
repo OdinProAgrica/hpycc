@@ -3,12 +3,11 @@ import concurrent.futures
 import pandas as pd
 import hpycc.getfiles.fileinterface as interface
 
-GET_FILE_URL = """/WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s&Count=%s"""
 POOL_SIZE = 15
 POOL = concurrent.futures.ThreadPoolExecutor(POOL_SIZE)
 
 
-def get_file(file_name, hpcc_addr, csv_file):
+def get_file(file_name, hpcc_addr, port, csv_file):
     """
 
     :param file_name:
@@ -26,7 +25,7 @@ def get_file(file_name, hpcc_addr, csv_file):
     print('Running downloads')
     futures = []
     for split in chunks:
-        futures.append(POOL.submit(_get_file_chunk, file_name, csv_file, hpcc_addr, current_row, split, column_names))
+        futures.append(POOL.submit(_get_file_chunk, file_name, csv_file, hpcc_addr, port, current_row, split, column_names))
         current_row = split + 1
 
     concurrent.futures.wait(futures)
@@ -48,7 +47,7 @@ def get_file(file_name, hpcc_addr, csv_file):
     return pd.concat([future.result() for future in futures])
 
 
-def _get_file_structure(file_name, hpcc_addr, csv_file):
+def _get_file_structure(file_name, hpcc_addr, port, csv_file):
     """
 
     :param file_name:
@@ -63,7 +62,7 @@ def _get_file_structure(file_name, hpcc_addr, csv_file):
     # file_size = response['WUResultResponse']['Total']
     # results = response['WUResultResponse']['Result']['Row']
 
-    response = interface.make_url_request(hpcc_addr, file_name, 0, 2)
+    response = interface.make_url_request(hpcc_addr, port, file_name, 0, 2)
     file_size = response['Total']
     results = response['Result']['Row']
 
@@ -90,7 +89,7 @@ def _get_file_structure(file_name, hpcc_addr, csv_file):
     return column_names, chunks, current_row
 
 
-def _get_file_chunk(file_name, csv_file, hpcc_addr, last, split, column_names):
+def _get_file_chunk(file_name, csv_file, hpcc_addr, port, last, split, column_names):
 
     print('Getting rows ' + str(last) + ' to ' + str(split))
 
@@ -99,7 +98,7 @@ def _get_file_chunk(file_name, csv_file, hpcc_addr, last, split, column_names):
     # response = interface.url_request(request)
     # results = response['WUResultResponse']['Result']['Row']
 
-    response = interface.make_url_request(hpcc_addr, file_name, last, split)
+    response = interface.make_url_request(hpcc_addr, port, file_name, last, split)
     results = response['Result']['Row']
 
     try:
