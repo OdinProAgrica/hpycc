@@ -1,6 +1,6 @@
 from hpycc import getECLquery 
 import os
-import warnings.warn as warn
+from warnings import warn
 
 def syntax_check(script, repo=None, silent = False):
     """

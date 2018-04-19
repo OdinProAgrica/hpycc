@@ -9,7 +9,7 @@ def get_parsed_outputs(script, server, port="8010", repo=None,
                        username="hpycc_get_output", password='" "',
                        silent=False):
     """
-    Return the first output of an ECL script as a DataFrame.
+    Return the xml portion of the response from HPCC. Can then be parsed by other functions in this class
 
     Parameters
     ----------
@@ -97,6 +97,9 @@ def get_output(script, server, port="8010", repo=None,
     :return: result: DataFrame
         The first output produced by the script.
     """
+
+
+    # TODO: these support scripts should be put in a specific place as part of the package rewrite
     outputs = get_parsed_outputs(
         script, server, port, repo, username, password, silent)
     parsed_data_frames = [
@@ -105,7 +108,8 @@ def get_output(script, server, port="8010", repo=None,
     try:
         first_parsed_result = parsed_data_frames[0][1]
     except IndexError:
-        print('Unable to parse response, printing first 500 characters: %s' (str(first_parsed_result)[:500])) 
+        UserWarning('Unable to parse response, printing first 500 characters: %s' (str(first_parsed_result)[:500]))
+        raise
 
     return first_parsed_result
 
@@ -113,7 +117,7 @@ def get_output(script, server, port="8010", repo=None,
 def get_outputs(script, server, port="8010", repo=None,
                 username="hpycc_get_output", password='" "', silent=False):
     """
-    Return the first output of an ECL script as a DataFrame.
+    Return all outputs of an ECL script as a dict of DataFrames.
 
     Parameters
     ----------
@@ -244,7 +248,7 @@ def save_outputs(
     if filenames:
         if len(filenames) != len(parsed_data_frames):
             UserWarning("The number of filenames specified is different to "
-                        "the number of outputs in your script.")
+                        "the number of outputs in your script. Adding names to compensate.")
         zipped = list(zip(parsed_data_frames, filenames))
     else:
         zipped = [(p, "{}.csv".format(p[0])) for p in parsed_data_frames]
