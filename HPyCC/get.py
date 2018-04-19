@@ -119,7 +119,7 @@ def get_file(inFileName, hpcc_addr,
         raise
 
     if output_path:
-        saveFile(df, output_path)
+        getHPCCfile.saveFile(df, output_path)
     return df
 
 
