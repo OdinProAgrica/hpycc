@@ -1,9 +1,10 @@
+import re
 import subprocess
 import xml.etree.ElementTree as ET
-import pandas as pd
-import re
-from hpycc import syntaxCheck
 
+import pandas as pd
+
+from hpycc.getscripts import syntaxCheck
 
 POOL_SIZE = 15
 GET_FILE_URL = """WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s&Count=%s"""

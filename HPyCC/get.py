@@ -1,7 +1,8 @@
 import os
 
-from hpycc import getECLquery
-from hpycc import getHPCCfile
+from hpycc.getfiles import getHPCCfile
+from hpycc.getscripts import getECLquery
+
 
 def get_output(script, server, port="8010", repo=None,
                username="hpycc_get_output", password='" "', silent=False):
