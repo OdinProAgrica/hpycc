@@ -13,7 +13,7 @@ HPCC_REPO = '..\\..\\..\\HPCC'
 GET_FILE_URL = """/WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s&Count=%s"""
 USELESS_COLS = ['updateddatetime', '__fileposition__', 'createddatetime']
 
-# File acquisition scripts
+
 def makeFileRequest(request):
     """make a request for an HPCC logical file.
 
@@ -185,4 +185,3 @@ def GetFileChunk(fileName, CSVlogicalFile, HPCCaddress, last, split, columnNames
         raise
 
     return pd.DataFrame(outInfo)
-
