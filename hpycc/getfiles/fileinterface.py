@@ -5,51 +5,55 @@ import urllib.request
 from time import sleep
 from urllib.error import HTTPError
 
+from hpycc.getfiles.getfiles import GET_FILE_URL
 
-def url_request(request):
-    """make a request for an HPCC logical file.
 
-    Parameters
-    ----------
-    request: str
-        The request string
+def make_url_request(hpcc_addr, fileName, last, split):
 
-    Returns
-    -------
-    outJSON: str
-        JSON of the response
-    """
-
-    #print(request)
-    attempts = 0
-    while attempts < 3:
-        try:
-            with urllib.request.urlopen(request) as response:
-                resp = response.read().decode('utf-8')
-            outJSON = json.loads(resp)
-            #print(str(outJSON))
-            return outJSON
-        except HTTPError as e:
-            attempts += 1
-            print(e)
-            sleep(5)
-        except:
-            print("Unexpected error:", sys.exc_info()[0])
-            print(str(traceback.print_exc(file=sys.stdout)))
-            attempts += 1
-        print('THE FOLLOWING CHUNK FAILED: ', request)
+    request = hpcc_addr + GET_FILE_URL % (fileName, last, split)
+    response = _run_url_request(request)
+    try:
+        response = response['WUResultResponse']
+    except KeyError:
+        print('Unable to parse response to url request:\n%s' % response)
         raise
 
+    return response
 
-def _parse_json_output(results, columnNames, outInfo, CSVlogicalFile):
+
+def _run_url_request(request):
+    """
+
+    :param request:
+    :return:
+    """
+    #print(request)
+    attempts = 0
+    max_attempts = 3
+
+    while attempts < max_attempts:
+        try:
+            with urllib.request.urlopen(request) as response:
+                return json.loads(response.read().decode('utf-8'))
+        except HTTPError as e:
+            attempts += 1
+            print('Error encountered in URL request: %s\n\n retry %s of %s' % (e, attempts, max_attempts))
+            sleep(5)
+
+    raise HTTPError('Unable to get response from HPCC for request: %s' % request)
+
+
+def parse_json_output(results, columnNames, CSVlogicalFile):
     """
 
     :param results:
     :param columnNames:
-    :param outInfo:
+    :param out_info:
     :param CSVlogicalFile:
     :return:
     """
+    out_info = {col: [] for col in columnNames}
+
     for i, resIN in enumerate(results):
         if CSVlogicalFile:
             res = resIN['line']
@@ -59,10 +63,10 @@ def _parse_json_output(results, columnNames, outInfo, CSVlogicalFile):
                 continue
             res = res.split(',')
             for j, col in enumerate(columnNames):
-                outInfo[col].append(res[j])
+                out_info[col].append(res[j])
         else:
             cols = resIN.keys()
             for col in cols:
-                outInfo[col].append(resIN[col])
+                out_info[col].append(resIN[col])
 
-    return outInfo
+    return out_info

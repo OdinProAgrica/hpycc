@@ -1,123 +1,117 @@
 import re
-from concurrent.futures import ThreadPoolExecutor
-from time import sleep
+import concurrent.futures
 import pandas as pd
 import hpycc.getfiles.fileinterface as interface
 
-POOL_SIZE = 15
 GET_FILE_URL = """/WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s&Count=%s"""
+POOL_SIZE = 15
+POOL = concurrent.futures.ThreadPoolExecutor(POOL_SIZE)
 
-def get_file(fileName, hpcc_addr, CSVlogicalFile):
+
+def get_file(file_name, hpcc_addr, csv_file):
     """
 
-    :param fileName:
+    :param file_name:
     :param hpcc_addr:
-    :param CSVlogicalFile:
+    :param csv_file:
     :return:
     """
 
     print('Adjusting name to HTML')
-    fileName = re.sub('[~]', '', fileName)
-    fileName = re.sub(r'[:]', '%3A', fileName)
+    file_name = re.sub('[~]', '', file_name)
+    file_name = re.sub(r'[:]', '%3A', file_name)
 
-    columnNames, splits = _get_file_structure(fileName, hpcc_addr, CSVlogicalFile)
+    column_names, chunks, current_row = _get_file_structure(file_name, hpcc_addr, csv_file)
 
-    outInfo = {col:[] for col in columnNames}
-
-    pool = ThreadPoolExecutor(POOL_SIZE)
+    print('Running downloads')
     futures = []
-    doneTest = [False]
+    for split in chunks:
+        futures.append(POOL.submit(_get_file_chunk, file_name, csv_file, hpcc_addr, current_row, split, column_names))
+        current_row = split + 1
 
-    for split in splits:
-        futures.append(pool.submit(get_file_chunk, fileName, CSVlogicalFile, hpcc_addr, last, split, columnNames, outInfo))
-        last = split + 1
+    concurrent.futures.wait(futures)
+    # TODO: remove if tests pass
+    # doneTest = [False]
+    # while not all(doneTest):
+    #     print('Waiting for chunks to complete')
+    #     sleep(5)
+    #     doneTest = [future.done() for future in futures]
+    #     print("Unfinished threads: " + str(len(doneTest) - sum(doneTest)))
 
-    while not all(doneTest):
-        print('Waiting for chunks to complete')
-        sleep(5)
-        doneTest = [future.done() for future in futures]
-        print("Unfinished threads: " + str(len(doneTest) - sum(doneTest)))
-
-    print("Locating any excepted threads")
+    print("Downloads Complete. Locating any excepted threads")
     for future in futures:
         if future.exception() is not None:
-            print(" THREAD FAILED FOR " + str(future.exception()))
+            print("CHUNK FAILED FOR " + str(future.exception()))
             raise future.exception()
 
     print('Concat outputs')
-    
-    return pd.concat([future.result() for futyure in futures])
+    return pd.concat([future.result() for future in futures])
 
 
-def _get_file_structure(fileName, hpcc_addr, CSVlogicalFile):
+def _get_file_structure(file_name, hpcc_addr, csv_file):
+    """
+
+    :param file_name:
+    :param hpcc_addr:
+    :param csv_file:
+    :return:
+    """
     print('Determining size and column names')
-    response = interface.url_request(hpcc_addr + GET_FILE_URL % (fileName, 0, 2))
-    nRecs = response['WUResultResponse']['Total']
-    results = response['WUResultResponse']['Result']['Row']
 
-    if CSVlogicalFile:
-        columnNames = results[0]['line']
-        columnNames = columnNames.split(',')
-        last = 1  # start row, miss first line
+    # TODO: remove if tests pass
+    # response = interface.url_request(hpcc_addr + GET_FILE_URL % (file_name, 0, 2))
+    # file_size = response['WUResultResponse']['Total']
+    # results = response['WUResultResponse']['Result']['Row']
+
+    response = interface.make_url_request(hpcc_addr, file_name, 0, 2)
+    file_size = response['Total']
+    results = response['Result']['Row']
+
+    if csv_file:
+        column_names = results[0]['line'].split(',')
+        current_row = 1  # start row, miss first line (header)
     else:
-        columnNames = results[0].keys()
-        last = 0  # start row, use first line
+        column_names = results[0].keys()
+        current_row = 0  # start row, use first line
 
-    print('Columns found: ' + str(columnNames))
-    print('Row count: ' + str(nRecs))
+    print('Columns found: ' + str(column_names))
+    print('Row count: ' + str(file_size))
 
-    if nRecs > 10000:
-        splits = list(range(10000, nRecs - 1, 10000))
-        if splits[-1] is not (nRecs - 1): splits.append(nRecs)
-        print('Large table, downloading in ' + str(len(splits)) + ' chunks ')
+    if file_size > 10000:
+        # TODO: this code can be made much more succinct
+        chunks = list(range(10000, file_size - 1, 10000))
+        if chunks[-1] is not (file_size - 1):
+            chunks.append(file_size)
+        print('Large table, downloading in ' + str(len(chunks)) + ' chunks ')
     else:
         print('Small table, running all at once')
-        splits = [nRecs]
+        chunks = [file_size]
 
-    return columnNames, splits
+    return column_names, chunks, current_row
 
 
-def get_file_chunk(fileName, CSVlogicalFile, HPCCaddress, last, split, columnNames, outInfo):
-    """
+def _get_file_chunk(file_name, csv_file, hpcc_addr, last, split, column_names):
 
-    Process to retrieve large files in chunks. Called by the threadpool made in get_file
-
-    Parameters
-    ----------
-    fileName:
-        logical file to be downloaded
-    CSVlogicalFile: bool
-        IS the logical file a CSV?    
-    hpcc_addr: str
-        address of the HPCC cluster
-    last: int
-        the last row that was read by a previous chunk
-    split: 
-        the row to split on
-    columnNames:
-        the column names to parse
-    outInfo:
-        the column names to return
-        
-
-    Returns
-    -------
-    result: pd.DataFrame
-        a DF of the given file chunk
-    """
-    
     print('Getting rows ' + str(last) + ' to ' + str(split))
-    request = HPCCaddress + GET_FILE_URL % (fileName, last, split)
-    response = interface.url_request(request)
-    results = response['WUResultResponse']['Result']['Row']
+
+    # TODO: remove if tests pass
+    # request = HPCCaddress + GET_FILE_URL % (file_name, last, split)
+    # response = interface.url_request(request)
+    # results = response['WUResultResponse']['Result']['Row']
+
+    response = interface.make_url_request(hpcc_addr, file_name, last, split)
+    results = response['Result']['Row']
 
     try:
-        outInfo = interface._parse_json_output(results, columnNames, outInfo, CSVlogicalFile)
+        out_info = interface.parse_json_output(results, column_names, csv_file)
     except Exception as E:
         print('Failed to Parse WU response, response written to FailedResponse.txt')
-        with open('FailedResponse.txt', 'w') as f: f.writelines(str(response))
+        with open('FailedResponse.txt', 'w') as f:
+            f.writelines(str(results))
         raise
 
-    return pd.DataFrame(outInfo)
+    return pd.DataFrame(out_info)
+
+
 
 
