@@ -208,6 +208,7 @@ def save_outputs(
     -------
     :return: None
     """
+
     outputs = getECLquery.get_parsed_outputs(
         script, server, port, repo, username, password, silent)
     parsed_data_frames = [
@@ -230,6 +231,15 @@ def save_outputs(
 
 
 def save_file(df, output_path, zip=False):
+
+    """
+
+    :param df:
+    :param output_path:
+    :param zip:
+    :return:
+    """
+
     compress = ''
     if zip:
         if output_path[-3:] != '.gz':
