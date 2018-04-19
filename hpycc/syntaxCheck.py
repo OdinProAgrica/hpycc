@@ -32,13 +32,11 @@ def syntax_check(script, repo=None, silent = False):
         List of processed tuples in the form
         [(output_name, output_xml)].
     """
-    if repo:
-        repo_flag = " -I {}".format(repo)
-    else:
-        repo_flag = ""
+
+    repo_flag = "-I {}".format(repo) if repo else ""
         
     if not os.path.isfile(script):
-        raise ValueError('Script %s not found' % (script))
+        raise FileNotFoundError('Script %s not found' % (script))
 
     command = ("eclcc -syntax -legacy {} {}").format(repo_flag, script)
     
