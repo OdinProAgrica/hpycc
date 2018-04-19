@@ -8,7 +8,7 @@ GET_FILE_URL = """WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s
 USELESS_COLS = ['updateddatetime', '__fileposition__', 'createddatetime']
 
 
-def run_command(cmd, silent=True, return_error=False):
+def run_command(cmd, silent=False, return_error=False):
     """
     Return stdout and optionally print stderr from shell command.
     
@@ -50,7 +50,7 @@ def run_command(cmd, silent=True, return_error=False):
         return stdout
 
 
-def parse_XML(xml, silent=True):
+def parse_XML(xml, silent=False):
     """
     Return a DataFrame from a nested XML.
 

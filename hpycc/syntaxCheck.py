@@ -1,5 +1,6 @@
 from hpycc import getECLquery 
 import os
+import warnings.warn as warn
 
 def syntax_check(script, repo=None, silent = False):
     """
@@ -46,7 +47,7 @@ def syntax_check(script, repo=None, silent = False):
     if err and ': error' in err.lower():
         raise EnvironmentError('Script %s does not compile! Errors: \n %s' % (script, err))
     elif err and ': warning' in err.lower() and not silent:
-        warnings ('Script %s raises the following warnings: \n %s' % (script, err))
+        warn('Script %s raises the following warnings: \n %s' % (script, err))
     elif err and ': warning' not in err.lower():
         raise EnvironmentError('Script %s contains unhandled feedback: \n %s' % (script, err))
     elif not silent:

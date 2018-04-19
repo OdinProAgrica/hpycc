@@ -5,10 +5,9 @@ from hpycc import getECLquery
 from hpycc import syntaxCheck
 
 
-
 def get_parsed_outputs(script, server, port="8010", repo=None,
                        username="hpycc_get_output", password='" "',
-                       silent=True):
+                       silent=False):
     """
     Return the first output of an ECL script as a DataFrame.
 
@@ -68,7 +67,7 @@ def get_parsed_outputs(script, server, port="8010", repo=None,
 
 
 def get_output(script, server, port="8010", repo=None,
-               username="hpycc_get_output", password='" "', silent=True):
+               username="hpycc_get_output", password='" "', silent=False):
     """
     Return the first output of an ECL script as a DataFrame.
 
@@ -112,7 +111,7 @@ def get_output(script, server, port="8010", repo=None,
 
 
 def get_outputs(script, server, port="8010", repo=None,
-                username="hpycc_get_output", password='" "', silent=True):
+                username="hpycc_get_output", password='" "', silent=False):
     """
     Return the first output of an ECL script as a DataFrame.
 
@@ -153,7 +152,7 @@ def get_outputs(script, server, port="8010", repo=None,
 
 
 def save_output(script, server, path, port="8010", repo=None,
-                username="hpycc_get_output", password='" "', silent=True,
+                username="hpycc_get_output", password='" "', silent=False,
                 compression=None):
     """
     Save the first output of an ECL script as a csv.
@@ -194,7 +193,7 @@ def save_output(script, server, path, port="8010", repo=None,
 
 def save_outputs(
         script, server, directory=".", port="8010", repo=None,
-        username="hpycc_get_output", password='" "', silent=True,
+        username="hpycc_get_output", password='" "', silent=False,
         compression=None, filenames=None, prefix=""):
     """
     Save all outputs of an ECL script as csvs using their output
