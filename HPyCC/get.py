@@ -1,70 +1,6 @@
 import os
-import re
 
 from hpycc import getECLquery
-from hpycc import syntaxCheck
-
-
-def get_parsed_outputs(script, server, port="8010", repo=None,
-                       username="hpycc_get_output", password='" "',
-                       silent=False):
-    """
-    Return the xml portion of the response from HPCC. Can then be parsed by other functions in this class
-
-    Parameters
-    ----------
-    :param script: str
-        Path of script to execute.
-    :param server: str
-        Ip address and port number of HPCC in the form
-        XX.XX.XX.XX.
-    :param port: str, optional
-        Port number ECL Watch is running on. "8010" by default.
-    :param repo: str, optional
-        Path to the root of local ECL repository if applicable.
-    :param username: str, optional
-        Username to execute the ECL workunit. "hpycc_get_output" by
-        default.
-    :param password: str, optional
-        Password to execute the ECL workunit. " " by default.
-    :param silent: bool
-        If False, the program will print out its progress. True by
-        default.
-
-    Returns
-    -------
-    :return: parsed: list of tuples
-        List of processed tuples in the form
-        [(output_name, output_xml)].
-    """
-    
-    syntaxCheck.syntax_check(script, repo=repo)
-    
-    if repo:
-        repo_flag = " -I {}".format(repo)
-    else:
-        repo_flag = ""
-
-    command = ("ecl run --server {} --port {} --username {} --password {} -legacy "
-               "thor {} {}").format(server, port, username, password, script,
-                                    repo_flag)
-
-    if not silent:
-        print("running ECL script")
-        print("command: {}".format(command))
-
-    result = getECLquery.run_command(command, silent)
-    stripped = result.strip()
-    trimmed = stripped.replace("\r\n", "")
-
-    if not silent:
-        print("Parsing response")
-
-    parsed = re.findall(
-        "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>", trimmed)
-
-    return parsed
-
 
 def get_output(script, server, port="8010", repo=None,
                username="hpycc_get_output", password='" "', silent=False):
@@ -100,7 +36,7 @@ def get_output(script, server, port="8010", repo=None,
 
 
     # TODO: these support scripts should be put in a specific place as part of the package rewrite
-    outputs = get_parsed_outputs(
+    outputs = getECLquery.get_parsed_outputs(
         script, server, port, repo, username, password, silent)
     parsed_data_frames = [
         (name, getECLquery.parse_XML(xml)) for name, xml in outputs]
@@ -145,7 +81,7 @@ def get_outputs(script, server, port="8010", repo=None,
     :return: as_dict: dictionary
         Outputs produced by the script in the form {output_name, df}.
     """
-    outputs = get_parsed_outputs(
+    outputs = getECLquery.get_parsed_outputs(
         script, server, port, repo, username, password, silent)
     parsed_data_frames = [
         (name, getECLquery.parse_XML(xml)) for name, xml in outputs]
@@ -240,7 +176,7 @@ def save_outputs(
     -------
     :return: None
     """
-    outputs = get_parsed_outputs(
+    outputs = getECLquery.get_parsed_outputs(
         script, server, port, repo, username, password, silent)
     parsed_data_frames = [
         (name, getECLquery.parse_XML(xml)) for name, xml in outputs]

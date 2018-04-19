@@ -2,6 +2,8 @@ import subprocess
 import xml.etree.ElementTree as ET
 import pandas as pd
 import re
+from hpycc import syntaxCheck
+
 
 POOL_SIZE = 15
 GET_FILE_URL = """WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s&Count=%s"""
@@ -93,3 +95,65 @@ def parse_XML(xml, silent=False):
             pass
 
     return df
+
+
+def get_parsed_outputs(script, server, port="8010", repo=None,
+                       username="hpycc_get_output", password='" "',
+                       silent=False):
+    """
+    Return the xml portion of the response from HPCC. Can then be parsed by other functions in this class
+
+    Parameters
+    ----------
+    :param script: str
+        Path of script to execute.
+    :param server: str
+        Ip address and port number of HPCC in the form
+        XX.XX.XX.XX.
+    :param port: str, optional
+        Port number ECL Watch is running on. "8010" by default.
+    :param repo: str, optional
+        Path to the root of local ECL repository if applicable.
+    :param username: str, optional
+        Username to execute the ECL workunit. "hpycc_get_output" by
+        default.
+    :param password: str, optional
+        Password to execute the ECL workunit. " " by default.
+    :param silent: bool
+        If False, the program will print out its progress. True by
+        default.
+
+    Returns
+    -------
+    :return: parsed: list of tuples
+        List of processed tuples in the form
+        [(output_name, output_xml)].
+    """
+
+    syntaxCheck.syntax_check(script, repo=repo)
+
+    if repo:
+        repo_flag = " -I {}".format(repo)
+    else:
+        repo_flag = ""
+
+    command = ("ecl run --server {} --port {} --username {} --password {} -legacy "
+               "thor {} {}").format(server, port, username, password, script,
+                                    repo_flag)
+
+    if not silent:
+        print("running ECL script")
+        print("command: {}".format(command))
+
+    result = run_command(command, silent)
+    stripped = result.strip()
+    trimmed = stripped.replace("\r\n", "")
+
+    if not silent:
+        print("Parsing response")
+
+    parsed = re.findall(
+        "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>", trimmed)
+
+    return parsed
+

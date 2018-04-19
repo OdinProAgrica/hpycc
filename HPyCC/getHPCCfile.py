@@ -8,7 +8,6 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 import traceback
 
-
 POOL_SIZE = 15
 HPCC_REPO = '..\\..\\..\\HPCC'
 GET_FILE_URL = """/WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s&Count=%s"""
@@ -115,7 +114,7 @@ def getFile(fileName, hpcc_addr, CSVlogicalFile):
         sleep(5)
         doneTest = [future.done() for future in futures]
         print("Unfinished threads: " + str(len(doneTest) - sum(doneTest)))
-        
+
 
     print("Locating any excepted threads")
     for future in futures:
@@ -129,7 +128,9 @@ def getFile(fileName, hpcc_addr, CSVlogicalFile):
 
 
 def GetFileChunk(fileName, CSVlogicalFile, HPCCaddress, last, split, columnNames, outInfo):
-    """Process to retrieve large files in chunks.
+    """
+
+    Process to retrieve large files in chunks. Called by the threadpool made in get_file
 
     Parameters
     ----------
