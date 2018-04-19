@@ -1,10 +1,10 @@
-from hpycc.getscripts import getECLquery
+from hpycc.getscripts import getscripts
 import os
 from warnings import warn
 import os
 from warnings import warn
 
-from hpycc.getscripts import getECLquery
+from hpycc.getscripts import getscripts
 
 
 def syntax_check(script, repo=None, silent = False):
@@ -45,7 +45,7 @@ def syntax_check(script, repo=None, silent = False):
 
     command = ("eclcc -syntax -legacy {} {}").format(repo_flag, script)
     
-    resp, err = getECLquery.run_command(command, silent=True, return_error=True)         
+    resp, err = getscripts.run_command(command, silent=True, return_error=True)
         
     if err and ': error' in err.lower():
         raise EnvironmentError('Script %s does not compile! Errors: \n %s' % (script, err))
