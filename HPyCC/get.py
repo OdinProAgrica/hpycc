@@ -1,7 +1,7 @@
 import os
 
-from hpycc.getfiles import getHPCCfile
-from hpycc.getscripts import getECLquery
+from hpycc.getfiles import getfiles
+from hpycc.getscripts import getscripts
 
 
 def get_output(script, server, port="8010", repo=None,
@@ -36,10 +36,10 @@ def get_output(script, server, port="8010", repo=None,
         The first output produced by the script.
     """
 
-    outputs = getECLquery.get_parsed_outputs(
+    outputs = getscripts.get_parsed_outputs(
         script, server, port, repo, username, password, silent)
     parsed_data_frames = [
-        (name, getECLquery.parse_XML(xml)) for name, xml in outputs]
+        (name, getscripts.parse_XML(xml)) for name, xml in outputs]
 
     try:
         first_parsed_result = parsed_data_frames[0][1]
@@ -81,10 +81,10 @@ def get_outputs(script, server, port="8010", repo=None,
     :return: as_dict: dictionary
         Outputs produced by the script in the form {output_name, df}.
     """
-    outputs = getECLquery.get_parsed_outputs(
+    outputs = getscripts.get_parsed_outputs(
         script, server, port, repo, username, password, silent)
     parsed_data_frames = [
-        (name, getECLquery.parse_XML(xml)) for name, xml in outputs]
+        (name, getscripts.parse_XML(xml)) for name, xml in outputs]
 
     as_dict = dict(parsed_data_frames)
 
@@ -114,13 +114,13 @@ def get_file(inFileName, hpcc_addr,
 
     print('Getting file')
     try:
-        df = getHPCCfile.getFile(inFileName, hpcc_addr, CSVlogicalFile)
+        df = getfiles.get_file(inFileName, hpcc_addr, CSVlogicalFile)
     except KeyError:
         print('Key error, have you specified a CSV or THOR file correctly?')
         raise
 
     if output_path:
-        getHPCCfile.saveFile(df, output_path)
+        getfiles.saveFile(df, output_path)
     return df
 
 
@@ -210,10 +210,10 @@ def save_outputs(
     :return: None
     """
 
-    outputs = getECLquery.get_parsed_outputs(
+    outputs = getscripts.get_parsed_outputs(
         script, server, port, repo, username, password, silent)
     parsed_data_frames = [
-        (name, getECLquery.parse_XML(xml)) for name, xml in outputs]
+        (name, getscripts.parse_XML(xml)) for name, xml in outputs]
 
     if filenames:
         if len(filenames) != len(parsed_data_frames):
