@@ -29,14 +29,6 @@ def get_file(file_name, hpcc_addr, port, csv_file):
         current_row = split + 1
 
     concurrent.futures.wait(futures)
-    # TODO: remove if tests pass
-    # doneTest = [False]
-    # while not all(doneTest):
-    #     print('Waiting for chunks to complete')
-    #     sleep(5)
-    #     doneTest = [future.done() for future in futures]
-    #     print("Unfinished threads: " + str(len(doneTest) - sum(doneTest)))
-
     print("Downloads Complete. Locating any excepted threads")
     for future in futures:
         if future.exception() is not None:
@@ -57,11 +49,6 @@ def _get_file_structure(file_name, hpcc_addr, port, csv_file):
     """
     print('Determining size and column names')
 
-    # TODO: remove if tests pass
-    # response = interface.url_request(hpcc_addr + GET_FILE_URL % (file_name, 0, 2))
-    # file_size = response['WUResultResponse']['Total']
-    # results = response['WUResultResponse']['Result']['Row']
-
     response = interface.make_url_request(hpcc_addr, port, file_name, 0, 2)
     file_size = response['Total']
     results = response['Result']['Row']
@@ -72,6 +59,8 @@ def _get_file_structure(file_name, hpcc_addr, port, csv_file):
     else:
         column_names = results[0].keys()
         current_row = 0  # start row, use first line
+
+    column_names = [col for col in column_names if col != '__fileposition__']
 
     print('Columns found: ' + str(column_names))
     print('Row count: ' + str(file_size))
@@ -89,16 +78,10 @@ def _get_file_structure(file_name, hpcc_addr, port, csv_file):
     return column_names, chunks, current_row
 
 
-def _get_file_chunk(file_name, csv_file, hpcc_addr, port, last, split, column_names):
+def _get_file_chunk(file_name, csv_file, hpcc_addr, port, current_row, chunk, column_names):
 
-    print('Getting rows ' + str(last) + ' to ' + str(split))
-
-    # TODO: remove if tests pass
-    # request = HPCCaddress + GET_FILE_URL % (file_name, last, split)
-    # response = interface.url_request(request)
-    # results = response['WUResultResponse']['Result']['Row']
-
-    response = interface.make_url_request(hpcc_addr, port, file_name, last, split)
+    print('Getting rows ' + str(current_row) + ' to ' + str(chunk))
+    response = interface.make_url_request(hpcc_addr, port, file_name, current_row, chunk)
     results = response['Result']['Row']
 
     try:

@@ -6,14 +6,16 @@ from urllib.error import HTTPError
 GET_FILE_URL = """/WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s&Count=%s"""
 
 
-def make_url_request(hpcc_addr, port, file_name, last, split):
+def make_url_request(hpcc_addr, port, file_name, current_row, chunk):
 
-    request = hpcc_addr + ':' + port + GET_FILE_URL % (file_name, last, split)
+    request = hpcc_addr + ':' + port + GET_FILE_URL % (file_name, current_row, chunk)
+
     response = _run_url_request(request)
+
     try:
         response = response['WUResultResponse']
-    except KeyError:
-        print('Unable to parse response to url request:\n%s' % response)
+    except (KeyError, UnboundLocalError):
+        print('Unable to parse request response:\n%s' % response)
         raise
 
     return response
@@ -31,7 +33,7 @@ def _run_url_request(request):
 
     while attempts < max_attempts:
         try:
-            print(request)
+            # print(request)
             response = urllib.request.urlopen(request)
             return json.loads(response.read().decode('utf-8'))
         except HTTPError as e:
@@ -53,7 +55,7 @@ def parse_json_output(results, column_names, csv_file):
     """
     out_info = {col: [] for col in column_names}
 
-    for i, result in enumerate(results):
+    for result in results:
         if csv_file:
             res = result['line']
             if res is None:
@@ -64,8 +66,7 @@ def parse_json_output(results, column_names, csv_file):
             for j, col in enumerate(column_names):
                 out_info[col].append(res[j])
         else:
-            cols = result.keys()
-            for col in cols:
+            for col in column_names:
                 out_info[col].append(result[col])
 
     return out_info

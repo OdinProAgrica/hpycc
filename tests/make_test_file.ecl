@@ -7,3 +7,6 @@ a := DATASET([{1,2},
               ], {INTEGER a; INTEGER b});
 
 OUTPUT(a, ,'~a::test::file', EXPIRE(1), OVERWRITE);
+
+OUTPUT(a, , '~a::test::filecsv', OVERWRITE,CSV(HEADING(SINGLE), QUOTE('"')), EXPIRE(1));
+
