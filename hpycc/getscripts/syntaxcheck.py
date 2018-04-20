@@ -1,3 +1,4 @@
+import hpycc.getscripts.scriptinterface
 from hpycc.getscripts import getscripts
 import os
 from warnings import warn
@@ -7,7 +8,7 @@ from warnings import warn
 from hpycc.getscripts import getscripts
 
 
-def syntax_check(script, repo=None, silent = False):
+def syntax_check(script, repo=None, silent=False):
     """
     Return the first output of an ECL script as a DataFrame.
 
@@ -41,11 +42,11 @@ def syntax_check(script, repo=None, silent = False):
     repo_flag = "-I {}".format(repo) if repo else ""
         
     if not os.path.isfile(script):
-        raise FileNotFoundError('Script %s not found' % (script))
+        raise FileNotFoundError('Script %s not found' % script)
 
-    command = ("eclcc -syntax -legacy {} {}").format(repo_flag, script)
+    command = "eclcc -syntax -legacy {} {}".format(repo_flag, script)
     
-    resp, err = getscripts.run_command(command, silent=True, return_error=True)
+    resp, err = hpycc.getscripts.scriptinterface.run_command(command, silent=True, return_error=True)
         
     if err and ': error' in err.lower():
         raise EnvironmentError('Script %s does not compile! Errors: \n %s' % (script, err))
@@ -55,5 +56,3 @@ def syntax_check(script, repo=None, silent = False):
         raise EnvironmentError('Script %s contains unhandled feedback: \n %s' % (script, err))
     elif not silent:
         print("Script %s passes syntax check" % script)
-        
-# get_parsed_outputs("C:\\z\\HPyCC\\HPyCC\\working.ecl", repo="C:/z/odin/HPCC", silent=False)
