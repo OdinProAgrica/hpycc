@@ -1,5 +1,4 @@
 import os
-
 from hpycc.getfiles import getfiles
 from hpycc.getscripts import getscripts
 
@@ -36,15 +35,13 @@ def get_output(script, server, port="8010", repo=None,
         The first output produced by the script.
     """
 
-    outputs = getscripts.get_parsed_outputs(
+    parsed_data_frames = getscripts.get_script(
         script, server, port, repo, username, password, silent)
-    parsed_data_frames = [
-        (name, getscripts.parse_XML(xml)) for name, xml in outputs]
 
     try:
         first_parsed_result = parsed_data_frames[0][1]
     except IndexError:
-        UserWarning('Unable to parse response, printing first 500 characters: %s' (str(first_parsed_result)[:500]))
+        UserWarning('Unable to parse response, printing first 500 characters: %s' % parsed_data_frames[:500])
         raise
 
     return first_parsed_result
@@ -81,10 +78,9 @@ def get_outputs(script, server, port="8010", repo=None,
     :return: as_dict: dictionary
         Outputs produced by the script in the form {output_name, df}.
     """
-    outputs = getscripts.get_parsed_outputs(
+
+    parsed_data_frames = getscripts.get_script(
         script, server, port, repo, username, password, silent)
-    parsed_data_frames = [
-        (name, getscripts.parse_XML(xml)) for name, xml in outputs]
 
     as_dict = dict(parsed_data_frames)
 
@@ -210,10 +206,8 @@ def save_outputs(
     :return: None
     """
 
-    outputs = getscripts.get_parsed_outputs(
+    parsed_data_frames = getscripts.get_script(
         script, server, port, repo, username, password, silent)
-    parsed_data_frames = [
-        (name, getscripts.parse_XML(xml)) for name, xml in outputs]
 
     if filenames:
         if len(filenames) != len(parsed_data_frames):
