@@ -14,14 +14,14 @@ expected_result_2 = pd.DataFrame({'a': [11, 13, 15, 17, 19, 111], 'b': [12, 14, 
 
 
 def test_get_script():
-    script = 'ECLtest_runScript_1output.ecl'
+    script = 'tests/ECLtest_runScript_1output.ecl'
 
     result = get.get_script(script, server, port, repo, username, password, silent)
     assert_frame_equal(result[0][1], expected_result_1, check_dtype=False, check_like=False)
 
 
 def test_get_script():
-    script = 'ECLtest_runScript_2outputs.ecl'
+    script = 'tests/ECLtest_runScript_2outputs.ecl'
 
     result = get.get_script(script, server, port, repo, username, password, silent)
 

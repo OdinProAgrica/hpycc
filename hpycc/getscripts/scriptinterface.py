@@ -68,6 +68,7 @@ def parse_XML(xml, silent=False):
         print("Parsing Results from XML")
     vls = []
 
+    # TODO: If you hand it an xml with two datasets in it it will concatenate them!!!! Not what you want!
     for line in re.findall("<Row>(?P<content>.+?)</Row>", xml):
         with_start = '<Row>' + line + '</Row>'
 

@@ -39,12 +39,13 @@ def syntax_check(script, repo=None, silent=False):
         [(output_name, output_xml)].
     """
 
-    repo_flag = "-I {}".format(repo) if repo else ""
-        
     if not os.path.isfile(script):
         raise FileNotFoundError('Script %s not found' % script)
 
+    repo_flag = " " if repo is None else "-I {}".format(repo)
     command = "eclcc -syntax -legacy {} {}".format(repo_flag, script)
+
+    print(command)
     
     result = hpycc.getscripts.scriptinterface.run_command(command, silent=True, return_error=True)
     err = result['stderr']
