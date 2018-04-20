@@ -1,10 +1,8 @@
 import re
 import subprocess
 import xml.etree.ElementTree as ET
-
 import pandas as pd
-
-from hpycc.getscripts import syntaxCheck
+from hpycc.getscripts import syntaxcheck
 
 POOL_SIZE = 15
 GET_FILE_URL = """WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s&Count=%s"""
@@ -131,7 +129,7 @@ def get_parsed_outputs(script, server, port="8010", repo=None,
         [(output_name, output_xml)].
     """
 
-    syntaxCheck.syntax_check(script, repo=repo)
+    syntaxcheck.syntax_check(script, repo=repo)
 
     if repo:
         repo_flag = " -I {}".format(repo)
