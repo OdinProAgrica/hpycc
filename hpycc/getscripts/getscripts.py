@@ -8,7 +8,7 @@ GET_FILE_URL = """WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s
 USELESS_COLS = ['updateddatetime', '__fileposition__', 'createddatetime']
 
 
-def get_script(script, server, port, repo, username, password, silent, legacy):
+def get_script(script, server, port, repo, username, password, silent, legacy, do_syntaxcheck):
     """
     Return the xml portion of the response from HPCC. Can then be parsed by other functions in this class
 
@@ -39,7 +39,8 @@ def get_script(script, server, port, repo, username, password, silent, legacy):
         [(output_name, output_xml)].
     """
 
-    syntaxcheck.syntax_check(script, repo=repo)
+    if do_syntaxcheck:
+        syntaxcheck.syntax_check(script, repo, legacy)
 
     repo_flag = " -I {}".format(repo) if repo else ""
     legacy_flag = '-legacy ' if legacy else ''

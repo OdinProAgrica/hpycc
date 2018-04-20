@@ -4,7 +4,8 @@ from hpycc.getscripts import getscripts
 
 
 def get_output(script, server, port="8010", repo=None,
-               username="hpycc_get_output", password='" "', silent=False):
+               username="hpycc_get_output", password='" "', silent=False,
+               legacy=False, do_syntaxcheck=True):
     """
     Return the first output of an ECL script as a DataFrame.
 
@@ -36,7 +37,7 @@ def get_output(script, server, port="8010", repo=None,
     """
 
     parsed_data_frames = getscripts.get_script(
-        script, server, port, repo, username, password, silent)
+        script, server, port, repo, username, password, silent, legacy, do_syntaxcheck)
 
     try:
         first_parsed_result = parsed_data_frames[0][1]
@@ -48,7 +49,8 @@ def get_output(script, server, port="8010", repo=None,
 
 
 def get_outputs(script, server, port="8010", repo=None,
-                username="hpycc_get_output", password='" "', silent=False):
+                username="hpycc_get_output", password='" "', silent=False,
+                legacy=False, do_syntaxcheck=True):
     """
     Return all outputs of an ECL script as a dict of DataFrames.
 
@@ -80,7 +82,7 @@ def get_outputs(script, server, port="8010", repo=None,
     """
 
     parsed_data_frames = getscripts.get_script(
-        script, server, port, repo, username, password, silent)
+        script, server, port, repo, username, password, silent, legacy, do_syntaxcheck)
 
     as_dict = dict(parsed_data_frames)
 
@@ -122,7 +124,7 @@ def get_file(inFileName, hpcc_addr,
 
 def save_output(script, server, path, port="8010", repo=None,
                 username="hpycc_get_output", password='" "', silent=False,
-                compression=None):
+                compression=None, legacy=False):
     """
     Save the first output of an ECL script as a csv.
 
@@ -155,7 +157,7 @@ def save_output(script, server, path, port="8010", repo=None,
     -------
     :return: None
     """
-    result = get_output(script, server, port, repo, username, password, silent)
+    result = get_output(script, server, port, repo, username, password, silent, legacy)
     result.to_csv(path_or_buf=path, compression=compression)
     return None
 
@@ -163,7 +165,8 @@ def save_output(script, server, path, port="8010", repo=None,
 def save_outputs(
         script, server, directory=".", port="8010", repo=None,
         username="hpycc_get_output", password='" "', silent=False,
-        compression=None, filenames=None, prefix=""):
+        compression=None, filenames=None, prefix="", legacy=False,
+        do_syntaxcheck=True):
     """
     Save all outputs of an ECL script as csvs using their output
     name. The file names can be changed using the filenames and
@@ -207,7 +210,7 @@ def save_outputs(
     """
 
     parsed_data_frames = getscripts.get_script(
-        script, server, port, repo, username, password, silent)
+        script, server, port, repo, username, password, silent, legacy, do_syntaxcheck)
 
     if filenames:
         if len(filenames) != len(parsed_data_frames):
