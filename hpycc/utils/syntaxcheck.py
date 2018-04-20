@@ -32,7 +32,7 @@ def syntax_check(script, repo, silent, legacy):
 
     command = "eclcc -syntax {}{} {}".format(legacy_flag, repo_flag, script)
     
-    result = hpycc.getscripts.scriptinterface.run_command(command, silent=True, return_error=True)
+    result = hpycc.getscripts.scriptinterface.run_command(command, silent=True)
     err = result['stderr']
 
     if err and ': error' in err.lower():

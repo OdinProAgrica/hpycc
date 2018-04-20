@@ -89,16 +89,15 @@ def get_outputs(script, server, port="8010", repo=None,
     return as_dict
 
 
-def get_file(inFileName, hpcc_addr,
-             CSVlogicalFile=False, output_path=''):
+def get_file(logical_file, hpcc_addr, port='8010', csv_file=False, output_path=''):
     """
     Main call to process an HPCC file. Advantage over scripts as it can be chunked and threaded.
 
     Parameters
     ----------
-    inFileName: str
+    logical_file: str
         logical file to be downloaded
-    CSVlogicalFile: bool
+    csv_file: bool
         IS the logical file a CSV?
     hpcc_addr: str
         address of the HPCC cluster
@@ -112,13 +111,13 @@ def get_file(inFileName, hpcc_addr,
 
     print('Getting file')
     try:
-        df = getfiles.get_file(inFileName, hpcc_addr, CSVlogicalFile)
+        df = getfiles.get_file(logical_file, hpcc_addr, port, csv_file)
     except KeyError:
         print('Key error, have you specified a CSV or THOR file correctly?')
         raise
 
     if output_path:
-        getfiles.saveFile(df, output_path)
+        save_file(df, output_path)
     return df
 
 
@@ -167,6 +166,7 @@ def save_outputs(
         username="hpycc_get_output", password='" "', silent=False,
         compression=None, filenames=None, prefix="", legacy=False,
         do_syntaxcheck=True):
+
     """
     Save all outputs of an ECL script as csvs using their output
     name. The file names can be changed using the filenames and
@@ -228,24 +228,24 @@ def save_outputs(
     return None
 
 
-def save_file(df, output_path, zip=False):
+def save_file(df, output_path, do_compression=False):
 
     """
 
     :param df:
     :param output_path:
-    :param zip:
+    :param do_compression:
     :return:
     """
 
-    compress = ''
-    if zip:
+    compress_extension = ''
+    if do_compression:
         if output_path[-3:] != '.gz':
             output_path += '.gz'
-        compress = 'gzip'
+        compress_extension = 'gzip'
 
     df.to_csv(output_path, index=False, encoding='utf-8',
-              compression=compress)  # , compression='gzip'
+              compression=compress_extension)  # , compression='gzip'
 
 
 
