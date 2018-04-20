@@ -11,7 +11,7 @@ expected_result_chunk = pd.DataFrame({'a': ['3', '5', '7'], 'b': ['4', '6', '8']
 
 # Create HPCC test files
 run_command(("ecl run --server {} --port {} --username {} --password {} -legacy "
-               "thor {} {}").format(hpcc_addr, '8010', 'test_call', '" "', './tests/make_test_file.ecl', ''))
+               "thor {} {}").format(hpcc_addr, '8010', 'test_call', '" "', './tests/ECLtest_makeTestData.ecl', ''))
 
 
 def test_get_file_1():

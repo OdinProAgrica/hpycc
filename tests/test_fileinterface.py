@@ -8,7 +8,7 @@ column_names = ['a', 'b']
 
 # Create HPCC test files
 run_command(("ecl run --server {} --port {} --username {} --password {} -legacy "
-               "thor {} {}").format(hpcc_addr, '8010', 'test_call', '" "', './tests/make_test_file.ecl', ''))
+               "thor {} {}").format(hpcc_addr, '8010', 'test_call', '" "', './tests/ECLtest_makeTestData.ecl', ''))
 
 
 def test_make_url_request_1():
