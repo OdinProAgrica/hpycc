@@ -8,9 +8,7 @@ GET_FILE_URL = """WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s
 USELESS_COLS = ['updateddatetime', '__fileposition__', 'createddatetime']
 
 
-def get_script(script, server, port="8010", repo=None,
-               username="hpycc_get_output", password='" "',
-               silent=False):
+def get_script(script, server, port, repo, username, password, silent):
     """
     Return the xml portion of the response from HPCC. Can then be parsed by other functions in this class
 
