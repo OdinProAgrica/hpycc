@@ -64,12 +64,14 @@ def parse_xml(xml, silent=False):
         Parsed xml.
     """
 
+    if "Dataset name='Result 2'" in xml:
+        raise ValueError('XML contains multiple datasets. These would be concatenated so aborting.')
+
     if not silent:
         print("Parsing Results from XML")
     vls = []
     lvls = []
 
-    # TODO: If you hand it an xml with two datasets in it it will concatenate them!!!! Not what you want!
     for line in re.findall("<Row>(?P<content>.+?)</Row>", xml):
 
         with_start = '<Row>' + line + '</Row>'
