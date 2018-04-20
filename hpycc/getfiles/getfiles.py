@@ -20,7 +20,7 @@ def get_file(file_name, hpcc_addr, port, csv_file):
     file_name = re.sub('[~]', '', file_name)
     file_name = re.sub(r'[:]', '%3A', file_name)
 
-    column_names, chunks, current_row = _get_file_structure(file_name, hpcc_addr, csv_file)
+    column_names, chunks, current_row = _get_file_structure(file_name, hpcc_addr, port, csv_file)
 
     print('Running downloads')
     futures = []
