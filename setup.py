@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='hpycc',
-	  version='0.3.1',
+      version='0.4.0',
       description='Download THOR files',
       author='Rob Mansfield',
       author_email='rob.mansfield@proagrica.com',
@@ -11,5 +11,4 @@ setup(name='hpycc',
       install_requires=[
           'pandas'
       ]
-	  )
-	       
+      )

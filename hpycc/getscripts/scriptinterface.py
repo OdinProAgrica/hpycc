@@ -4,7 +4,7 @@ from xml.etree import ElementTree as ET
 import pandas as pd
 
 
-def run_command(cmd, silent=False, return_error=False):
+def run_command(cmd, silent=False):
     """
     Return stdout and optionally print stderr from shell command.
 
@@ -17,8 +17,8 @@ def run_command(cmd, silent=False, return_error=False):
         default.
     Returns
     -------
-    stdout: str
-        Stdout of the command.
+    result: dict
+        dict of stdout and stderr
     """
     result = subprocess.run(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -46,7 +46,7 @@ def run_command(cmd, silent=False, return_error=False):
     return {'stdout': stdout, 'stderr': stderr}
 
 
-def parse_XML(xml, silent=False):
+def parse_xml(xml, silent=False):
     """
     Return a DataFrame from a nested XML.
 
@@ -67,12 +67,12 @@ def parse_XML(xml, silent=False):
     if not silent:
         print("Parsing Results from XML")
     vls = []
+    lvls = []
 
     # TODO: If you hand it an xml with two datasets in it it will concatenate them!!!! Not what you want!
     for line in re.findall("<Row>(?P<content>.+?)</Row>", xml):
-        with_start = '<Row>' + line + '</Row>'
 
-        lvls = []
+        with_start = '<Row>' + line + '</Row>'
         newvls = []
         etree = ET.fromstring(with_start)
         for child in etree:
@@ -82,6 +82,7 @@ def parse_XML(xml, silent=False):
         vls.append(newvls)
 
     df = pd.DataFrame(vls, columns=lvls)
+
     for col in df.columns:
         try:
             nums = pd.to_numeric(df[col])

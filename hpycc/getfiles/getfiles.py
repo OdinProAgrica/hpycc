@@ -25,7 +25,8 @@ def get_file(file_name, hpcc_addr, port, csv_file):
     print('Running downloads')
     futures = []
     for split in chunks:
-        futures.append(POOL.submit(_get_file_chunk, file_name, csv_file, hpcc_addr, port, current_row, split, column_names))
+        futures.append(POOL.submit(_get_file_chunk,
+                                   file_name, csv_file, hpcc_addr, port, current_row, split, column_names))
         current_row = split + 1
 
     concurrent.futures.wait(futures)
@@ -86,14 +87,10 @@ def _get_file_chunk(file_name, csv_file, hpcc_addr, port, current_row, chunk, co
 
     try:
         out_info = interface.parse_json_output(results, column_names, csv_file)
-    except Exception as E:
+    except Exception:
         print('Failed to Parse WU response, response written to FailedResponse.txt')
         with open('FailedResponse.txt', 'w') as f:
             f.writelines(str(results))
         raise
 
     return pd.DataFrame(out_info)
-
-
-
-

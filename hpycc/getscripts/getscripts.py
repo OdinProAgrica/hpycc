@@ -1,5 +1,4 @@
 import re
-
 import hpycc.getscripts.scriptinterface as interface
 from hpycc.utils import syntaxcheck
 
@@ -40,7 +39,7 @@ def get_script(script, server, port, repo, username, password, silent, legacy, d
     """
 
     if do_syntaxcheck:
-        syntaxcheck.syntax_check(script, repo, legacy)
+        syntaxcheck.syntax_check(script, repo, silent, legacy)
 
     repo_flag = " -I {}".format(repo) if repo else ""
     legacy_flag = '-legacy ' if legacy else ''
@@ -59,7 +58,6 @@ def get_script(script, server, port, repo, username, password, silent, legacy, d
         print("Parsing response")
 
     results = re.findall("<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>", result)
-    results = [(name, interface.parse_XML(xml)) for name, xml in results]
+    results = [(name, interface.parse_xml(xml)) for name, xml in results]
 
     return results
-

@@ -1,11 +1,6 @@
 import hpycc.getscripts.scriptinterface
-from hpycc.getscripts import getscripts
 import os
 from warnings import warn
-import os
-from warnings import warn
-
-from hpycc.getscripts import getscripts
 
 
 def syntax_check(script, repo, silent, legacy):
@@ -16,18 +11,8 @@ def syntax_check(script, repo, silent, legacy):
     ----------
     :param script: str
         Path of script to execute.
-    :param server: str
-        Ip address and port number of HPCC in the form
-        XX.XX.XX.XX.
-    :param port: str, optional
-        Port number ECL Watch is running on. "8010" by default.
     :param repo: str, optional
         Path to the root of local ECL repository if applicable.
-    :param username: str, optional
-        Username to execute the ECL workunit. "hpycc_get_output" by
-        default.
-    :param password: str, optional
-        Password to execute the ECL workunit. " " by default.
     :param silent: bool
         If False, the program will print out its progress. True by
         default.

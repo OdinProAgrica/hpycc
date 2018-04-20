@@ -42,6 +42,6 @@ xml_2Datasets = """<Result>
 #     assert False
 
 def test_parse_XML():
-    result = interface.parse_XML(xml, silent=False)
+    result = interface.parse_xml(xml, silent=False)
     print(result)
     assert_frame_equal(result, expected_result_1, check_dtype=False, check_like=False)
