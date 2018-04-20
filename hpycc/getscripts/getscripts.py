@@ -1,7 +1,7 @@
 import re
 
-from hpycc.getscripts import syntaxcheck
 import hpycc.getscripts.scriptinterface as interface
+from hpycc.utils import syntaxcheck
 
 POOL_SIZE = 15
 GET_FILE_URL = """WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s&Count=%s"""

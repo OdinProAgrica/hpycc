@@ -46,8 +46,9 @@ def syntax_check(script, repo=None, silent=False):
 
     command = "eclcc -syntax -legacy {} {}".format(repo_flag, script)
     
-    resp, err = hpycc.getscripts.scriptinterface.run_command(command, silent=True, return_error=True)
-        
+    result = hpycc.getscripts.scriptinterface.run_command(command, silent=True, return_error=True)
+    err = result['stderr']
+
     if err and ': error' in err.lower():
         raise EnvironmentError('Script %s does not compile! Errors: \n %s' % (script, err))
     elif err and ': warning' in err.lower() and not silent:
