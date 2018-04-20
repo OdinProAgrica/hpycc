@@ -8,7 +8,7 @@ from warnings import warn
 from hpycc.getscripts import getscripts
 
 
-def syntax_check(script, repo=None, silent=False):
+def syntax_check(script, repo, silent, legacy):
     """
     Return the first output of an ECL script as a DataFrame.
 
@@ -43,9 +43,9 @@ def syntax_check(script, repo=None, silent=False):
         raise FileNotFoundError('Script %s not found' % script)
 
     repo_flag = " " if repo is None else "-I {}".format(repo)
-    command = "eclcc -syntax -legacy {} {}".format(repo_flag, script)
+    legacy_flag = '-legacy ' if legacy else ''
 
-    print(command)
+    command = "eclcc -syntax {}{} {}".format(legacy_flag, repo_flag, script)
     
     result = hpycc.getscripts.scriptinterface.run_command(command, silent=True, return_error=True)
     err = result['stderr']

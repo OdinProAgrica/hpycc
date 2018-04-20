@@ -8,7 +8,7 @@ GET_FILE_URL = """WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s
 USELESS_COLS = ['updateddatetime', '__fileposition__', 'createddatetime']
 
 
-def get_script(script, server, port, repo, username, password, silent):
+def get_script(script, server, port, repo, username, password, silent, legacy):
     """
     Return the xml portion of the response from HPCC. Can then be parsed by other functions in this class
 
@@ -42,9 +42,10 @@ def get_script(script, server, port, repo, username, password, silent):
     syntaxcheck.syntax_check(script, repo=repo)
 
     repo_flag = " -I {}".format(repo) if repo else ""
+    legacy_flag = '-legacy ' if legacy else ''
 
-    command = ("ecl run --server {} --port {} --username {} --password {} -legacy "
-               "thor {} {}").format(server, port, username, password, script, repo_flag)
+    command = ("ecl run --server {} --port {} --username {} --password {} {}"
+               "thor {} {}").format(server, port, username, password, legacy_flag, script, repo_flag)
 
     if not silent:
         print("running ECL script")
