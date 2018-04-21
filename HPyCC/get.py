@@ -1,41 +1,17 @@
-import os
 import logging
-import sys
+import os
 from hpycc.filerunning import getfiles
 from hpycc.scriptrunning import getscripts
+from hpycc.utils.logfunctions import boot_logger
 
 LOG_PATH = 'hpycc.log'
-logger = logging.getLogger()
-
-
-def boot_logger(silent, debg, log_to_file, logpath):
-    # TODO: get logger in each funtion
-
-    global logger
-
-    if debg:
-        logger.setLevel(logging.DEBUG)
-    elif silent:
-        logger.setLevel(logging.WARN)
-    else:
-        logger.setLevel(logging.INFO)
-
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-    if log_to_file:
-        fh = logging.FileHandler(logpath)
-        fh.setFormatter(formatter)
-        logger.addHandler(fh)
-
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
 
 
 def get_output(script, server, port="8010", repo=None,
                username="hpycc_get_output", password='" "',
                legacy=False, do_syntaxcheck=True,
-               silent=False, debg=False, log_to_file=False, logpath=LOG_PATH):
+               silent=False, debg=False, log_to_file=False,
+               logpath=LOG_PATH):
     """
     Return the first output of an ECL script as a DataFrame.
 
@@ -175,8 +151,8 @@ def get_file(logical_file, server, port='8010',
 
 def save_output(script, server, path, port="8010", repo=None,
                 username="hpycc_get_output", password='" "',
-                compression=None, legacy=False, silent=False, debg=False,
-                log_to_file=False, logpath=LOG_PATH):
+                compression=None, legacy=False, silent=False,
+                refresh=False):
     """
     Save the first output of an ECL script as a csv.
 
@@ -211,6 +187,10 @@ def save_output(script, server, path, port="8010", repo=None,
     """
 
     # boot_logger(silent, debg, log_to_file, logpath) # No logger as get_output boots logger
+    if os.path.isfile(path) and not refresh and not silent:
+        raise FileExistsError('File already exists, set refresh=True to override or silent=True to suppress this error')
+    elif os.path.isfile(path) and not refresh:
+        return None
 
     result = get_output(script, server, port, repo, username, password, silent, legacy)
     result.to_csv(path_or_buf=path, compression=compression, index=False)
@@ -289,25 +269,25 @@ def save_outputs(
     return None
 
 
-def save_file(logical_file, output_path, server, port='8010',
+def save_file(logical_file, path, server, port='8010',
               username="hpycc_get_output", password='" "',
               csv_file=False, compression=None, silent=False,
-              debg=False, log_to_file=False, logpath=LOG_PATH):
-
+              refresh=False):
     """
 
     :param df:
-    :param output_path:
+    :param path:
     :param do_compression:
     :return:
     """
 
-    # boot_logger(silent, debg, log_to_file, logpath) # no logger as get_file boots logger
+    if os.path.isfile(path) and not refresh and not silent:
+        raise FileExistsError('File already exists, set refresh=True to override or silent=True to suppress this error')
+    elif os.path.isfile(path) and not refresh:
+        return None
 
     df = get_file(logical_file, server, port, username, password, csv_file, silent)
 
-    df.to_csv(output_path, index=False, encoding='utf-8',
-              compression=compression)
+    df.to_csv(path, index=False, encoding='utf-8', compression=compression)
 
 
-# TODO: Run function that runs a script and saves the output. Probably another class.
