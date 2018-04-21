@@ -59,9 +59,6 @@ def parse_xml(xml, silent=False):
     logger = logging.getLogger('parse_xml')
     logger.info("Parsing Results from XML")
 
-    if "Dataset name='Result 2'" in xml:
-        raise ValueError('XML contains multiple datasets. These would be concatenated so aborting.')
-
     vls = []
     lvls = []
 
