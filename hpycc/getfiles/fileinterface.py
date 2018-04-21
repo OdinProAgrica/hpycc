@@ -12,7 +12,7 @@ def make_url_request(server, port, username, password, logical_file, current_row
     server = re.sub(r'(?i)http://', '', server)
 
     request = 'http://' + server + ':' + port + GET_FILE_URL % (logical_file, current_row, chunk)
-    response = _run_url_request(request)
+    response = _run_url_request(request, silent)
 
     try:
         response = response['WUResultResponse']

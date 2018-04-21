@@ -50,7 +50,7 @@ def _get_file_structure(logical_file, server, port, username, password, csv_file
     """
     print('Determining size and column names')
 
-    response = interface.make_url_request(server, port, logical_file, 0, 2)
+    response = interface.make_url_request(server, port, username, password, logical_file, 0, 2, silent)
     file_size = response['Total']
     results = response['Result']['Row']
 
@@ -79,14 +79,16 @@ def _get_file_structure(logical_file, server, port, username, password, csv_file
     return column_names, chunks, current_row
 
 
-def _get_file_chunk(file_name, csv_file, server, port, username, password, current_row, chunk, column_names, silent):
+def _get_file_chunk(file_name, csv_file, server, port,
+                    username, password, current_row,
+                    chunk, column_names, silent):
 
     print('Getting rows ' + str(current_row) + ' to ' + str(chunk))
-    response = interface.make_url_request(server, port, file_name, current_row, chunk)
+    response = interface.make_url_request(server, port, username, password, file_name, current_row, chunk, silent)
     results = response['Result']['Row']
 
     try:
-        out_info = interface.parse_json_output(results, column_names, csv_file)
+        out_info = interface.parse_json_output(results, column_names, csv_file, silent)
     except Exception:
         print('Failed to Parse WU response, response written to FailedResponse.txt')
         with open('FailedResponse.txt', 'w') as f:
