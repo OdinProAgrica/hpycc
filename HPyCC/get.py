@@ -89,7 +89,7 @@ def get_outputs(script, server, port="8010", repo=None,
     return as_dict
 
 
-def get_file(logical_file, hpcc_addr, port='8010', csv_file=False, output_path=''):
+def get_file(logical_file, hpcc_addr, port='8010', csv_file=False):
     """
     Main call to process an HPCC file. Advantage over scripts as it can be chunked and threaded.
 
@@ -116,8 +116,6 @@ def get_file(logical_file, hpcc_addr, port='8010', csv_file=False, output_path='
         print('Key error, have you specified a CSV or THOR file correctly?')
         raise
 
-    if output_path:
-        save_file(df, output_path)
     return df
 
 
@@ -157,7 +155,7 @@ def save_output(script, server, path, port="8010", repo=None,
     :return: None
     """
     result = get_output(script, server, port, repo, username, password, silent, legacy)
-    result.to_csv(path_or_buf=path, compression=compression)
+    result.to_csv(path_or_buf=path, compression=compression, index=False)
     return None
 
 
@@ -223,12 +221,12 @@ def save_outputs(
     for result in zipped:
         file_name = "{}{}".format(prefix, result[1])
         path = os.path.join(directory, file_name)
-        result[0][1].to_csv(path, compression=compression)
+        result[0][1].to_csv(path, compression=compression, index=False)
 
     return None
 
 
-def save_file(df, output_path, do_compression=False):
+def save_file(logical_file, output_path, hpcc_addr, port='8010', csv_file=False, do_compression=False):
 
     """
 
@@ -237,6 +235,8 @@ def save_file(df, output_path, do_compression=False):
     :param do_compression:
     :return:
     """
+
+    df = get_file(logical_file, hpcc_addr, port=port, csv_file=csv_file)
 
     compress_extension = ''
     if do_compression:
