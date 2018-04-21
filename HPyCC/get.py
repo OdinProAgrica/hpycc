@@ -8,7 +8,7 @@ LOG_PATH = 'hpycc.log'
 logger = logging.getLogger()
 
 
-def boot_logger(silent, debg, to_file, logpath):
+def boot_logger(silent, debg, log_to_file, logpath):
     # TODO: get logger in each funtion
 
     global logger
@@ -22,7 +22,7 @@ def boot_logger(silent, debg, to_file, logpath):
 
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-    if to_file:
+    if log_to_file:
         fh = logging.FileHandler(logpath)
         fh.setFormatter(formatter)
         logger.addHandler(fh)
@@ -35,7 +35,7 @@ def boot_logger(silent, debg, to_file, logpath):
 def get_output(script, server, port="8010", repo=None,
                username="hpycc_get_output", password='" "',
                legacy=False, do_syntaxcheck=True,
-               silent=False, debg=False, to_file=False, logpath=LOG_PATH):
+               silent=False, debg=False, log_to_file=False, logpath=LOG_PATH):
     """
     Return the first output of an ECL script as a DataFrame.
 
@@ -66,7 +66,7 @@ def get_output(script, server, port="8010", repo=None,
         The first output produced by the script.
     """
 
-    boot_logger(silent, debg, to_file, logpath)
+    boot_logger(silent, debg, log_to_file, logpath)
     logger = logging.getLogger('get_output')
     logger.debug('Starting get_script')
 
@@ -88,7 +88,7 @@ def get_output(script, server, port="8010", repo=None,
 def get_outputs(script, server, port="8010", repo=None,
                 username="hpycc_get_output", password='" "',
                 legacy=False, do_syntaxcheck=True,
-                silent=False, debg=False, to_file=False,
+                silent=False, debg=False, log_to_file=False,
                 logpath=LOG_PATH):
     """
     Return all outputs of an ECL script as a dict of DataFrames.
@@ -120,7 +120,7 @@ def get_outputs(script, server, port="8010", repo=None,
         Outputs produced by the script in the form {output_name, df}.
     """
 
-    boot_logger(silent, debg, to_file, logpath)
+    boot_logger(silent, debg, log_to_file, logpath)
     logger = logging.getLogger('get_outputs')
     logger.debug('Starting get_script')
 
@@ -138,7 +138,7 @@ def get_outputs(script, server, port="8010", repo=None,
 def get_file(logical_file, server, port='8010',
              username = "hpycc_get_output", password = '" "',
              csv_file=False, silent=False, debg=False,
-             to_file=False, logpath=LOG_PATH):
+             log_to_file=False, logpath=LOG_PATH):
 
     """
     Main call to process an HPCC file. Advantage over scripts as it can be chunked and threaded.
@@ -159,7 +159,7 @@ def get_file(logical_file, server, port='8010',
         a DF of the given file
     """
 
-    boot_logger(silent, debg, to_file, logpath)
+    boot_logger(silent, debg, log_to_file, logpath)
     logger = logging.getLogger('get_file')
     logger.debug('Starting get_file')
 
@@ -176,7 +176,7 @@ def get_file(logical_file, server, port='8010',
 def save_output(script, server, path, port="8010", repo=None,
                 username="hpycc_get_output", password='" "',
                 compression=None, legacy=False, silent=False, debg=False,
-                to_file=False, logpath=LOG_PATH):
+                log_to_file=False, logpath=LOG_PATH):
     """
     Save the first output of an ECL script as a csv.
 
@@ -210,7 +210,7 @@ def save_output(script, server, path, port="8010", repo=None,
     :return: None
     """
 
-    # boot_logger(silent, debg, to_file, logpath) # No logger as get_output boots logger
+    # boot_logger(silent, debg, log_to_file, logpath) # No logger as get_output boots logger
 
     result = get_output(script, server, port, repo, username, password, silent, legacy)
     result.to_csv(path_or_buf=path, compression=compression, index=False)
@@ -222,7 +222,7 @@ def save_outputs(
         username="hpycc_get_output", password='" "',
         compression=None, filenames=None, prefix="", legacy=False,
         do_syntaxcheck=True, silent=False, debg=False,
-        to_file=False, logpath=LOG_PATH):
+        log_to_file=False, logpath=LOG_PATH):
 
     """
     Save all outputs of an ECL script as csvs using their output
@@ -266,7 +266,7 @@ def save_outputs(
     :return: None
     """
 
-    boot_logger(silent, debg, to_file, logpath)
+    boot_logger(silent, debg, log_to_file, logpath)
     logger = logging.getLogger('get_outputs')
     logger.debug('Starting get_script')
 
@@ -292,7 +292,7 @@ def save_outputs(
 def save_file(logical_file, output_path, server, port='8010',
               username="hpycc_get_output", password='" "',
               csv_file=False, compression=None, silent=False,
-              debg=False, to_file=False, logpath=LOG_PATH):
+              debg=False, log_to_file=False, logpath=LOG_PATH):
 
     """
 
@@ -302,7 +302,7 @@ def save_file(logical_file, output_path, server, port='8010',
     :return:
     """
 
-    # boot_logger(silent, debg, to_file, logpath) # no logger as get_file boots logger
+    # boot_logger(silent, debg, log_to_file, logpath) # no logger as get_file boots logger
 
     df = get_file(logical_file, server, port, username, password, csv_file, silent)
 
