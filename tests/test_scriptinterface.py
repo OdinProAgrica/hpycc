@@ -1,4 +1,4 @@
-import hpycc.getscripts.scriptinterface as interface
+import hpycc.scriptrunning.scriptinterface as interface
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
 

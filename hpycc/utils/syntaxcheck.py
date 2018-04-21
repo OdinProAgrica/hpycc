@@ -1,6 +1,6 @@
-import hpycc.getscripts.scriptinterface
 import os
-from warnings import warn
+import logging
+import hpycc.scriptrunning.scriptinterface
 
 
 def syntax_check(script, repo, silent, legacy):
@@ -24,6 +24,9 @@ def syntax_check(script, repo, silent, legacy):
         [(output_name, output_xml)].
     """
 
+    logger = logging.getLogger('syntaxcheck')
+    logger.info('Checking %s using repo %s and legacy %s' % (script, repo, legacy))
+
     if not os.path.isfile(script):
         raise FileNotFoundError('Script %s not found' % script)
 
@@ -31,15 +34,15 @@ def syntax_check(script, repo, silent, legacy):
     legacy_flag = '-legacy ' if legacy else ''
 
     command = "eclcc -syntax {}{} {}".format(legacy_flag, repo_flag, script)
-    
-    result = hpycc.getscripts.scriptinterface.run_command(command, silent=True)
+
+    result = hpycc.scriptrunning.scriptinterface.run_command(command, silent=True)
     err = result['stderr']
 
     if err and ': error' in err.lower():
         raise EnvironmentError('Script %s does not compile! Errors: \n %s' % (script, err))
     elif err and ': warning' in err.lower() and not silent:
-        warn('Script %s raises the following warnings: \n %s' % (script, err))
+        logger.warning('Script %s raises the following warnings: \n %s' % (script, err))
     elif err and ': warning' not in err.lower():
         raise EnvironmentError('Script %s contains unhandled feedback: \n %s' % (script, err))
     elif not silent:
-        print("Script %s passes syntax check" % script)
+        logger.info("Script %s passes syntax check" % script)

@@ -1,5 +1,6 @@
 import re
-import hpycc.getscripts.scriptinterface as interface
+import logging
+import hpycc.scriptrunning.scriptinterface as interface
 from hpycc.utils import syntaxcheck
 
 POOL_SIZE = 15
@@ -38,6 +39,10 @@ def get_script(script, server, port, repo, username, password, silent, legacy, d
         [(output_name, output_xml)].
     """
 
+    logger = logging.getLogger('getscripts.get_script')
+    logger.info('Getting result to %s from %s:XXXXXXX@%s : %s using repo %s. Legacy is %s and syntaxcheck is %s'
+                % (script, username, server, port, repo, legacy, do_syntaxcheck))
+
     if do_syntaxcheck:
         syntaxcheck.syntax_check(script, repo, silent, legacy)
 
@@ -47,17 +52,13 @@ def get_script(script, server, port, repo, username, password, silent, legacy, d
     command = ("ecl run --server {} --port {} --username {} --password {} {}"
                "thor {} {}").format(server, port, username, password, legacy_flag, script, repo_flag)
 
-    if not silent:
-        print("running ECL script")
-        print("command: {}".format(command))
-
+    logger.info('Running ECL script')
     result = interface.run_command(command, silent)
     result = result['stdout']
 
-    if not silent:
-        print("Parsing response")
-
+    logger.info("Parsing response")
     results = re.findall("<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>", result)
     results = [(name, interface.parse_xml(xml)) for name, xml in results]
 
+    logger.debug('Returning: %s' % results)
     return results

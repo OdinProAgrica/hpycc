@@ -1,11 +1,41 @@
 import os
-from hpycc.getfiles import getfiles
-from hpycc.getscripts import getscripts
+import logging
+import sys
+from hpycc.filerunning import getfiles
+from hpycc.scriptrunning import getscripts
+
+LOG_PATH = 'hpycc.log'
+logger = logging.getLogger()
+
+
+def boot_logger(silent, debg, to_file, logpath):
+    # TODO: get logger in each funtion
+
+    global logger
+
+    if debg:
+        logger.setLevel(logging.DEBUG)
+    elif silent:
+        logger.setLevel(logging.WARN)
+    else:
+        logger.setLevel(logging.INFO)
+
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    if to_file:
+        fh = logging.FileHandler(logpath)
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
 
 def get_output(script, server, port="8010", repo=None,
-               username="hpycc_get_output", password='" "', silent=False,
-               legacy=False, do_syntaxcheck=True):
+               username="hpycc_get_output", password='" "',
+               legacy=False, do_syntaxcheck=True,
+               silent=False, debg=False, to_file=False, logpath=LOG_PATH):
     """
     Return the first output of an ECL script as a DataFrame.
 
@@ -36,21 +66,30 @@ def get_output(script, server, port="8010", repo=None,
         The first output produced by the script.
     """
 
-    parsed_data_frames = getscripts.get_script(
-        script, server, port, repo, username, password, silent, legacy, do_syntaxcheck)
+    boot_logger(silent, debg, to_file, logpath)
+    logger = logging.getLogger('get_output')
+    logger.debug('Starting get_script')
 
+    parsed_data_frames = getscripts.get_script(
+        script, server, port, repo,
+        username, password, silent,
+        legacy, do_syntaxcheck)
+
+    logger.debug('Extracting outputs')
     try:
         first_parsed_result = parsed_data_frames[0][1]
     except IndexError:
-        UserWarning('Unable to parse response, printing first 500 characters: %s' % parsed_data_frames[:500])
+        logger.error('Unable to parse response, printing first 500 characters: %s' % parsed_data_frames[:500])
         raise
 
     return first_parsed_result
 
 
 def get_outputs(script, server, port="8010", repo=None,
-                username="hpycc_get_output", password='" "', silent=False,
-                legacy=False, do_syntaxcheck=True):
+                username="hpycc_get_output", password='" "',
+                legacy=False, do_syntaxcheck=True,
+                silent=False, debg=False, to_file=False,
+                logpath=LOG_PATH):
     """
     Return all outputs of an ECL script as a dict of DataFrames.
 
@@ -81,9 +120,16 @@ def get_outputs(script, server, port="8010", repo=None,
         Outputs produced by the script in the form {output_name, df}.
     """
 
-    parsed_data_frames = getscripts.get_script(
-        script, server, port, repo, username, password, silent, legacy, do_syntaxcheck)
+    boot_logger(silent, debg, to_file, logpath)
+    logger = logging.getLogger('get_outputs')
+    logger.debug('Starting get_script')
 
+    parsed_data_frames = getscripts.get_script(
+        script, server, port, repo,
+        username, password, silent,
+        legacy, do_syntaxcheck)
+
+    logger.debug('Converting response to Dict')
     as_dict = dict(parsed_data_frames)
 
     return as_dict
@@ -91,9 +137,9 @@ def get_outputs(script, server, port="8010", repo=None,
 
 def get_file(logical_file, server, port='8010',
              username = "hpycc_get_output", password = '" "',
-             csv_file=False, silent = False):
+             csv_file=False, silent=False, debg=False,
+             to_file=False, logpath=LOG_PATH):
 
-    # (logical_file, server, port='8010', username = "hpycc_get_output", password = '" "', csv_file=False, silent = False)
     """
     Main call to process an HPCC file. Advantage over scripts as it can be chunked and threaded.
 
@@ -113,20 +159,24 @@ def get_file(logical_file, server, port='8010',
         a DF of the given file
     """
 
-    print('Getting file')
+    boot_logger(silent, debg, to_file, logpath)
+    logger = logging.getLogger('get_file')
+    logger.debug('Starting get_file')
+
     try:
         df = getfiles.get_file(logical_file, server, port,
                                username, password, csv_file, silent)
     except KeyError:
-        print('Key error, have you specified a CSV or THOR file correctly?')
+        logger.error('Key error, have you specified a CSV or THOR file correctly?')
         raise
 
     return df
 
 
 def save_output(script, server, path, port="8010", repo=None,
-                username="hpycc_get_output", password='" "', silent=False,
-                compression=None, legacy=False):
+                username="hpycc_get_output", password='" "',
+                compression=None, legacy=False, silent=False, debg=False,
+                to_file=False, logpath=LOG_PATH):
     """
     Save the first output of an ECL script as a csv.
 
@@ -159,6 +209,9 @@ def save_output(script, server, path, port="8010", repo=None,
     -------
     :return: None
     """
+
+    # boot_logger(silent, debg, to_file, logpath) # No logger as get_output boots logger
+
     result = get_output(script, server, port, repo, username, password, silent, legacy)
     result.to_csv(path_or_buf=path, compression=compression, index=False)
     return None
@@ -166,9 +219,10 @@ def save_output(script, server, path, port="8010", repo=None,
 
 def save_outputs(
         script, server, directory=".", port="8010", repo=None,
-        username="hpycc_get_output", password='" "', silent=False,
+        username="hpycc_get_output", password='" "',
         compression=None, filenames=None, prefix="", legacy=False,
-        do_syntaxcheck=True):
+        do_syntaxcheck=True, silent=False, debg=False,
+        to_file=False, logpath=LOG_PATH):
 
     """
     Save all outputs of an ECL script as csvs using their output
@@ -212,12 +266,16 @@ def save_outputs(
     :return: None
     """
 
+    boot_logger(silent, debg, to_file, logpath)
+    logger = logging.getLogger('get_outputs')
+    logger.debug('Starting get_script')
+
     parsed_data_frames = getscripts.get_script(
         script, server, port, repo, username, password, silent, legacy, do_syntaxcheck)
 
     if filenames:
         if len(filenames) != len(parsed_data_frames):
-            UserWarning("The number of filenames specified is different to "
+            logger.warning("The number of filenames specified is different to "
                         "the number of outputs in your script. Adding names to compensate.")
         zipped = list(zip(parsed_data_frames, filenames))
     else:
@@ -233,7 +291,8 @@ def save_outputs(
 
 def save_file(logical_file, output_path, server, port='8010',
               username="hpycc_get_output", password='" "',
-              csv_file=False, compression=None, silent=False):
+              csv_file=False, compression=None, silent=False,
+              debg=False, to_file=False, logpath=LOG_PATH):
 
     """
 
@@ -242,6 +301,8 @@ def save_file(logical_file, output_path, server, port='8010',
     :param do_compression:
     :return:
     """
+
+    # boot_logger(silent, debg, to_file, logpath) # no logger as get_file boots logger
 
     df = get_file(logical_file, server, port, username, password, csv_file, silent)
 

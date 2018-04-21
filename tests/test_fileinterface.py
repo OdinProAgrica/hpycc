@@ -1,5 +1,5 @@
-import hpycc.getfiles.fileinterface as interface
-from hpycc.getscripts.scriptinterface import run_command
+import hpycc.filerunning.fileinterface as interface
+from hpycc.scriptrunning.scriptinterface import run_command
 
 server = 'http://localhost'
 port = '8010'
