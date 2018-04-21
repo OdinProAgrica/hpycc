@@ -1,7 +1,6 @@
 import json
-import urllib.request
+import requests
 from time import sleep
-from urllib.error import HTTPError
 import re
 
 GET_FILE_URL = """/WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s&Count=%s"""
@@ -12,7 +11,7 @@ def make_url_request(server, port, username, password, logical_file, current_row
     server = re.sub(r'(?i)http://', '', server)
 
     request = 'http://' + server + ':' + port + GET_FILE_URL % (logical_file, current_row, chunk)
-    response = _run_url_request(request, silent)
+    response = _run_url_request(request, username, password, silent)
 
     try:
         response = response['WUResultResponse']
@@ -23,7 +22,7 @@ def make_url_request(server, port, username, password, logical_file, current_row
     return response
 
 
-def _run_url_request(url_request, silent):
+def _run_url_request(url_request, username, password, silent):
     """
 
     :param url_request:
@@ -33,14 +32,21 @@ def _run_url_request(url_request, silent):
     attempts = 0
     max_attempts = 3
 
+    password = '' if password == '" "' else password
+
     while attempts < max_attempts:
         try:
             # print(url_request)
-            response = urllib.request.urlopen(url_request)
-            return json.loads(response.read().decode('utf-8'))
-        except HTTPError as e:
+            response = requests.get(url_request, auth=(username, password))
+            response = response.text
+            outJSON = json.loads(response)
+
+            return outJSON
+
+        except Exception as e:
             attempts += 1
             print('Error encountered in URL url_request: %s\n\n retry %s of %s' % (e, attempts, max_attempts))
+            print(e)
             sleep(5)
 
     raise OSError('Unable to get response from HPCC for url_request: %s' % url_request)
