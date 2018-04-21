@@ -151,8 +151,9 @@ def get_file(logical_file, server, port='8010',
 
 def save_output(script, server, path, port="8010", repo=None,
                 username="hpycc_get_output", password='" "',
-                compression=None, legacy=False, silent=False,
-                refresh=False):
+                compression=None, legacy=False,
+                refresh=False, silent=False, debg=False,
+                log_to_file=False, logpath=LOG_PATH):
     """
     Save the first output of an ECL script as a csv.
 
@@ -192,7 +193,8 @@ def save_output(script, server, path, port="8010", repo=None,
     elif os.path.isfile(path) and not refresh:
         return None
 
-    result = get_output(script, server, port, repo, username, password, silent, legacy)
+    result = get_output(script, server, port, repo, username, password, legacy=legacy, debg=debg,
+                        log_to_file=log_to_file, logpath=logpath)
     result.to_csv(path_or_buf=path, compression=compression, index=False)
     return None
 
@@ -271,8 +273,9 @@ def save_outputs(
 
 def save_file(logical_file, path, server, port='8010',
               username="hpycc_get_output", password='" "',
-              csv_file=False, compression=None, silent=False,
-              refresh=False):
+              csv_file=False, compression=None,
+              refresh=False, silent=False, debg=False,
+              log_to_file=False, logpath=LOG_PATH):
     """
 
     :param df:
@@ -286,7 +289,8 @@ def save_file(logical_file, path, server, port='8010',
     elif os.path.isfile(path) and not refresh:
         return None
 
-    df = get_file(logical_file, server, port, username, password, csv_file, silent)
+    df = get_file(logical_file, server, port, username, password, csv_file, silent=silent, debg=debg,
+                  log_to_file=log_to_file, logpath=logpath)
 
     df.to_csv(path, index=False, encoding='utf-8', compression=compression)
 
