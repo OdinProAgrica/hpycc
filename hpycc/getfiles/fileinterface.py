@@ -2,14 +2,16 @@ import json
 import urllib.request
 from time import sleep
 from urllib.error import HTTPError
+import re
 
 GET_FILE_URL = """/WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s&Count=%s"""
 
 
 def make_url_request(hpcc_addr, port, file_name, current_row, chunk):
 
-    request = hpcc_addr + ':' + port + GET_FILE_URL % (file_name, current_row, chunk)
+    hpcc_addr = re.sub(r'(?i)http://', '', hpcc_addr)
 
+    request = 'http://' + hpcc_addr + ':' + port + GET_FILE_URL % (file_name, current_row, chunk)
     response = _run_url_request(request)
 
     try:
