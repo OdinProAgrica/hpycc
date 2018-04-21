@@ -48,7 +48,8 @@ def test_get_outputs():
 
 def test_get_file():
     logical_file = '~a::test::file'
-    result = get.get_file(logical_file, server, port='8010', csv_file=False)
+    result = get.get_file(logical_file, server, port='8010', username=username,
+                          password=password, csv_file=False, silent=silent)
 
     assert_frame_equal(result, expected_result, check_dtype=False, check_like=False)
 
@@ -90,7 +91,8 @@ def test_save_file():
     logical_file = '~a::test::file'
     path = 'testOuputSave.csv'
 
-    get.save_file(logical_file, path, server, port, csv_file=False, compression=None)
+    get.save_file(logical_file, path, server, port, username=username,
+                  password=password, csv_file=False, compression=None, silent=silent)
 
     result = pd.read_csv(path)
     os.remove(path)

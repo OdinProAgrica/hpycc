@@ -7,26 +7,26 @@ POOL_SIZE = 15
 POOL = concurrent.futures.ThreadPoolExecutor(POOL_SIZE)
 
 
-def get_file(file_name, hpcc_addr, port, csv_file):
+def get_file(logical_file, server, port, username, password, csv_file, silent):
     """
 
-    :param file_name:
-    :param hpcc_addr:
+    :param logical_file:
+    :param server:
     :param csv_file:
     :return:
     """
 
     print('Adjusting name to HTML')
-    file_name = re.sub('[~]', '', file_name)
-    file_name = re.sub(r'[:]', '%3A', file_name)
+    logical_file = re.sub('[~]', '', logical_file)
+    logical_file = re.sub(r'[:]', '%3A', logical_file)
 
-    column_names, chunks, current_row = _get_file_structure(file_name, hpcc_addr, port, csv_file)
+    column_names, chunks, current_row = _get_file_structure(logical_file, server, port, username, password, csv_file, silent)
 
     print('Running downloads')
     futures = []
     for split in chunks:
         futures.append(POOL.submit(_get_file_chunk,
-                                   file_name, csv_file, hpcc_addr, port, current_row, split, column_names))
+                                   logical_file, csv_file, server, port, username, password, current_row, split, column_names, silent))
         current_row = split + 1
 
     concurrent.futures.wait(futures)
@@ -40,17 +40,17 @@ def get_file(file_name, hpcc_addr, port, csv_file):
     return pd.concat([future.result() for future in futures])
 
 
-def _get_file_structure(file_name, hpcc_addr, port, csv_file):
+def _get_file_structure(logical_file, server, port, username, password, csv_file, silent):
     """
 
-    :param file_name:
-    :param hpcc_addr:
+    :param logical_file:
+    :param server:
     :param csv_file:
     :return:
     """
     print('Determining size and column names')
 
-    response = interface.make_url_request(hpcc_addr, port, file_name, 0, 2)
+    response = interface.make_url_request(server, port, logical_file, 0, 2)
     file_size = response['Total']
     results = response['Result']['Row']
 
@@ -79,10 +79,10 @@ def _get_file_structure(file_name, hpcc_addr, port, csv_file):
     return column_names, chunks, current_row
 
 
-def _get_file_chunk(file_name, csv_file, hpcc_addr, port, current_row, chunk, column_names):
+def _get_file_chunk(file_name, csv_file, server, port, username, password, current_row, chunk, column_names, silent):
 
     print('Getting rows ' + str(current_row) + ' to ' + str(chunk))
-    response = interface.make_url_request(hpcc_addr, port, file_name, current_row, chunk)
+    response = interface.make_url_request(server, port, file_name, current_row, chunk)
     results = response['Result']['Row']
 
     try:

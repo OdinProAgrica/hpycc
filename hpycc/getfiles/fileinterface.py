@@ -7,11 +7,11 @@ import re
 GET_FILE_URL = """/WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s&Count=%s"""
 
 
-def make_url_request(hpcc_addr, port, file_name, current_row, chunk):
+def make_url_request(server, port, username, password, logical_file, current_row, chunk, silent):
 
-    hpcc_addr = re.sub(r'(?i)http://', '', hpcc_addr)
+    server = re.sub(r'(?i)http://', '', server)
 
-    request = 'http://' + hpcc_addr + ':' + port + GET_FILE_URL % (file_name, current_row, chunk)
+    request = 'http://' + server + ':' + port + GET_FILE_URL % (logical_file, current_row, chunk)
     response = _run_url_request(request)
 
     try:
@@ -23,7 +23,7 @@ def make_url_request(hpcc_addr, port, file_name, current_row, chunk):
     return response
 
 
-def _run_url_request(url_request):
+def _run_url_request(url_request, silent):
     """
 
     :param url_request:
@@ -46,7 +46,7 @@ def _run_url_request(url_request):
     raise OSError('Unable to get response from HPCC for url_request: %s' % url_request)
 
 
-def parse_json_output(results, column_names, csv_file):
+def parse_json_output(results, column_names, csv_file, silent):
     """
 
     :param results:

@@ -89,7 +89,11 @@ def get_outputs(script, server, port="8010", repo=None,
     return as_dict
 
 
-def get_file(logical_file, hpcc_addr, port='8010', csv_file=False):
+def get_file(logical_file, server, port='8010',
+             username = "hpycc_get_output", password = '" "',
+             csv_file=False, silent = False):
+
+    # (logical_file, server, port='8010', username = "hpycc_get_output", password = '" "', csv_file=False, silent = False)
     """
     Main call to process an HPCC file. Advantage over scripts as it can be chunked and threaded.
 
@@ -99,7 +103,7 @@ def get_file(logical_file, hpcc_addr, port='8010', csv_file=False):
         logical file to be downloaded
     csv_file: bool
         IS the logical file a CSV?
-    hpcc_addr: str
+    server: str
         address of the HPCC cluster
     output_path: str, optional
         Path to save to. If blank will return a dataframe. Blank by default.
@@ -111,7 +115,8 @@ def get_file(logical_file, hpcc_addr, port='8010', csv_file=False):
 
     print('Getting file')
     try:
-        df = getfiles.get_file(logical_file, hpcc_addr, port, csv_file)
+        df = getfiles.get_file(logical_file, server, port,
+                               username, password, csv_file, silent)
     except KeyError:
         print('Key error, have you specified a CSV or THOR file correctly?')
         raise
@@ -226,7 +231,9 @@ def save_outputs(
     return None
 
 
-def save_file(logical_file, output_path, hpcc_addr, port='8010', csv_file=False, do_compression=False):
+def save_file(logical_file, output_path, server, port='8010',
+              username="hpycc_get_output", password='" "',
+              csv_file=False, compression=None, silent=False):
 
     """
 
@@ -236,17 +243,10 @@ def save_file(logical_file, output_path, hpcc_addr, port='8010', csv_file=False,
     :return:
     """
 
-    df = get_file(logical_file, hpcc_addr, port=port, csv_file=csv_file)
-
-    compress_extension = ''
-    if do_compression:
-        if output_path[-3:] != '.gz':
-            output_path += '.gz'
-        compress_extension = 'gzip'
+    df = get_file(logical_file, server, port, username, password, csv_file, silent)
 
     df.to_csv(output_path, index=False, encoding='utf-8',
-              compression=compress_extension)  # , compression='gzip'
-
+              compression=compression)
 
 
 # TODO: Run function that runs a script and saves the output. Probably another class.
