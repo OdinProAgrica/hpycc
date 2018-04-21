@@ -1,6 +1,7 @@
 import re
 import logging
-import hpycc.scriptrunning.scriptinterface as interface
+import hpycc.utils.datarequests
+import hpycc.utils.parsers
 from hpycc.utils import syntaxcheck
 
 POOL_SIZE = 15
@@ -53,12 +54,12 @@ def get_script(script, server, port, repo, username, password, silent, legacy, d
                "thor {} {}").format(server, port, username, password, legacy_flag, script, repo_flag)
 
     logger.info('Running ECL script')
-    result = interface.run_command(command, silent)
+    result = hpycc.utils.datarequests.run_command(command, silent)
     result = result['stdout']
 
     logger.info("Parsing response")
     results = re.findall("<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>", result)
-    results = [(name, interface.parse_xml(xml)) for name, xml in results]
+    results = [(name, hpycc.utils.parsers.parse_xml(xml)) for name, xml in results]
 
     logger.debug('Returning: %s' % results)
     return results

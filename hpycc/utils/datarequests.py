@@ -1,10 +1,12 @@
 import json
-import requests
-from time import sleep
-import re
 import logging
+import re
+import subprocess
+from time import sleep
+import requests
 
 GET_FILE_URL = """/WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s&Count=%s"""
+
 
 def make_url_request(server, port, username, password, logical_file, current_row, chunk, silent):
 
@@ -55,36 +57,50 @@ def _run_url_request(url_request, username, password, silent):
     raise OSError('Unable to get response from HPCC for url_request: %s' % url_request)
 
 
-def parse_json_output(results, column_names, csv_file, silent):
+def run_command(cmd, silent=False):
     """
+    Return stdout and optionally print stderr from shell command.
 
-    :param results:
-    :param column_names:
-    :param csv_file:
-    :return:
+    Parameters
+    ----------
+    cmd: str
+        Command to run.
+    silent: bool, optional
+        If False, the program will print out the stderr. True by
+        default.
+    Returns
+    -------
+    result: dict
+        dict of stdout and stderr
     """
+    logger = logging.getLogger('run_command')
+    logger.info('Executing syntax check command: %s' % cmd)
 
-    logger = logging.getLogger('parse_json_output')
-    logger.info('Parsing JSON response, converting to dict')
-    logger.debug('See _run_url_request log for JSON. Column_names: %s, csv_file: %s' % (column_names, csv_file))
+    result = subprocess.run(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        stdin=subprocess.PIPE, shell=True)
 
-    out_info = {col: [] for col in column_names}
+    stderr = result.stderr.decode('utf-8')
+    stdout = result.stdout.decode("utf-8")
+    logger.debug('stderr: %s' % stderr)
+    logger.debug('stdout: %s' % stdout)
 
-    for i, result in enumerate(results):
-        logger.debug('Parsing result %s' % i)
-        if csv_file:
-            res = result['line']
-            if res is None:
-                logger.warning('Line', str(i), 'is blank! Row: %s' % result)
-                continue
-            res = res.split(',')
-            for j, col in enumerate(column_names):
-                out_info[col].append(res[j])
-        else:
-            for col in column_names:
-                out_info[col].append(result[col])
+    windows_path_error = ("'ecl' is not recognized as an internal or external "
+                          "command,\r\noperable program or batch file.\r\n")
 
-    sample_data = {col: val[0:5] for (col, val) in out_info.items()}
-    logger.debug('Returning (5 row sample): %s' % sample_data)
+    if stderr in [windows_path_error]:
+        error_string = "{} Have you added client tools to your path?".format(
+            stderr)
+        raise OSError(error_string)
 
-    return out_info
+    elif stderr:
+        errors = stderr.split('\r\r\n')
+        logger.warning('The following errors were generated:'.format(cmd))
+        logger.warning("\n".join(errors))
+
+    stdout = stdout.strip()
+    stdout = stdout.replace("\r\n", "")
+    out_dict = {'stdout': stdout, 'stderr': stderr}
+    logger.debug('Returning: %s' % out_dict)
+
+    return out_dict

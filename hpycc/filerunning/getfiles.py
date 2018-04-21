@@ -2,7 +2,8 @@ import re
 import logging
 import concurrent.futures
 import pandas as pd
-import hpycc.filerunning.fileinterface as interface
+import hpycc.utils.datarequests
+import hpycc.utils.parsers
 
 POOL_SIZE = 15
 POOL = concurrent.futures.ThreadPoolExecutor(POOL_SIZE)
@@ -69,7 +70,7 @@ def _get_file_structure(logical_file, server, port, username, password, csv_file
     logger.info('Getting file structure for %s' % logical_file)
 
     logger.info('Getting 1 row to determine structure')
-    response = interface.make_url_request(server, port, username, password, logical_file, 0, 2, silent)
+    response = hpycc.utils.datarequests.make_url_request(server, port, username, password, logical_file, 0, 2, silent)
     file_size = response['Total']
     results = response['Result']['Row']
 
@@ -110,13 +111,13 @@ def _get_file_chunk(file_name, csv_file, server, port,
     logger = logging.getLogger('_get_file_chunk')
     logger.info('Aquiring file chunk. Row: %s, chunk size: %s' % (current_row, chunk))
 
-    response = interface.make_url_request(server, port, username, password, file_name, current_row, chunk, silent)
+    response = hpycc.utils.datarequests.make_url_request(server, port, username, password, file_name, current_row, chunk, silent)
     logger.debug('Extracting results from response')
     results = response['Result']['Row']
 
     try:
         logger.debug('Handing to paser to extract data from JSON')
-        out_info = interface.parse_json_output(results, column_names, csv_file, silent)
+        out_info = hpycc.utils.parsers.parse_json_output(results, column_names, csv_file, silent)
     except Exception:
         logger.error('Failed to Parse WU response, response writing to FailedResponse.txt')
         with open('FailedResponse.txt', 'w') as f:

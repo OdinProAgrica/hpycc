@@ -1,6 +1,7 @@
-import hpycc.scriptrunning.scriptinterface as interface
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
+
+import hpycc.utils.parsers
 
 xml = """<Result>
            <Dataset name='Result 1'> 
@@ -42,6 +43,6 @@ xml_2Datasets = """<Result>
 #     assert False
 
 def test_parse_XML():
-    result = interface.parse_xml(xml, silent=False)
+    result = hpycc.utils.parsers.parse_xml(xml, silent=False)
     print(result)
     assert_frame_equal(result, expected_result_1, check_dtype=False, check_like=False)

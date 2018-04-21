@@ -1,6 +1,6 @@
 import os
 import logging
-import hpycc.scriptrunning.scriptinterface
+import hpycc.utils.datarequests
 
 
 def syntax_check(script, repo, silent, legacy):
@@ -8,7 +8,7 @@ def syntax_check(script, repo, silent, legacy):
     Return the first output of an ECL script as a DataFrame.
 
     Parameters
-    ----------
+    ----------s
     :param script: str
         Path of script to execute.
     :param repo: str, optional
@@ -35,7 +35,7 @@ def syntax_check(script, repo, silent, legacy):
 
     command = "eclcc -syntax {}{} {}".format(legacy_flag, repo_flag, script)
 
-    result = hpycc.scriptrunning.scriptinterface.run_command(command, silent=True)
+    result = hpycc.utils.datarequests.run_command(command, silent=True)
     err = result['stderr']
 
     if err and ': error' in err.lower():

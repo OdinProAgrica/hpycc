@@ -1,5 +1,5 @@
 import hpycc.filerunning.getfiles as get
-from hpycc.scriptrunning.scriptinterface import run_command
+from hpycc.utils.datarequests import run_command
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
 
