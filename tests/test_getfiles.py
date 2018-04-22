@@ -20,7 +20,7 @@ run_command(("ecl run --server {} --port {} --username {} --password {} -legacy 
 def test_get_file_1():
     file_name = '~a::test::file'
     csv_file = False
-    result = get.get_file(file_name, server, port, username, password, csv_file, silent)
+    result = get.get_file(file_name, server, port, username, password, csv_file)
 
     assert_frame_equal(result, expected_result, check_dtype=False, check_like=False)
 
@@ -28,7 +28,7 @@ def test_get_file_1():
 def test_get_file_2():
     file_name = '~a::test::filecsv'
     csv_file = True
-    result = get.get_file(file_name, server, port, username, password, csv_file, silent)
+    result = get.get_file(file_name, server, port, username, password, csv_file)
 
     assert_frame_equal(result, expected_result, check_dtype=False, check_like=False)
 
@@ -36,14 +36,14 @@ def test_get_file_2():
 def test_get_file_structure_1():
     file_name = '~a::test::file'
     csv_file = False
-    result = get._get_file_structure(file_name, server, port, username, password, csv_file, silent)
+    result = get._get_file_structure(file_name, server, port, username, password, csv_file)
     assert result == (['a', 'b'], [6], 0)
 
 
 def test_get_file_structure_2():
     file_name = '~a::test::filecsv'
     csv_file = True
-    result = get._get_file_structure(file_name, server, port, username, password, csv_file, silent)
+    result = get._get_file_structure(file_name, server, port, username, password, csv_file)
     assert result == (['a', 'b'], [6], 1)
 
 
@@ -53,7 +53,7 @@ def test_get_file_chunk_1():
     current_row = 1
     chunk = 3
 
-    result = get._get_file_chunk(file_name, csv_file, server, port, username, password, current_row, chunk, column_names, silent)
+    result = get._get_file_chunk(file_name, csv_file, server, port, username, password, current_row, chunk, column_names)
     assert_frame_equal(result, expected_result_chunk, check_dtype=False, check_like=False)
 
 
@@ -64,7 +64,7 @@ def test_get_file_chunk_2():
     current_row = 2
     chunk = 3
 
-    result = get._get_file_chunk(file_name, csv_file, server, port, username, password, current_row, chunk, column_names, silent)
+    result = get._get_file_chunk(file_name, csv_file, server, port, username, password, current_row, chunk, column_names)
     assert_frame_equal(result, expected_result_chunk, check_dtype=False, check_like=False)
 
 

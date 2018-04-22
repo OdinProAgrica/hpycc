@@ -18,7 +18,7 @@ run_command(("ecl run --server {} --port {} --username {} --password {} -legacy 
 def test_make_url_request_1():
     current_row = 1
     chunk = 2
-    result = hpycc.utils.datarequests.make_url_request(server, port, username, password, logical_file, current_row, chunk, silent)
+    result = hpycc.utils.datarequests.make_url_request(server, port, username, password, logical_file, current_row, chunk)
     result = result['Result']['Row']
     expected_result = [{'a': '3', 'b': '4', '__fileposition__': '16'},
                        {'a': '5', 'b': '6', '__fileposition__': '32'}]
@@ -29,7 +29,7 @@ def test_make_url_request_1():
 def test_make_url_request_2():
     current_row = 1
     chunk = 6
-    result = hpycc.utils.datarequests.make_url_request(server, port, username, password, logical_file, current_row, chunk, silent)
+    result = hpycc.utils.datarequests.make_url_request(server, port, username, password, logical_file, current_row, chunk)
     result = result['Result']['Row']
     assert result == [{'a': '3', 'b': '4', '__fileposition__': '16'},
                       {'a': '5', 'b': '6', '__fileposition__': '32'},
@@ -41,7 +41,7 @@ def test_make_url_request_2():
 def test_make_url_request_3():
     current_row = 2
     chunk = 2
-    result = hpycc.utils.datarequests.make_url_request(server, port, username, password, logical_file, current_row, chunk, silent)
+    result = hpycc.utils.datarequests.make_url_request(server, port, username, password, logical_file, current_row, chunk)
     result = result['Result']['Row']
     expected_result = [{'a': '5', 'b': '6', '__fileposition__': '32'},
                       {'a': '7', 'b': '8', '__fileposition__': '48'}]
@@ -52,16 +52,16 @@ def test_make_url_request_3():
 def test_parse_json_output_1():
     csv_file = False
     results = hpycc.utils.datarequests.make_url_request(server, port, username, password,
-                                         '~a::test::file', 1, 6, silent)['Result']['Row']
+                                         '~a::test::file', 1, 6)['Result']['Row']
 
-    result = hpycc.utils.parsers.parse_json_output(results, column_names, csv_file, silent)
+    result = hpycc.utils.parsers.parse_json_output(results, column_names, csv_file)
     assert result == {'a': ['3', '5', '7', '9', '11'], 'b': ['4', '6', '8', '10', '12']}
 
 
 def test_parse_json_output_2():
     csv_file = True
     results = hpycc.utils.datarequests.make_url_request(server, port, username, password,
-                                         '~a::test::filecsv', 2, 6, silent)['Result']['Row']
+                                         '~a::test::filecsv', 2, 6)['Result']['Row']
 
-    result = hpycc.utils.parsers.parse_json_output(results, column_names, csv_file, silent)
+    result = hpycc.utils.parsers.parse_json_output(results, column_names, csv_file)
     assert result == {'a': ['3', '5', '7', '9', '11'], 'b': ['4', '6', '8', '10', '12']}
