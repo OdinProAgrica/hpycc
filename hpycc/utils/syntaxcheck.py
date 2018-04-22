@@ -7,8 +7,6 @@ def syntax_check(script, repo, legacy):
     """
     Use ECLCC to run a syntax check on a script.
 
-    Parameters
-    ----------
     :param script: str
         Path of script to execute.
     :param repo: str
@@ -16,8 +14,6 @@ def syntax_check(script, repo, legacy):
     :param legacy: bool
         should the -legacy flag be added to the call?
 
-    Returns
-    -------
     :return: parsed: list of tuples
         List of processed tuples in the form
         [(output_name, output_xml)].

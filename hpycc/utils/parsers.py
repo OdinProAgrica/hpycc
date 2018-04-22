@@ -8,18 +8,14 @@ def parse_json_output(results, column_names, csv_file):
     """
     Return a dict that can be converted to a pandas df from a JSON.
 
-    Parameters
-    ----------
-    results: dict
+    :param results: dict
         json to be parsed.
-    column_names: list
+    :param column_names: list
         column names to parse
-    csv_file: bool
+    :param csv_file: bool
         Is this a csv file? Requires different parsing
 
-    Returns
-    -------
-    outInfo: pd.DataFrame
+    :return: outInfo: pd.DataFrame
         Parsed json converted to DataFrame.
     """
 
@@ -54,13 +50,9 @@ def parse_xml(xml):
     """
     Return a DataFrame from a nested XML.
 
-    Parameters
-    ----------
     :param xml: str
         xml to be parsed.
 
-    Returns
-    -------
     :return pd.DataFrame
         Parsed xml.
     """
@@ -94,6 +86,7 @@ def make_cols_numeric(df):
     """
     Attempts to convert every column to numeric, if an error
     is raised (ie they contain characters) then leave as is
+
     :param df: pd.DataFrame
         Data frame to run conversion on
     :return: pd.DataFrame

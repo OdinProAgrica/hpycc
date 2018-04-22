@@ -15,8 +15,6 @@ def get_script(script, server, port, repo,
     """
     Return the xml portion of the response from HPCC. Can then be parsed by other functions in this class
 
-    Parameters
-    ----------
     :param script: str
         Path of script to execute.
     :param server: str
@@ -30,18 +28,13 @@ def get_script(script, server, port, repo,
         Username to execute the ECL workunit.
     :param password: str
         Password to execute the ECL workunit.
-    :param silent: bool
-        If False, the program will print out its progress.
-    :param legacy, bool
+    :param legacy: bool
         Should ECL scripts be run with -legacy flag?
-    :param do_syntaxcheck, bool
+    :param do_syntaxcheck: bool
         Should the script be syntax checked before running?
 
-    Returns
-    -------
     :return: parsed: list of tuples
-        List of processed tuples in the form
-        [(output_name, output_xml)].
+        List of processed tuples in the form [(output_name, output_xml)].
     """
 
     logger = logging.getLogger('getscripts.get_script')

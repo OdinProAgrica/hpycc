@@ -89,14 +89,10 @@ def run_command(cmd):
     """
     Return stdout and stderr from shell command.
 
-    Parameters
-    ----------
-    cmd: str
+    :param cmd: str
         Command to run.
 
-    Returns
-    -------
-    result: dict
+    :return: dict
         dict of stdout and stderr
     """
     logger = logging.getLogger('run_command')

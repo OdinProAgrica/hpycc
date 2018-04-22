@@ -18,8 +18,6 @@ def get_output(script, server, port="8010", repo=None,
     Return the first output of an ECL script as a DataFrame. See save_output() for writing
     straight to file and get_outputs() for downloading scripts with multiple outputs.
 
-    Parameters
-    ----------
     :param script: str
          Path of script to execute.
     :param server: str
@@ -47,8 +45,6 @@ def get_output(script, server, port="8010", repo=None,
     :param logpath: str, optional
         If logging to file, what is the filename? hpycc.log by default.
 
-    Returns
-    -------
     :return: result: DataFrame
         The first output produced by the script.
     """
@@ -81,8 +77,6 @@ def get_outputs(script, server, port="8010", repo=None,
     Return all outputs of an ECL script as a dict of DataFrames. See get_output for single files and
     save_outputs() for writing multiple files to disk.
 
-    Parameters
-    ----------
     :param script: str
          Path of script to execute.
     :param server: str
@@ -108,8 +102,6 @@ def get_outputs(script, server, port="8010", repo=None,
     :param logpath: str, optional
         If logging to file, what is the filename? hpycc.log by default.
 
-    Returns
-    -------
     :return: as_dict: dictionary
         Outputs produced by the script in the form {output_name: df}.
     """
@@ -140,8 +132,6 @@ def get_file(logical_file, server, port='8010',
     without a return use save_file(). This process has an advantage over scripts as it can be
     chunked and threaded.
 
-    Parameters
-    ----------
     :param logical_file: str
         Logical file to be downloaded
     :param server: str
@@ -167,8 +157,6 @@ def get_file(logical_file, server, port='8010',
         Number of concurrent download threads for the file. Warning: too many will likely
         cause either your script or you cluster to crash! 15 by default
 
-    Returns
-    -------
     :return: pd.DataFrame
         a DF of the given file
     """
@@ -197,8 +185,6 @@ def save_output(script, server, path, port="8010", repo=None,
     Save the first output of an ECL script as a csv. See save_outputs() for downloading multiple files
     and get_output() for returning a pandas df.
 
-    Parameters
-    ----------
     :param path: str
         Path of target destination.
     :param script: str
@@ -229,8 +215,6 @@ def save_output(script, server, path, port="8010", repo=None,
     :param logpath: str, optional
         If logging to file, what is the filename? hpycc.log by default.
 
-    Returns
-    -------
     :return: None
     """
 
@@ -259,8 +243,6 @@ def save_outputs(
     prefix parameters. See get_outputs() for returning pandas
     dataframes and save_output() for single outputs.
 
-    Parameters
-    ----------
     :param script: str
          Path of script to execute.
     :param server: str
@@ -296,10 +278,7 @@ def save_outputs(
         Should log info be dumped to a file. False by default
     :param logpath: str, optional
         If logging to file, what is the filename? hpycc.log by default.
-    default.
 
-    Returns
-    -------
     :return: None
     """
 
@@ -337,8 +316,6 @@ def save_file(logical_file, path, server, port='8010',
     Getting logical files has an advantage over scripts as they can
     be chunked and multi-threaded.
 
-    Parameters
-    ----------
     :param logical_file: str
         Logical file to be downloaded
     :param path: str
@@ -348,8 +325,7 @@ def save_file(logical_file, path, server, port='8010',
     :param port: str, optional
         Port number ECL Watch is running on. "8010" by default.
     :param username: str, optional
-        Username to execute the ECL workunit. "hpycc_get_output" by
-        default.
+        Username to execute the ECL workunit. "hpycc_get_output" by default.
     :param password: str, optional
         Password to execute the ECL workunit. " " by default
     :param csv_file: bool, optional
@@ -370,8 +346,7 @@ def save_file(logical_file, path, server, port='8010',
     :param download_threads: int, optional
         Number of concurrent download threads for the file. Warning: too many will likely
         cause either your script or you cluster to crash! 15 by default
-    Returns
-    -------
+
     :return: None
     """
 
@@ -397,8 +372,7 @@ def run_script(script, server, port="8010", repo=None,
     """
     Run an ECL script but do not download, save or process the response.
 
-    Parameters
-    ----------
+
     :param script: str
          Path of script to execute.
     :param server: str
@@ -426,11 +400,9 @@ def run_script(script, server, port="8010", repo=None,
     :param logpath: str, optional
         If logging to file, what is the filename? hpycc.log by default.
 
-        Returns
-        -------
-        :return: None
+    :return: None
 
-        """
+    """
 
     boot_logger(silent, debg, log_to_file, logpath)
     logger = logging.getLogger('run_script')

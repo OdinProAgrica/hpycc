@@ -10,13 +10,10 @@ def run_script(script, server, port, repo, username, password, legacy, do_syntax
     Runs an ECL script, waits for completion and then returns None. No
     data is downloaded or returned.
 
-    Parameters
-    ----------
     :param script: str
         Path of script to execute.
     :param server: str
-        Ip address and port number of HPCC in the form
-        XX.XX.XX.XX.
+        Ip address and port number of HPCC in the form XX.XX.XX.XX.
     :param port: str, optional
         Port number ECL Watch is running on.
     :param repo: str, optional
@@ -25,18 +22,14 @@ def run_script(script, server, port, repo, username, password, legacy, do_syntax
         Username to execute the ECL workunit.
     :param password: str, optional
         Password to execute the ECL workunit.
-    :param silent: bool
-        If False, the program will print out its progress.
-    :param legacy, bool
+    :param legacy: bool
         Should ECL scripts be run with -legacy flag?
-    :param do_syntaxcheck, bool
+    :param do_syntaxcheck: bool
         Should the script be syntax checked before running?
 
-    Returns
-    -------
     :return: None
+        No return as just runs a script
     """
-
     logger = logging.getLogger('runscripts.run_script')
     logger.info('Running %s from %s:XXXXXXX@%s : %s using repo %s. Legacy is %s and syntaxcheck is %s'
                 % (script, username, server, port, repo, legacy, do_syntaxcheck))

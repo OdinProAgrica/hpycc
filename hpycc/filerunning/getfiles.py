@@ -12,8 +12,6 @@ def get_file(logical_file, server, port, username, password, csv_file, download_
      without a return use save_file(). This process has an advantage over scripts as it can be
      chunked and threaded.
 
-     Parameters
-     ----------
      :param logical_file: str
          Logical file to be downloaded
      :param server: str
@@ -30,8 +28,6 @@ def get_file(logical_file, server, port, username, password, csv_file, download_
          Number of concurrent download threads for the file. Warning: too many will likely
          cause either your script or you cluster to crash!
 
-     Returns
-     -------
      :return: pd.DataFrame
          a DF of the given file
      """
@@ -83,8 +79,6 @@ def _get_file_structure(logical_file, server, port, username, password, csv_file
      Downloads a single row from the given logical file and uses it to get column names and
      row count.
 
-     Parameters
-     ----------
      :param logical_file: str
          Logical file to be downloaded
      :param server: str
@@ -98,8 +92,6 @@ def _get_file_structure(logical_file, server, port, username, password, csv_file
      :param csv_file: bool
          Is the logical file a CSV?
 
-     Returns
-     -------
      :return: list
         list of column names
      :return: list

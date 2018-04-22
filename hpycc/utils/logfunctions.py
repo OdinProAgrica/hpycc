@@ -7,8 +7,6 @@ def boot_logger(silent, debg, log_to_file, logpath):
     """
     Iinitate logging for the package at the required verbosity.
 
-    Parameters
-    -------
     :param silent: bool
         Sets log level to Warnings, errors and critical only
     :param debg: bool
@@ -18,8 +16,6 @@ def boot_logger(silent, debg, log_to_file, logpath):
     :param logpath:
         Path for if logging to file
 
-    Returns
-    -------
     :return: None
         loggers are global
     """
