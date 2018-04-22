@@ -9,6 +9,7 @@ setup(name='hpycc',
       packages=['hpycc'],
       zip_safe=False,
       install_requires=[
-          'pandas'
+          'pandas',
+          'requests'
       ]
       )

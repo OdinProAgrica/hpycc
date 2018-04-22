@@ -347,7 +347,7 @@ def save_file(logical_file, path, server, port='8010',
     :param compression: str, optional
         Handed to pandas' compression command when writing output file. Note that the path variable is respected.
     :param refresh: bool, optional
-        Should the file be overriden if it's already there? False by default which will cause a FileExistsException
+        Should the file be overridden if it's already there? False by default which will cause a FileExistsException
         (unless silent=True, then you'll get a one line acknowledgement)
     :param silent: bool, optional
         Should all feedback except warnings and errors be suppressed. False by default

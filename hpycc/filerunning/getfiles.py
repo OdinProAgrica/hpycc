@@ -1,7 +1,7 @@
 """
 Internal calls for obtaining logical files. Handles obtaining file structure and orchestrates
 downloading each chunk of the file. Larger files are multi-threaded. Actual downloads are
-handled by the datarequests module in utils. Results are parsed to dataframes using the
+handled by the data requests module in utils. Results are parsed to dataframes using the
 relevent parser from utils, in this case JSON.
 """
 
@@ -90,7 +90,8 @@ def _get_file_structure(logical_file, server, port, username, password, csv_file
      :param logical_file: str
          Logical file to be downloaded
      :param server: str
-         Ip address of HPCC in the form XX.XX.XX.XX.
+        IP address or url of the HPCC server, supply usernames, passwords and ports
+        using other arguments.
      :param port: str
          Port number ECL Watch is running on.
      :param username: str
@@ -156,7 +157,8 @@ def _get_file_chunk(logical_file, csv_file, server, port,
     :param csv_file: bool
         Is the logical file a CSV?
     :param server: str
-        Ip address of HPCC in the form XX.XX.XX.XX.
+        IP address or url of the HPCC server, supply usernames, passwords and ports
+        using other arguments.
     :param port: str
         Port number ECL Watch is running on.
     :param username: str
@@ -175,7 +177,7 @@ def _get_file_chunk(logical_file, csv_file, server, port,
     """
 
     logger = logging.getLogger('_get_file_chunk')
-    logger.info('Aquiring file chunk. Row: %s, chunk size: %s' % (current_row, chunk))
+    logger.info('Acquiring file chunk. Row: %s, chunk size: %s' % (current_row, chunk))
 
     response = hpycc.utils.datarequests.make_url_request(server, port, username, password, logical_file, current_row, chunk)
     logger.debug('Extracting results from response')

@@ -22,8 +22,11 @@ Tests require an HPCC instance running on your local machine, docker images do e
 
 Main Functions
 --------------
-Below summarises the key functions and non-optional parameters. For specific arguments see the relevent function's documentation.  
-Note that while retrieving a file is a multi-thread process, running a script and getting the results is not. Therefore if your file is quite big you may be better off saving the results of a script using run_script_internal() with a thor file output then downloading the file with get_file_internal(). 
+Below summarises the key functions and non-optional parameters. For specific arguments see the relevant
+function's documentation. Note that while retrieving a file is a multi-thread process, running a script
+and getting the results is not. Therefore if your file is quite big you may be better off saving the
+results of a script using run_script_internal() with a thor file output then downloading the file with
+get_file_internal().
 
 get_output(script, server...) & save_output(script, server, path...)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -45,7 +48,7 @@ key_parameters
 ^^^^^^^^^^^^^^
 See function documentation for full list but those of note include:
 * Specifying a local ECL repository for scripts (repo=...)
-* Allowing files to be overriden when saving (refresh=...)
+* Allowing files to be overridden when saving (refresh=...)
 * Altering the default HPCC port (port=...) 
 * Adding usernames (username=...) and passwords (password=...)
 * Suppressing all but essential messages (silent=...)

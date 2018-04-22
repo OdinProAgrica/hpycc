@@ -9,9 +9,8 @@ import hpycc.utils.datarequests
 import hpycc.utils.parsers
 from hpycc.utils import syntaxcheck
 
-POOL_SIZE = 15
+
 GET_FILE_URL = """WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s&Count=%s"""
-USELESS_COLS = ['updateddatetime', '__fileposition__', 'createddatetime']
 
 
 def get_script_internal(script, server, port, repo,
