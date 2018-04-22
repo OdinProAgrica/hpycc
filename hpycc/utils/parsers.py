@@ -49,7 +49,7 @@ def parse_json_output(results, column_names, csv_file):
     return out_info
 
 
-def parse_xml(xml=False):
+def parse_xml(xml):
     """
     Return a DataFrame from a nested XML.
 

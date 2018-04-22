@@ -34,14 +34,14 @@ def syntax_check(script, repo, legacy):
 
     command = "eclcc -syntax {}{} {}".format(legacy_flag, repo_flag, script)
 
-    result = hpycc.utils.datarequests.run_command(command=True)
+    result = hpycc.utils.datarequests.run_command(command)
     err = result['stderr']
 
     if err and ': error' in err.lower():
         raise EnvironmentError('Script %s does not compile! Errors: \n %s' % (script, err))
-    elif err and ': warning' in err.lower() and not silent:
+    elif err and ': warning' in err.lower():
         logger.warning('Script %s raises the following warnings: \n %s' % (script, err))
     elif err and ': warning' not in err.lower():
         raise EnvironmentError('Script %s contains unhandled feedback: \n %s' % (script, err))
-    elif not silent:
+    else:
         logger.info("Script %s passes syntax check" % script)

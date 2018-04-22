@@ -102,3 +102,14 @@ def test_save_file():
     os.remove(path)
 
     assert_frame_equal(result, expected_result_1, check_dtype=False, check_like=False)
+
+
+def test_run_script():
+    # TODO: should check it's been run on the server to be a proper test.
+    script = test_script_location + 'ECLtest_runScript_1output.ecl'
+
+    get.run_script(script, server, port="8010", repo=None,
+                   username="hpycc_get_output", password='" "', silent=False,
+                   legacy=False, do_syntaxcheck=True, log_to_file=log_to_file, debg=debg)
+
+    assert True

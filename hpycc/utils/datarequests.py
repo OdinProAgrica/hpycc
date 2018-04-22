@@ -85,7 +85,7 @@ def _run_url_request(url_request, username, password):
     raise OSError('Unable to get response from HPCC for url_request: %s' % url_request)
 
 
-def run_command(cmd=False):
+def run_command(cmd):
     """
     Return stdout and stderr from shell command.
 
