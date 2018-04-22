@@ -5,17 +5,16 @@ import hpycc.utils.datarequests
 
 def syntax_check(script, repo, silent, legacy):
     """
-    Return the first output of an ECL script as a DataFrame.
+    Use ECLCC to run a syntax check on a script.
 
     Parameters
-    ----------s
+    ----------
     :param script: str
         Path of script to execute.
-    :param repo: str, optional
+    :param repo: str
         Path to the root of local ECL repository if applicable.
-    :param silent: bool
-        If False, the program will print out its progress. True by
-        default.
+    :param legacy: bool
+        should the -legacy flag be added to the call?
 
     Returns
     -------

@@ -9,7 +9,28 @@ GET_FILE_URL = """/WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%
 
 
 def make_url_request(server, port, username, password, logical_file, current_row, chunk, silent):
+    """
+    Construct a url request for data and parse the response. Request is actually
+    run by _run_url_request()
 
+    :param logical_file: str
+        Logical file to be downloaded
+    :param server: str
+        Ip address of HPCC in the form XX.XX.XX.XX.
+    :param port: str
+        Port number ECL Watch is running on.
+    :param username: str
+        Username to execute the ECL workunit.
+    :param password: str
+        Password to execute the ECL workunit.
+    :param current_row: int
+        Starting row for chunk
+    :param chunk: int
+        Size of chunk
+
+    :return: dict
+        workunit result as result['WUResultResponse']
+    """
     logger = logging.getLogger('make_url_request')
     logger.info('Getting Chunk %s from %s' % (chunk, server))
 
@@ -28,9 +49,16 @@ def make_url_request(server, port, username, password, logical_file, current_row
 
 def _run_url_request(url_request, username, password, silent):
     """
+    Run a url request for data.
 
-    :param url_request:
-    :return:
+    :param url_request: str
+        url for requesting data
+    :param username: str
+        Username to execute the ECL workunit.
+    :param password: str
+        Password to execute the ECL workunit.
+    :return: dict
+        Response, read into dict using json.loads
     """
 
     logger = logging.getLogger('_run_url_request')
@@ -59,15 +87,13 @@ def _run_url_request(url_request, username, password, silent):
 
 def run_command(cmd, silent=False):
     """
-    Return stdout and optionally print stderr from shell command.
+    Return stdout and stderr from shell command.
 
     Parameters
     ----------
     cmd: str
         Command to run.
-    silent: bool, optional
-        If False, the program will print out the stderr. True by
-        default.
+
     Returns
     -------
     result: dict

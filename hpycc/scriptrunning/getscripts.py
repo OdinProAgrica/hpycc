@@ -9,7 +9,9 @@ GET_FILE_URL = """WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s
 USELESS_COLS = ['updateddatetime', '__fileposition__', 'createddatetime']
 
 
-def get_script(script, server, port, repo, username, password, silent, legacy, do_syntaxcheck):
+def get_script(script, server, port, repo,
+               username, password, silent,
+               legacy, do_syntaxcheck):
     """
     Return the xml portion of the response from HPCC. Can then be parsed by other functions in this class
 
@@ -20,18 +22,20 @@ def get_script(script, server, port, repo, username, password, silent, legacy, d
     :param server: str
         Ip address and port number of HPCC in the form
         XX.XX.XX.XX.
-    :param port: str, optional
-        Port number ECL Watch is running on. "8010" by default.
-    :param repo: str, optional
+    :param port: str
+        Port number ECL Watch is running on.
+    :param repo: str
         Path to the root of local ECL repository if applicable.
-    :param username: str, optional
-        Username to execute the ECL workunit. "hpycc_get_output" by
-        default.
-    :param password: str, optional
-        Password to execute the ECL workunit. " " by default.
+    :param username: str
+        Username to execute the ECL workunit.
+    :param password: str
+        Password to execute the ECL workunit.
     :param silent: bool
-        If False, the program will print out its progress. True by
-        default.
+        If False, the program will print out its progress.
+    :param legacy, bool
+        Should ECL scripts be run with -legacy flag?
+    :param do_syntaxcheck, bool
+        Should the script be syntax checked before running?
 
     Returns
     -------

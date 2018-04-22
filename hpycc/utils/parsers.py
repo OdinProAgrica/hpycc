@@ -6,11 +6,21 @@ import pandas as pd
 
 def parse_json_output(results, column_names, csv_file, silent):
     """
+    Return a dict that can be converted to a pandas df from a JSON.
 
-    :param results:
-    :param column_names:
-    :param csv_file:
-    :return:
+    Parameters
+    ----------
+    results: dict
+        json to be parsed.
+    column_names: list
+        column names to parse
+    csv_file: bool
+        Is this a csv file? Requires different parsing
+
+    Returns
+    -------
+    outInfo: dict
+        Parsed json.
     """
 
     logger = logging.getLogger('parse_json_output')
@@ -45,15 +55,12 @@ def parse_xml(xml, silent=False):
 
     Parameters
     ----------
-    xml: str
+    :param xml: str
         xml to be parsed.
-    silent: bool
-        If False, the program will print out its progress. True by
-        default.
 
     Returns
     -------
-    df: DataFrame
+    :return pd.DataFrame
         Parsed xml.
     """
     logger = logging.getLogger('parse_xml')

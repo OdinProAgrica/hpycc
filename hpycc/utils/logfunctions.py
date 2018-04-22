@@ -4,6 +4,25 @@ logger = logging.getLogger()
 
 
 def boot_logger(silent, debg, log_to_file, logpath):
+    """
+    Iinitate logging for the package at the required verbosity.
+
+    Parameters
+    -------
+    :param silent: bool
+        Sets log level to Warnings, errors and critical only
+    :param debg: bool
+        Sets log level to debug, overrides silent
+    :param log_to_file: bool
+        Sets logging to also dump to file
+    :param logpath:
+        Path for if logging to file
+
+    Returns
+    -------
+    :return: None
+        loggers are global
+    """
     global logger
 
     if debg:
@@ -23,3 +42,5 @@ def boot_logger(silent, debg, log_to_file, logpath):
     ch = logging.StreamHandler(sys.stdout)
     ch.setFormatter(formatter)
     logger.addHandler(ch)
+
+    return None

@@ -5,18 +5,37 @@ import pandas as pd
 import hpycc.utils.datarequests
 import hpycc.utils.parsers
 
-POOL_SIZE = 15
-POOL = concurrent.futures.ThreadPoolExecutor(POOL_SIZE)
 
-
-def get_file(logical_file, server, port, username, password, csv_file, silent):
+def get_file(logical_file, server, port, username, password, csv_file, silent, download_threads):
     """
+     Download an HPCC logical file and return a pandas dataframe. To save to csv
+     without a return use save_file(). This process has an advantage over scripts as it can be
+     chunked and threaded.
 
-    :param logical_file:
-    :param server:
-    :param csv_file:
-    :return:
-    """
+     Parameters
+     ----------
+     :param logical_file: str
+         Logical file to be downloaded
+     :param server: str
+         Ip address of HPCC in the form XX.XX.XX.XX.
+     :param port: str
+         Port number ECL Watch is running on.
+     :param username: str
+         Username to execute the ECL workunit.
+     :param password: str
+         Password to execute the ECL workunit.
+     :param csv_file: bool
+         Is the logical file a CSV?
+     :param download_threads: int
+         Number of concurrent download threads for the file. Warning: too many will likely
+         cause either your script or you cluster to crash!
+
+     Returns
+     -------
+     :return: pd.DataFrame
+         a DF of the given file
+     """
+
     logger = logging.getLogger('getfiles.get_file')
     logger.info('Getting file %s from %s:XXXXXXX@%s : %s. csv_file is %s'
                 % (logical_file, username, server, port, csv_file))
@@ -33,10 +52,11 @@ def get_file(logical_file, server, port, username, password, csv_file, silent):
     logger.info('Dumping download tasks to thread pools. See _get_file_structure log for file structure')
     logger.debug('No. chunks: %s, start row (0 for Thor, 1 for csv): %s' % (len(chunks), current_row))
 
+    pool = concurrent.futures.ThreadPoolExecutor(download_threads)
     futures = []
     for chunk in chunks:
         logger.debug('Booting chunk: %s' % chunk)
-        futures.append(POOL.submit(_get_file_chunk,
+        futures.append(pool.submit(_get_file_chunk,
                                    logical_file, csv_file, server, port,
                                    username, password, current_row, chunk,
                                    column_names, silent))
@@ -60,12 +80,33 @@ def get_file(logical_file, server, port, username, password, csv_file, silent):
 
 def _get_file_structure(logical_file, server, port, username, password, csv_file, silent):
     """
+     Downloads a single row from the given logical file and uses it to get column names and
+     row count.
 
-    :param logical_file:
-    :param server:
-    :param csv_file:
-    :return:
-    """
+     Parameters
+     ----------
+     :param logical_file: str
+         Logical file to be downloaded
+     :param server: str
+         Ip address of HPCC in the form XX.XX.XX.XX.
+     :param port: str
+         Port number ECL Watch is running on.
+     :param username: str
+         Username to execute the ECL workunit.
+     :param password: str
+         Password to execute the ECL workunit.
+     :param csv_file: bool
+         Is the logical file a CSV?
+
+     Returns
+     -------
+     :return: list
+        list of column names
+     :return: list
+        list of chunk positions
+     :return: int
+        starting row for download
+     """
     logger = logging.getLogger('_get_file_structure')
     logger.info('Getting file structure for %s' % logical_file)
 
@@ -104,14 +145,39 @@ def _get_file_structure(logical_file, server, port, username, password, csv_file
     return column_names, chunks, current_row
 
 
-def _get_file_chunk(file_name, csv_file, server, port,
+def _get_file_chunk(logical_file, csv_file, server, port,
                     username, password, current_row,
                     chunk, column_names, silent):
+    """
+    Downloads a part of a logical file.
+
+    :param logical_file: str
+        Logical file to be downloaded
+    :param csv_file: bool
+        Is the logical file a CSV?
+    :param server: str
+        Ip address of HPCC in the form XX.XX.XX.XX.
+    :param port: str
+        Port number ECL Watch is running on.
+    :param username: str
+        Username to execute the ECL workunit.
+    :param password: str
+       Password to execute the ECL workunit.
+    :param current_row: int
+        Starting row for chunk
+    :param chunk: int
+        Size of chunk
+    :param column_names: list
+        names of columns to download
+
+    :return: pd.DataFrame
+        df of requested chunk
+    """
 
     logger = logging.getLogger('_get_file_chunk')
     logger.info('Aquiring file chunk. Row: %s, chunk size: %s' % (current_row, chunk))
 
-    response = hpycc.utils.datarequests.make_url_request(server, port, username, password, file_name, current_row, chunk, silent)
+    response = hpycc.utils.datarequests.make_url_request(server, port, username, password, logical_file, current_row, chunk, silent)
     logger.debug('Extracting results from response')
     results = response['Result']['Row']
 
