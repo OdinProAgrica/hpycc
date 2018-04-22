@@ -1,3 +1,12 @@
+"""
+This module contains the callable functions in hpycc. Basically you may get data via a script with one
+result (..._output), a script with multiple results (..._outputs) or a logical file (..._file).
+Data may be saved or simply returned as a pandas dataframe. The module also contains a function to
+run a script with no import. The main  use case I had in mind was for running a script, saving a
+logical file and then accessing with get_file(). This takes advantage of multi-threading, something
+which script outputs cannot do.
+"""
+
 import logging
 import os
 from hpycc.filerunning import getfiles
@@ -21,8 +30,8 @@ def get_output(script, server, port="8010", repo=None,
     :param script: str
          Path of script to execute.
     :param server: str
-        Ip address and port number of HPCC in the form
-        XX.XX.XX.XX.
+        IP address or url of the HPCC server, supply usernames, passwords and ports
+        using other arguments.
     :param port: str, optional
         Port number ECL Watch is running on. "8010" by default.
     :param repo: str, optional
@@ -80,7 +89,8 @@ def get_outputs(script, server, port="8010", repo=None,
     :param script: str
          Path of script to execute.
     :param server: str
-        Ip address and port number of HPCC in the form XX.XX.XX.XX.
+        IP address or url of the HPCC server, supply usernames, passwords and ports
+        using other arguments.
     :param port: str, optional
         Port number ECL Watch is running on. "8010" by default.
     :param repo: str, optional
@@ -135,7 +145,8 @@ def get_file(logical_file, server, port='8010',
     :param logical_file: str
         Logical file to be downloaded
     :param server: str
-        Ip address of HPCC in the form XX.XX.XX.XX.
+        IP address or url of the HPCC server, supply usernames, passwords and ports
+        using other arguments.
     :param port: str, optional
         Port number ECL Watch is running on. "8010" by default.
     :param username: str, optional
@@ -190,7 +201,8 @@ def save_output(script, server, path, port="8010", repo=None,
     :param script: str
          Path of script to execute.
     :param server: str
-        Ip address of HPCC in the form XX.XX.XX.XX.
+        IP address or url of the HPCC server, supply usernames, passwords and ports
+        using other arguments.
     :param port: str, optional
         Port number ECL Watch is running on. "8010" by default.
     :param repo: str, optional
@@ -246,7 +258,8 @@ def save_outputs(
     :param script: str
          Path of script to execute.
     :param server: str
-        Ip address of HPCC in the form XX.XX.XX.XX.
+        IP address or url of the HPCC server, supply usernames, passwords and ports
+        using other arguments.
     :param directory: str, optional
         Directory to save output files in. "." by default.
     :param port: str, optional
@@ -321,7 +334,8 @@ def save_file(logical_file, path, server, port='8010',
     :param path: str
         Path of target destination.
     :param server: str
-        Ip address of HPCC in the form XX.XX.XX.XX.
+        IP address or url of the HPCC server, supply usernames, passwords and ports
+        using other arguments.
     :param port: str, optional
         Port number ECL Watch is running on. "8010" by default.
     :param username: str, optional
@@ -376,8 +390,8 @@ def run_script(script, server, port="8010", repo=None,
     :param script: str
          Path of script to execute.
     :param server: str
-        Ip address and port number of HPCC in the form
-        XX.XX.XX.XX.
+        IP address or url of the HPCC server, supply usernames, passwords and ports
+        using other arguments
     :param port: str, optional
         Port number ECL Watch is running on. "8010" by default.
     :param repo: str, optional

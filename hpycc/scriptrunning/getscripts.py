@@ -1,3 +1,8 @@
+"""
+Internal call for obtaining the results of an ECL script. Hands off to a call to the ecl.exe
+via datarequests module in utils. Results are parsed to dataframes using the
+relevent parser from utils, in this case XML.
+"""
 import re
 import logging
 import hpycc.utils.datarequests
@@ -18,8 +23,8 @@ def get_script_internal(script, server, port, repo,
     :param script: str
         Path of script to execute.
     :param server: str
-        Ip address and port number of HPCC in the form
-        XX.XX.XX.XX.
+        IP address or url of the HPCC server, supply usernames, passwords and ports
+        using other arguments.
     :param port: str
         Port number ECL Watch is running on.
     :param repo: str

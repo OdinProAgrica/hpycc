@@ -1,3 +1,8 @@
+"""
+module contains the function to boot the logger, debug mode and
+logging to file are all handled by arguments passed from the
+front-end functions in get.
+"""
 import logging
 import sys
 logger = logging.getLogger()

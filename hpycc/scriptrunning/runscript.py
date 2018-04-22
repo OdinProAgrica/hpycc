@@ -1,3 +1,8 @@
+"""
+Internal call for running an ECL script. Hands off to a call to the ecl.exe
+via datarequests module in utils. Does retrieve 10 rows of data but this is
+dropped.
+"""
 import re
 import logging
 import hpycc.utils.datarequests
@@ -13,7 +18,8 @@ def run_script_internal(script, server, port, repo, username, password, legacy, 
     :param script: str
         Path of script to execute.
     :param server: str
-        Ip address and port number of HPCC in the form XX.XX.XX.XX.
+        IP address or url of the HPCC server, supply usernames, passwords and ports
+        using other arguments.
     :param port: str, optional
         Port number ECL Watch is running on.
     :param repo: str, optional

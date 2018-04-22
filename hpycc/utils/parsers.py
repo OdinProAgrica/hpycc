@@ -1,3 +1,7 @@
+"""
+Contains functions to parse responses from HPCC. Currently it can convert
+both ecl.exe produced XML and WUresult JSON produced via a url request.
+"""
 import logging
 import re
 from xml.etree import ElementTree as ET

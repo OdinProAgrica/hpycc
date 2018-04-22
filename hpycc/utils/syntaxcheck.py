@@ -1,3 +1,7 @@
+"""
+Module contains functions to check ECL scripts prior to runtime, therefore
+saving resources on the main server.
+"""
 import os
 import logging
 import hpycc.utils.datarequests

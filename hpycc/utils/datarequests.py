@@ -1,3 +1,8 @@
+"""
+Contains functions for making data requests. Currently this is via a url or via a
+call to ecl.exe from HPCC client tools. The latter of these should match the
+version of HPCC you are using *and needs to be on your system path*
+"""
 import json
 import logging
 import re
@@ -16,7 +21,8 @@ def make_url_request(server, port, username, password, logical_file, current_row
     :param logical_file: str
         Logical file to be downloaded
     :param server: str
-        Ip address of HPCC in the form XX.XX.XX.XX.
+        IP address or url of the HPCC server, supply usernames, passwords and ports
+        using other arguments.
     :param port: str
         Port number ECL Watch is running on.
     :param username: str
