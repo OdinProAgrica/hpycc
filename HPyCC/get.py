@@ -2,6 +2,7 @@ import logging
 import os
 from hpycc.filerunning import getfiles
 from hpycc.scriptrunning import getscripts
+from hpycc.scriptrunning import runscript
 from hpycc.utils.logfunctions import boot_logger
 
 LOG_PATH = 'hpycc.log'
@@ -435,7 +436,7 @@ def run_script(script, server, port="8010", repo=None,
     logger = logging.getLogger('run_script')
     logger.debug('Starting run_script')
 
-    run_script(
+    runscript.run_script(
         script, server, port, repo,
         username, password,
         legacy, do_syntaxcheck)
