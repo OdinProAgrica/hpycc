@@ -190,6 +190,5 @@ def _get_file_chunk(logical_file, csv_file, server, port,
             f.writelines(str(results))
         raise
 
-    out_info = pd.DataFrame(out_info)
-    logger.debug('Returning: %s' % out_info)
+    logger.debug('Returning. See Parse_json_output log for contents')
     return out_info

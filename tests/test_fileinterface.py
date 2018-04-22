@@ -1,6 +1,8 @@
 import hpycc.utils.datarequests
 import hpycc.utils.parsers
 from hpycc.utils.datarequests import run_command
+import pandas as pd
+from pandas.util.testing import assert_frame_equal
 
 server = 'http://localhost'
 port = '8010'
@@ -55,7 +57,8 @@ def test_parse_json_output_1():
                                          '~a::test::file', 1, 6)['Result']['Row']
 
     result = hpycc.utils.parsers.parse_json_output(results, column_names, csv_file)
-    assert result == {'a': ['3', '5', '7', '9', '11'], 'b': ['4', '6', '8', '10', '12']}
+    expected_result = pd.DataFrame({'a': [3, 5, 7, 9, 11], 'b': [4, 6, 8, 10, 12]})
+    assert_frame_equal(result, expected_result, check_dtype=False, check_like=False)
 
 
 def test_parse_json_output_2():
@@ -64,4 +67,6 @@ def test_parse_json_output_2():
                                          '~a::test::filecsv', 2, 6)['Result']['Row']
 
     result = hpycc.utils.parsers.parse_json_output(results, column_names, csv_file)
-    assert result == {'a': ['3', '5', '7', '9', '11'], 'b': ['4', '6', '8', '10', '12']}
+    expected_result = pd.DataFrame({'a': [3, 5, 7, 9, 11], 'b': [4, 6, 8, 10, 12]})
+    assert_frame_equal(result, expected_result, check_dtype=False, check_like=False)
+

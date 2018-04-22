@@ -19,8 +19,8 @@ def parse_json_output(results, column_names, csv_file):
 
     Returns
     -------
-    outInfo: dict
-        Parsed json.
+    outInfo: pd.DataFrame
+        Parsed json converted to DataFrame.
     """
 
     logger = logging.getLogger('parse_json_output')
@@ -43,10 +43,11 @@ def parse_json_output(results, column_names, csv_file):
             for col in column_names:
                 out_info[col].append(result[col])
 
-    sample_data = {col: val[0:5] for (col, val) in out_info.items()}
-    logger.debug('Returning (5 row sample): %s' % sample_data)
+    df = pd.DataFrame(out_info)
+    df = make_cols_numeric(df)
+    logger.debug('Returning: %s' % df)
 
-    return out_info
+    return df
 
 
 def parse_xml(xml):
@@ -83,7 +84,16 @@ def parse_xml(xml):
 
     df = pd.DataFrame(vls, columns=lvls)
 
+    df = make_cols_numeric(df)
+
+    logger.debug('Returning: %s' % df)
+    return df
+
+
+def make_cols_numeric(df):
+    logger = logging.getLogger('make_cols_numeric')
     logger.debug('Converting numeric cols')
+
     for col in df.columns:
         try:
             nums = pd.to_numeric(df[col])
@@ -92,6 +102,4 @@ def parse_xml(xml):
         except ValueError:
             logger.debug('%s cannot be converted to numeric' % col)
             pass
-
-    logger.debug('Returning: %s' % df)
     return df
