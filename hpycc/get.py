@@ -51,9 +51,9 @@ def get_output(script, server, port="8010", repo=None,
 
     boot_logger(silent, debg, log_to_file, logpath)
     logger = logging.getLogger('get_output')
-    logger.debug('Starting get_script')
+    logger.debug('Starting get_script_internal')
 
-    parsed_data_frames = getscripts.get_script(
+    parsed_data_frames = getscripts.get_script_internal(
         script, server, port, repo,
         username, password,
         legacy, do_syntaxcheck)
@@ -108,9 +108,9 @@ def get_outputs(script, server, port="8010", repo=None,
 
     boot_logger(silent, debg, log_to_file, logpath)
     logger = logging.getLogger('get_outputs')
-    logger.debug('Starting get_script')
+    logger.debug('Starting get_script_internal')
 
-    parsed_data_frames = getscripts.get_script(
+    parsed_data_frames = getscripts.get_script_internal(
         script, server, port, repo,
         username, password,
         legacy, do_syntaxcheck)
@@ -162,13 +162,13 @@ def get_file(logical_file, server, port='8010',
     """
 
     boot_logger(silent, debg, log_to_file, logpath)
-    logger = logging.getLogger('get_file')
-    logger.debug('Starting get_file')
+    logger = logging.getLogger('get_file_internal')
+    logger.debug('Starting get_file_internal')
 
     try:
-        df = getfiles.get_file(logical_file, server, port,
-                               username, password, csv_file,
-                               download_threads)
+        df = getfiles.get_file_internal(logical_file, server, port,
+                                        username, password, csv_file,
+                                        download_threads)
     except KeyError:
         logger.error('Key error, have you specified a CSV or THOR file correctly?')
         raise
@@ -284,9 +284,9 @@ def save_outputs(
 
     boot_logger(silent, debg, log_to_file, logpath)
     logger = logging.getLogger('get_outputs')
-    logger.debug('Starting get_script')
+    logger.debug('Starting get_script_internal')
 
-    parsed_data_frames = getscripts.get_script(
+    parsed_data_frames = getscripts.get_script_internal(
         script, server, port, repo, username, password, legacy, do_syntaxcheck)
 
     if filenames:
@@ -312,7 +312,7 @@ def save_file(logical_file, path, server, port='8010',
               log_to_file=False, logpath=LOG_PATH,
               download_threads=15):
     """
-    Save an HPCC file to disk, see get_file for returning a dataframe.
+    Save an HPCC file to disk, see get_file_internal for returning a dataframe.
     Getting logical files has an advantage over scripts as they can
     be chunked and multi-threaded.
 
@@ -405,10 +405,10 @@ def run_script(script, server, port="8010", repo=None,
     """
 
     boot_logger(silent, debg, log_to_file, logpath)
-    logger = logging.getLogger('run_script')
-    logger.debug('Starting run_script')
+    logger = logging.getLogger('run_script_internal')
+    logger.debug('Starting run_script_internal')
 
-    runscript.run_script(
+    runscript.run_script_internal(
         script, server, port, repo,
         username, password,
         legacy, do_syntaxcheck)

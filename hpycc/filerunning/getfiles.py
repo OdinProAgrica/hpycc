@@ -6,7 +6,7 @@ import hpycc.utils.datarequests
 import hpycc.utils.parsers
 
 
-def get_file(logical_file, server, port, username, password, csv_file, download_threads):
+def get_file_internal(logical_file, server, port, username, password, csv_file, download_threads):
     """
      Download an HPCC logical file and return a pandas dataframe. To save to csv
      without a return use save_file(). This process has an advantage over scripts as it can be
@@ -32,7 +32,7 @@ def get_file(logical_file, server, port, username, password, csv_file, download_
          a DF of the given file
      """
 
-    logger = logging.getLogger('getfiles.get_file')
+    logger = logging.getLogger('getfiles.get_file_internal')
     logger.info('Getting file %s from %s:XXXXXXX@%s : %s. csv_file is %s'
                 % (logical_file, username, server, port, csv_file))
 

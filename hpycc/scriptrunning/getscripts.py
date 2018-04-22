@@ -9,9 +9,9 @@ GET_FILE_URL = """WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s
 USELESS_COLS = ['updateddatetime', '__fileposition__', 'createddatetime']
 
 
-def get_script(script, server, port, repo,
-               username, password,
-               legacy, do_syntaxcheck):
+def get_script_internal(script, server, port, repo,
+                        username, password,
+                        legacy, do_syntaxcheck):
     """
     Return the xml portion of the response from HPCC. Can then be parsed by other functions in this class
 
@@ -37,7 +37,7 @@ def get_script(script, server, port, repo,
         List of processed tuples in the form [(output_name, output_xml)].
     """
 
-    logger = logging.getLogger('getscripts.get_script')
+    logger = logging.getLogger('getscripts.get_script_internal')
     logger.info('Getting result to %s from %s:XXXXXXX@%s : %s using repo %s. Legacy is %s and syntaxcheck is %s'
                 % (script, username, server, port, repo, legacy, do_syntaxcheck))
 

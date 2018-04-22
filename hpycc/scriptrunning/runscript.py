@@ -5,7 +5,7 @@ import hpycc.utils.parsers
 from hpycc.utils import syntaxcheck
 
 
-def run_script(script, server, port, repo, username, password, legacy, do_syntaxcheck):
+def run_script_internal(script, server, port, repo, username, password, legacy, do_syntaxcheck):
     """
     Runs an ECL script, waits for completion and then returns None. No
     data is downloaded or returned.
@@ -30,7 +30,7 @@ def run_script(script, server, port, repo, username, password, legacy, do_syntax
     :return: None
         No return as just runs a script
     """
-    logger = logging.getLogger('runscripts.run_script')
+    logger = logging.getLogger('runscripts.run_script_internal')
     logger.info('Running %s from %s:XXXXXXX@%s : %s using repo %s. Legacy is %s and syntaxcheck is %s'
                 % (script, username, server, port, repo, legacy, do_syntaxcheck))
 

@@ -21,7 +21,7 @@ run_command(("ecl run --server {} --port {} --username {} --password {} -legacy 
 def test_get_file_1():
     file_name = '~a::test::file'
     csv_file = False
-    result = get.get_file(file_name, server, port, username, password, csv_file, download_threads)
+    result = get.get_file_internal(file_name, server, port, username, password, csv_file, download_threads)
 
     assert_frame_equal(result, expected_result, check_dtype=False, check_like=False)
 
@@ -29,7 +29,7 @@ def test_get_file_1():
 def test_get_file_2():
     file_name = '~a::test::filecsv'
     csv_file = True
-    result = get.get_file(file_name, server, port, username, password, csv_file, download_threads)
+    result = get.get_file_internal(file_name, server, port, username, password, csv_file, download_threads)
 
     assert_frame_equal(result, expected_result, check_dtype=False, check_like=False)
 

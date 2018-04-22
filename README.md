@@ -14,7 +14,7 @@ Tests require an HPCC instance running on your local machine, docker images do e
 
 ## Main Functions
 Below summarises the key functions and non-optional parameters. For specific arguments see the relevent function's documentation.  
-Note that while retrieving a file is a multi-thread process, running a script and getting the results is not. Therefore if your file is quite big you may be better off saving the results of a script using run_script() with a thor file output then downloading the file with get_file(). 
+Note that while retrieving a file is a multi-thread process, running a script and getting the results is not. Therefore if your file is quite big you may be better off saving the results of a script using run_script_internal() with a thor file output then downloading the file with get_file_internal(). 
 
 ### get_output(script, server...) & save_output(script, server, path...)
 Run a given ECL script and either return the first result as a pandas dataframe or save it to file.
@@ -22,10 +22,10 @@ Run a given ECL script and either return the first result as a pandas dataframe 
 ### get_outputs(script, server...) & save_outputs(script, server...)
 Run a given ECL script and return all results as a dict of pandas dataframes or save them to files.
 
-### get_file(logical_file, server...) & save_file(logical_file, path, server...)
+### get_file_internal(logical_file, server...) & save_file(logical_file, path, server...)
 Get a logical file and either return as a pandas dataframe or save it to file.
 
-### run_script(script, server...)
+### run_script_internal(script, server...)
 Run a given ECL script. 10 rows will be returned but they will be dumped, no output is given. 
 
 ### key_parameters

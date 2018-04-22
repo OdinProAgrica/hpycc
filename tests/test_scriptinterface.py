@@ -37,7 +37,7 @@ xml_2Datasets = """<Result>
         </Result>"""
 
 # TODO: basically runs all other functions in scripts. Doesn't seem much point as all it does is return teh console.
-# If stdout breaks it'll break get_script. if stderr breaks it'll break the syntax checker.
+# If stdout breaks it'll break get_script_internal. if stderr breaks it'll break the syntax checker.
 # def test_run_command():
 #
 #     assert False
