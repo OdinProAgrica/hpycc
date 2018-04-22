@@ -3,7 +3,7 @@ hpycc Readme
 
 Documentation
 -------------
-The below readme and package documentation is available on [readthedocs](http://hpycc.readthedocs.io)
+The below readme and package documentation is available on [readthedocs](hpycc.readthedocs.io)
 
 Installation
 ------------
