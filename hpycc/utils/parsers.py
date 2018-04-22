@@ -91,6 +91,15 @@ def parse_xml(xml):
 
 
 def make_cols_numeric(df):
+    """
+    Attempts to convert every column to numeric, if an error
+    is raised (ie they contain characters) then leave as is
+    :param df: pd.DataFrame
+        Data frame to run conversion on
+    :return: pd.DataFrame
+        Data frame with all numeric columns converted to numeric.
+    """
+
     logger = logging.getLogger('make_cols_numeric')
     logger.debug('Converting numeric cols')
 

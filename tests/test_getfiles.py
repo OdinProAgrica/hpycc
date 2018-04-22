@@ -6,8 +6,8 @@ from pandas.util.testing import assert_frame_equal
 server = 'http://localhost'
 port = '8010'
 column_names = ['a', 'b']
-expected_result = pd.DataFrame({'a': ['1', '3', '5', '7', '9', '11'], 'b': ['2', '4', '6', '8', '10', '12']})
-expected_result_chunk = pd.DataFrame({'a': ['3', '5', '7'], 'b': ['4', '6', '8']})
+expected_result = pd.DataFrame({'a': [1, 3, 5, 7, 9, 11], 'b': [2, 4, 6, 8, 10, 12]})
+expected_result_chunk = pd.DataFrame({'a': [3, 5, 7], 'b': [4, 6, 8]})
 username = "hpycc_get_output"
 password = '" "'
 silent = False

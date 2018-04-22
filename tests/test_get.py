@@ -20,8 +20,8 @@ debg = True
 
 expected_result_1 = pd.DataFrame({'a': [1, 3, 5, 7, 9, 11], 'b': [2, 4, 6, 8, 10, 12]})
 expected_result_2 = pd.DataFrame({'a': [11, 13, 15, 17, 19, 111], 'b': [12, 14, 16, 18, 110, 112]})
-expected_result = pd.DataFrame({'a': ['1', '3', '5', '7', '9', '11'], 'b': ['2', '4', '6', '8', '10', '12']})
-expected_result_chunk = pd.DataFrame({'a': ['3', '5', '7'], 'b': ['4', '6', '8']})
+expected_result = pd.DataFrame({'a': [1, 3, 5, 7, 9, 11], 'b': [2, 4, 6, 8, 10, 12]})
+expected_result_chunk = pd.DataFrame({'a': [3, 5, 7], 'b': [4, 6, 8]})
 
 # Create HPCC test files
 run_command(("ecl run --server {} --port {} --username {} --password {} -legacy "
