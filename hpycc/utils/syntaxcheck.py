@@ -3,7 +3,7 @@ import logging
 import hpycc.utils.datarequests
 
 
-def syntax_check(script, repo, silent, legacy):
+def syntax_check(script, repo, legacy):
     """
     Use ECLCC to run a syntax check on a script.
 
@@ -34,7 +34,7 @@ def syntax_check(script, repo, silent, legacy):
 
     command = "eclcc -syntax {}{} {}".format(legacy_flag, repo_flag, script)
 
-    result = hpycc.utils.datarequests.run_command(command, silent=True)
+    result = hpycc.utils.datarequests.run_command(command=True)
     err = result['stderr']
 
     if err and ': error' in err.lower():

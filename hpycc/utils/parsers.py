@@ -4,7 +4,7 @@ from xml.etree import ElementTree as ET
 import pandas as pd
 
 
-def parse_json_output(results, column_names, csv_file, silent):
+def parse_json_output(results, column_names, csv_file):
     """
     Return a dict that can be converted to a pandas df from a JSON.
 
@@ -49,7 +49,7 @@ def parse_json_output(results, column_names, csv_file, silent):
     return out_info
 
 
-def parse_xml(xml, silent=False):
+def parse_xml(xml=False):
     """
     Return a DataFrame from a nested XML.
 

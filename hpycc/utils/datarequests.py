@@ -8,7 +8,7 @@ import requests
 GET_FILE_URL = """/WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s&Count=%s"""
 
 
-def make_url_request(server, port, username, password, logical_file, current_row, chunk, silent):
+def make_url_request(server, port, username, password, logical_file, current_row, chunk):
     """
     Construct a url request for data and parse the response. Request is actually
     run by _run_url_request()
@@ -36,7 +36,7 @@ def make_url_request(server, port, username, password, logical_file, current_row
 
     server = re.sub(r'(?i)http://', '', server)
     request = 'http://' + server + ':' + port + GET_FILE_URL % (logical_file, current_row, chunk)
-    response = _run_url_request(request, username, password, silent)
+    response = _run_url_request(request, username, password)
 
     try:
         response = response['WUResultResponse']
@@ -47,7 +47,7 @@ def make_url_request(server, port, username, password, logical_file, current_row
     return response
 
 
-def _run_url_request(url_request, username, password, silent):
+def _run_url_request(url_request, username, password):
     """
     Run a url request for data.
 
@@ -85,7 +85,7 @@ def _run_url_request(url_request, username, password, silent):
     raise OSError('Unable to get response from HPCC for url_request: %s' % url_request)
 
 
-def run_command(cmd, silent=False):
+def run_command(cmd=False):
     """
     Return stdout and stderr from shell command.
 

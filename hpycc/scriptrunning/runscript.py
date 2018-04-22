@@ -5,7 +5,7 @@ import hpycc.utils.parsers
 from hpycc.utils import syntaxcheck
 
 
-def get_script(script, server, port, repo, username, password, silent, legacy, do_syntaxcheck):
+def get_script(script, server, port, repo, username, password, legacy, do_syntaxcheck):
     """
     Runs an ECL script, waits for completion and then returns None. No
     data is downloaded or returned.
@@ -42,7 +42,7 @@ def get_script(script, server, port, repo, username, password, silent, legacy, d
                 % (script, username, server, port, repo, legacy, do_syntaxcheck))
 
     if do_syntaxcheck:
-        syntaxcheck.syntax_check(script, repo, silent, legacy)
+        syntaxcheck.syntax_check(script, repo, legacy)
 
     repo_flag = " -I {}".format(repo) if repo else ""
     legacy_flag = '-legacy ' if legacy else ''
@@ -51,7 +51,7 @@ def get_script(script, server, port, repo, username, password, silent, legacy, d
                "thor {} {}").format(server, port, username, password, legacy_flag, script, repo_flag)
 
     logger.info('Running ECL script')
-    hpycc.utils.datarequests.run_command(command, silent)
+    hpycc.utils.datarequests.run_command(command)
 
     logger.debug('Script completed, check run_command log for any issues')
 

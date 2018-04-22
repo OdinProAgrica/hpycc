@@ -10,7 +10,7 @@ USELESS_COLS = ['updateddatetime', '__fileposition__', 'createddatetime']
 
 
 def get_script(script, server, port, repo,
-               username, password, silent,
+               username, password,
                legacy, do_syntaxcheck):
     """
     Return the xml portion of the response from HPCC. Can then be parsed by other functions in this class
@@ -49,7 +49,7 @@ def get_script(script, server, port, repo,
                 % (script, username, server, port, repo, legacy, do_syntaxcheck))
 
     if do_syntaxcheck:
-        syntaxcheck.syntax_check(script, repo, silent, legacy)
+        syntaxcheck.syntax_check(script, repo, legacy)
 
     repo_flag = " -I {}".format(repo) if repo else ""
     legacy_flag = '-legacy ' if legacy else ''
@@ -58,7 +58,7 @@ def get_script(script, server, port, repo,
                "thor {} {}").format(server, port, username, password, legacy_flag, script, repo_flag)
 
     logger.info('Running ECL script')
-    result = hpycc.utils.datarequests.run_command(command, silent)
+    result = hpycc.utils.datarequests.run_command(command)
     result = result['stdout']
 
     logger.info("Parsing response")

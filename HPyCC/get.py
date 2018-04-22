@@ -12,8 +12,10 @@ def get_output(script, server, port="8010", repo=None,
                legacy=False, do_syntaxcheck=True,
                silent=False, debg=False, log_to_file=False,
                logpath=LOG_PATH):
+
     """
-    Return the first output of an ECL script as a DataFrame.
+    Return the first output of an ECL script as a DataFrame. See save_output() for writing
+    straight to file and get_outputs() for downloading scripts with multiple outputs.
 
     Parameters
     ----------
@@ -30,11 +32,19 @@ def get_output(script, server, port="8010", repo=None,
         Username to execute the ECL workunit. "hpycc_get_output" by
         default.
     :param password: str, optional
-        Password to execute the ECL workunit. " " by
-    default.
-    :param silent: bool
-        If False, the program will print out its progress. True by
-        default.
+        Password to execute the ECL workunit. " " by default
+    :param legacy: bool, optional
+        Should ECL commands be sent with the -legacy flag, False by default
+    :param do_syntaxcheck: bool, optional
+        Should a syntaxcheck be completed on the script before running. True by default
+    :param silent: bool, optional
+        Should all feedback except warnings and errors be suppressed. False by default
+    :param debg: bool, optional
+        Should debug info be logged. False by default
+    :param log_to_file: bool, optional
+        Should log info be dumped to a file. False by default
+    :param logpath: str, optional
+        If logging to file, what is the filename? hpycc.log by default.
 
     Returns
     -------
@@ -48,7 +58,7 @@ def get_output(script, server, port="8010", repo=None,
 
     parsed_data_frames = getscripts.get_script(
         script, server, port, repo,
-        username, password, silent,
+        username, password,
         legacy, do_syntaxcheck)
 
     logger.debug('Extracting outputs')
@@ -67,33 +77,40 @@ def get_outputs(script, server, port="8010", repo=None,
                 silent=False, debg=False, log_to_file=False,
                 logpath=LOG_PATH):
     """
-    Return all outputs of an ECL script as a dict of DataFrames.
+    Return all outputs of an ECL script as a dict of DataFrames. See get_output for single files and
+    save_outputs() for writing multiple files to disk.
 
     Parameters
     ----------
     :param script: str
          Path of script to execute.
     :param server: str
-        Ip address and port number of HPCC in the form
-        XX.XX.XX.XX.
+        Ip address and port number of HPCC in the form XX.XX.XX.XX.
     :param port: str, optional
         Port number ECL Watch is running on. "8010" by default.
     :param repo: str, optional
         Path to the root of local ECL repository if applicable.
     :param username: str, optional
-        Username to execute the ECL workunit. "hpycc_get_output" by
-        default.
+        Username to execute the ECL workunit. "hpycc_get_output" by default.
     :param password: str, optional
-        Password to execute the ECL workunit. " " by
-    default.
-    :param silent: bool
-        If False, the program will print out its progress. True by
-        default.
+        Password to execute the ECL workunit. " " by default.
+    :param legacy: bool, optional
+        Should ECL commands be sent with the -legacy flag, False by default
+    :param do_syntaxcheck: bool, optional
+        Should a syntaxcheck be completed on the script before running. True by default
+    :param silent: bool, optional
+        Should all feedback except warnings and errors be suppressed. False by default
+    :param debg: bool, optional
+        Should debug info be logged. False by default
+    :param log_to_file: bool, optional
+        Should log info be dumped to a file. False by default
+    :param logpath: str, optional
+        If logging to file, what is the filename? hpycc.log by default.
 
     Returns
     -------
     :return: as_dict: dictionary
-        Outputs produced by the script in the form {output_name, df}.
+        Outputs produced by the script in the form {output_name: df}.
     """
 
     boot_logger(silent, debg, log_to_file, logpath)
@@ -102,7 +119,7 @@ def get_outputs(script, server, port="8010", repo=None,
 
     parsed_data_frames = getscripts.get_script(
         script, server, port, repo,
-        username, password, silent,
+        username, password,
         legacy, do_syntaxcheck)
 
     logger.debug('Converting response to Dict')
@@ -112,26 +129,46 @@ def get_outputs(script, server, port="8010", repo=None,
 
 
 def get_file(logical_file, server, port='8010',
-             username = "hpycc_get_output", password = '" "',
+             username="hpycc_get_output", password='" "',
              csv_file=False, silent=False, debg=False,
-             log_to_file=False, logpath=LOG_PATH):
+             log_to_file=False, logpath=LOG_PATH,
+             download_threads=15):
 
     """
-    Main call to process an HPCC file. Advantage over scripts as it can be chunked and threaded.
+    Download an HPCC logical file and return a pandas dataframe. To save to csv
+    without a return use save_file(). This process has an advantage over scripts as it can be
+    chunked and threaded.
 
     Parameters
     ----------
-    logical_file: str
-        logical file to be downloaded
-    csv_file: bool
-        IS the logical file a CSV?
-    server: str
-        address of the HPCC cluster
-    output_path: str, optional
-        Path to save to. If blank will return a dataframe. Blank by default.
+    :param logical_file: str
+        Logical file to be downloaded
+    :param server: str
+        Ip address of HPCC in the form XX.XX.XX.XX.
+    :param port: str, optional
+        Port number ECL Watch is running on. "8010" by default.
+    :param username: str, optional
+        Username to execute the ECL workunit. "hpycc_get_output" by
+        default.
+    :param password: str, optional
+        Password to execute the ECL workunit. " " by default
+    :param csv_file: bool, optional
+        Is the logical file a CSV? False by default
+    :param silent: bool, optional
+        Should all feedback except warnings and errors be suppressed. False by default
+    :param debg: bool, optional
+        Should debug info be logged. False by default
+    :param log_to_file: bool, optional
+        Should log info be dumped to a file. False by default
+    :param logpath: str, optional
+        If logging to file, what is the filename? hpycc.log by default.
+    :param download_threads: int, optional
+        Number of concurrent download threads for the file. Warning: too many will likely
+        cause either your script or you cluster to crash! 15 by default
+
     Returns
     -------
-    result: pd.DataFrame
+    :return: pd.DataFrame
         a DF of the given file
     """
 
@@ -141,7 +178,8 @@ def get_file(logical_file, server, port='8010',
 
     try:
         df = getfiles.get_file(logical_file, server, port,
-                               username, password, csv_file, silent)
+                               username, password, csv_file,
+                               download_threads)
     except KeyError:
         logger.error('Key error, have you specified a CSV or THOR file correctly?')
         raise
@@ -155,7 +193,8 @@ def save_output(script, server, path, port="8010", repo=None,
                 refresh=False, silent=False, debg=False,
                 log_to_file=False, logpath=LOG_PATH):
     """
-    Save the first output of an ECL script as a csv.
+    Save the first output of an ECL script as a csv. See save_outputs() for downloading multiple files
+    and get_output() for returning a pandas df.
 
     Parameters
     ----------
@@ -164,23 +203,30 @@ def save_output(script, server, path, port="8010", repo=None,
     :param script: str
          Path of script to execute.
     :param server: str
-        Ip address and port number of HPCC in the form
-        XX.XX.XX.XX.
+        Ip address of HPCC in the form XX.XX.XX.XX.
     :param port: str, optional
         Port number ECL Watch is running on. "8010" by default.
     :param repo: str, optional
         Path to the root of local ECL repository if applicable.
     :param username: str, optional
-        Username to execute the ECL workunit. "hpycc_get_output" by
-        default.
+        Username to execute the ECL workunit. "hpycc_get_output" by default.
     :param password: str, optional
-        Password to execute the ECL workunit. " " by
-    default.
-    :param silent: bool
-        If False, the program will print out its progress. True by
-        default.
+        Password to execute the ECL workunit. " " by default.
     :param compression: str, optional
         Compression format to give to pandas. None by default.
+    :param legacy: bool, optional
+        Should ECL commands be sent with the -legacy flag, False by default
+    :param refresh: bool, optional
+        Should the file be overriden if it's already there? False by default which will cause a FileExistsException
+        (unless silent=True, then you'll get a one line acknowledgement)
+    :param silent: bool, optional
+        Should all feedback except warnings and errors be suppressed. False by default
+    :param debg: bool, optional
+        Should debug info be logged. False by default
+    :param log_to_file: bool, optional
+        Should log info be dumped to a file. False by default
+    :param logpath: str, optional
+        If logging to file, what is the filename? hpycc.log by default.
 
     Returns
     -------
@@ -194,7 +240,7 @@ def save_output(script, server, path, port="8010", repo=None,
         return None
 
     result = get_output(script, server, port, repo, username, password, legacy=legacy, debg=debg,
-                        log_to_file=log_to_file, logpath=logpath)
+                        log_to_file=log_to_file, logpath=logpath, silent=silent)
     result.to_csv(path_or_buf=path, compression=compression, index=False)
     return None
 
@@ -209,15 +255,15 @@ def save_outputs(
     """
     Save all outputs of an ECL script as csvs using their output
     name. The file names can be changed using the filenames and
-    prefix parameters.
+    prefix parameters. See get_outputs() for returning pandas
+    dataframes and save_output() for single outputs.
 
     Parameters
     ----------
     :param script: str
          Path of script to execute.
     :param server: str
-        Ip address and port number of HPCC in the form
-        XX.XX.XX.XX.
+        Ip address of HPCC in the form XX.XX.XX.XX.
     :param directory: str, optional
         Directory to save output files in. "." by default.
     :param port: str, optional
@@ -225,14 +271,9 @@ def save_outputs(
     :param repo: str, optional
         Path to the root of local ECL repository if applicable.
     :param username: str, optional
-        Username to execute the ECL workunit. "hpycc_get_output" by
-        default.
+        Username to execute the ECL workunit. "hpycc_get_output" by default.
     :param password: str, optional
-        Password to execute the ECL workunit. " " by
-    default.
-    :param silent: bool
-        If False, the program will print out its progress. True by
-        default.
+        Password to execute the ECL workunit. " " by default.
     :param compression: str, optional
         Compression format to give to pandas. None by default.
     :param filenames: list, optional
@@ -242,6 +283,19 @@ def save_outputs(
         assigned by the ECL script.
     :param prefix: str, optional
         Prefix to prepend to all file names. "" by default.
+    :param legacy: bool, optional
+        Should ECL commands be sent with the -legacy flag, False by default
+    :param do_syntaxcheck: bool, optional
+        Should a syntax check be completed on the script before running. True by default
+    :param silent: bool, optional
+        Should all feedback except warnings and errors be suppressed. False by default
+    :param debg: bool, optional
+        Should debug info be logged. False by default
+    :param log_to_file: bool, optional
+        Should log info be dumped to a file. False by default
+    :param logpath: str, optional
+        If logging to file, what is the filename? hpycc.log by default.
+    default.
 
     Returns
     -------
@@ -253,12 +307,12 @@ def save_outputs(
     logger.debug('Starting get_script')
 
     parsed_data_frames = getscripts.get_script(
-        script, server, port, repo, username, password, silent, legacy, do_syntaxcheck)
+        script, server, port, repo, username, password, legacy, do_syntaxcheck)
 
     if filenames:
         if len(filenames) != len(parsed_data_frames):
-            logger.warning("The number of filenames specified is different to "
-                        "the number of outputs in your script. Adding names to compensate.")
+            logger.warning("The number of filenames specified is different to " +
+                           "the number of outputs in your script. Adding names to compensate.")
         zipped = list(zip(parsed_data_frames, filenames))
     else:
         zipped = [(p, "{}.csv".format(p[0])) for p in parsed_data_frames]
@@ -275,23 +329,118 @@ def save_file(logical_file, path, server, port='8010',
               username="hpycc_get_output", password='" "',
               csv_file=False, compression=None,
               refresh=False, silent=False, debg=False,
-              log_to_file=False, logpath=LOG_PATH):
+              log_to_file=False, logpath=LOG_PATH,
+              download_threads=15):
     """
+    Save an HPCC file to disk, see get_file for returning a dataframe.
+    Getting logical files has an advantage over scripts as they can
+    be chunked and multi-threaded.
 
-    :param df:
-    :param path:
-    :param do_compression:
-    :return:
+    Parameters
+    ----------
+    :param logical_file: str
+        Logical file to be downloaded
+    :param path: str
+        Path of target destination.
+    :param server: str
+        Ip address of HPCC in the form XX.XX.XX.XX.
+    :param port: str, optional
+        Port number ECL Watch is running on. "8010" by default.
+    :param username: str, optional
+        Username to execute the ECL workunit. "hpycc_get_output" by
+        default.
+    :param password: str, optional
+        Password to execute the ECL workunit. " " by default
+    :param csv_file: bool, optional
+        Is the logical file a CSV? False by default
+    :param compression: str, optional
+        Handed to pandas' compression command when writing output file. Note that the path variable is respected.
+    :param refresh: bool, optional
+        Should the file be overriden if it's already there? False by default which will cause a FileExistsException
+        (unless silent=True, then you'll get a one line acknowledgement)
+    :param silent: bool, optional
+        Should all feedback except warnings and errors be suppressed. False by default
+    :param debg: bool, optional
+        Should debug info be logged. False by default
+    :param log_to_file: bool, optional
+        Should log info be dumped to a file. False by default
+    :param logpath: str, optional
+        If logging to file, what is the filename? hpycc.log by default.
+    :param download_threads: int, optional
+        Number of concurrent download threads for the file. Warning: too many will likely
+        cause either your script or you cluster to crash! 15 by default
+    Returns
+    -------
+    :return: None
     """
 
     if os.path.isfile(path) and not refresh and not silent:
         raise FileExistsError('File already exists, set refresh=True to override or silent=True to suppress this error')
     elif os.path.isfile(path) and not refresh:
+        # print('File exists, nothing to do so exiting.')
         return None
 
-    df = get_file(logical_file, server, port, username, password, csv_file, silent=silent, debg=debg,
-                  log_to_file=log_to_file, logpath=logpath)
+    df = get_file(logical_file, server, port, username, password, csv_file, debg=debg,
+                  log_to_file=log_to_file, logpath=logpath, download_threads=download_threads,
+                  silent=silent)
 
     df.to_csv(path, index=False, encoding='utf-8', compression=compression)
 
+    return None
 
+
+def run_script(script, server, port="8010", repo=None,
+               username="hpycc_get_output", password='" "',
+               legacy=False, do_syntaxcheck=True,
+               silent=False, debg=False, log_to_file=False, logpath=LOG_PATH):
+    """
+    Run an ECL script but do not download, save or process the response.
+
+    Parameters
+    ----------
+    :param script: str
+         Path of script to execute.
+    :param server: str
+        Ip address and port number of HPCC in the form
+        XX.XX.XX.XX.
+    :param port: str, optional
+        Port number ECL Watch is running on. "8010" by default.
+    :param repo: str, optional
+        Path to the root of local ECL repository if applicable.
+    :param username: str, optional
+        Username to execute the ECL workunit. "hpycc_get_output" by
+        default.
+    :param password: str, optional
+        Password to execute the ECL workunit. " " by default
+    :param legacy: bool, optional
+        Should ECL commands be sent with the -legacy flag, False by default
+    :param do_syntaxcheck: bool, optional
+        Should a syntaxcheck be completed on the script before running. True by default
+    :param silent: bool, optional
+        Should all feedback except warnings and errors be suppressed. False by default
+    :param debg: bool, optional
+        Should debug info be logged. False by default
+    :param log_to_file: bool, optional
+        Should log info be dumped to a file. False by default
+    :param logpath: str, optional
+        If logging to file, what is the filename? hpycc.log by default.
+
+        Returns
+        -------
+        :return: None
+
+        """
+
+    boot_logger(silent, debg, log_to_file, logpath)
+    logger = logging.getLogger('run_script')
+    logger.debug('Starting run_script')
+
+    run_script(
+        script, server, port, repo,
+        username, password,
+        legacy, do_syntaxcheck)
+
+    return None
+
+
+# TODO: make a script for tidying up potentially wrong server addresses. Ie if they give the port number, removing slashes from the end and removing http:// from the start (to be added later if needed.

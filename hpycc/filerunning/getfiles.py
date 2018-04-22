@@ -6,7 +6,7 @@ import hpycc.utils.datarequests
 import hpycc.utils.parsers
 
 
-def get_file(logical_file, server, port, username, password, csv_file, silent, download_threads):
+def get_file(logical_file, server, port, username, password, csv_file, download_threads):
     """
      Download an HPCC logical file and return a pandas dataframe. To save to csv
      without a return use save_file(). This process has an advantage over scripts as it can be
@@ -47,7 +47,7 @@ def get_file(logical_file, server, port, username, password, csv_file, silent, d
 
     column_names, chunks, current_row = _get_file_structure(logical_file, server, port,
                                                             username, password,
-                                                            csv_file, silent)
+                                                            csv_file)
 
     logger.info('Dumping download tasks to thread pools. See _get_file_structure log for file structure')
     logger.debug('No. chunks: %s, start row (0 for Thor, 1 for csv): %s' % (len(chunks), current_row))
@@ -59,7 +59,7 @@ def get_file(logical_file, server, port, username, password, csv_file, silent, d
         futures.append(pool.submit(_get_file_chunk,
                                    logical_file, csv_file, server, port,
                                    username, password, current_row, chunk,
-                                   column_names, silent))
+                                   column_names))
         current_row = chunk + 1
 
     logger.info('Waiting for %s threads to complete' % len(futures))
@@ -78,7 +78,7 @@ def get_file(logical_file, server, port, username, password, csv_file, silent, d
     return results
 
 
-def _get_file_structure(logical_file, server, port, username, password, csv_file, silent):
+def _get_file_structure(logical_file, server, port, username, password, csv_file):
     """
      Downloads a single row from the given logical file and uses it to get column names and
      row count.
@@ -111,7 +111,7 @@ def _get_file_structure(logical_file, server, port, username, password, csv_file
     logger.info('Getting file structure for %s' % logical_file)
 
     logger.info('Getting 1 row to determine structure')
-    response = hpycc.utils.datarequests.make_url_request(server, port, username, password, logical_file, 0, 2, silent)
+    response = hpycc.utils.datarequests.make_url_request(server, port, username, password, logical_file, 0, 2)
     file_size = response['Total']
     results = response['Result']['Row']
 
@@ -147,7 +147,7 @@ def _get_file_structure(logical_file, server, port, username, password, csv_file
 
 def _get_file_chunk(logical_file, csv_file, server, port,
                     username, password, current_row,
-                    chunk, column_names, silent):
+                    chunk, column_names):
     """
     Downloads a part of a logical file.
 
@@ -177,13 +177,13 @@ def _get_file_chunk(logical_file, csv_file, server, port,
     logger = logging.getLogger('_get_file_chunk')
     logger.info('Aquiring file chunk. Row: %s, chunk size: %s' % (current_row, chunk))
 
-    response = hpycc.utils.datarequests.make_url_request(server, port, username, password, logical_file, current_row, chunk, silent)
+    response = hpycc.utils.datarequests.make_url_request(server, port, username, password, logical_file, current_row, chunk)
     logger.debug('Extracting results from response')
     results = response['Result']['Row']
 
     try:
         logger.debug('Handing to paser to extract data from JSON')
-        out_info = hpycc.utils.parsers.parse_json_output(results, column_names, csv_file, silent)
+        out_info = hpycc.utils.parsers.parse_json_output(results, column_names, csv_file)
     except Exception:
         logger.error('Failed to Parse WU response, response writing to FailedResponse.txt')
         with open('FailedResponse.txt', 'w') as f:
