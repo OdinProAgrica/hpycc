@@ -11,6 +11,7 @@ expected_result_chunk = pd.DataFrame({'a': ['3', '5', '7'], 'b': ['4', '6', '8']
 username = "hpycc_get_output"
 password = '" "'
 silent = False
+download_threads = 15
 
 # Create HPCC test files
 run_command(("ecl run --server {} --port {} --username {} --password {} -legacy "
@@ -20,7 +21,7 @@ run_command(("ecl run --server {} --port {} --username {} --password {} -legacy 
 def test_get_file_1():
     file_name = '~a::test::file'
     csv_file = False
-    result = get.get_file(file_name, server, port, username, password, csv_file)
+    result = get.get_file(file_name, server, port, username, password, csv_file, download_threads)
 
     assert_frame_equal(result, expected_result, check_dtype=False, check_like=False)
 
@@ -28,7 +29,7 @@ def test_get_file_1():
 def test_get_file_2():
     file_name = '~a::test::filecsv'
     csv_file = True
-    result = get.get_file(file_name, server, port, username, password, csv_file)
+    result = get.get_file(file_name, server, port, username, password, csv_file, download_threads)
 
     assert_frame_equal(result, expected_result, check_dtype=False, check_like=False)
 

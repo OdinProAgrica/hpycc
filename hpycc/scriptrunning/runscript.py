@@ -5,7 +5,7 @@ import hpycc.utils.parsers
 from hpycc.utils import syntaxcheck
 
 
-def get_script(script, server, port, repo, username, password, legacy, do_syntaxcheck):
+def run_script(script, server, port, repo, username, password, legacy, do_syntaxcheck):
     """
     Runs an ECL script, waits for completion and then returns None. No
     data is downloaded or returned.
