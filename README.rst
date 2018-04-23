@@ -10,7 +10,8 @@ The package's github is available at: https://github.com/OdinProAgrica/hpycc
 
 Installation
 ------------
-Install with
+Install with:
+
 pip install git+git://github.com/OdinProAgrica/hpycc
 
 Current Status
@@ -19,8 +20,12 @@ Tested and working on HPCC v6.4.2 and python 3.5.2 under windows 10. Will make l
 
 Dependencies
 ------------
-The package itself mainly uses core Python, Pandas is needed for outputting dataframes.  
-There is a dependency for client tools to run ECL scripts (you need ecl.exe and eclcc.exe), make sure you install the right client tools for your HPCC version. This must be in your system path.   
+The package itself mainly uses core Python, Pandas is needed for outputting dataframes.
+
+There is a dependency for client tools to run ECL scripts (you need ecl.exe and eclcc.exe).
+Make sure you install the right client tools for your HPCC version and add the dir to your system path,
+e.g. C:\Program Files (x86)\HPCCSystems\X.X.X\clienttools\bin.
+
 Tests require an HPCC instance running on your local machine, docker images do exist for this.
 
 Main Functions
@@ -50,6 +55,7 @@ Run a given ECL script. 10 rows will be returned but they will be dumped, no out
 Frequently Used Arguments
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 See function documentation for full list but those of note include:
+
 * Specifying a local ECL repository for scripts (repo=...)
 * Allowing files to be overridden when saving (refresh=...)
 * Altering the default HPCC port (port=...)

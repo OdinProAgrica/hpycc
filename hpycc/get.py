@@ -428,6 +428,3 @@ def run_script(script, server, port="8010", repo=None,
         legacy, do_syntaxcheck)
 
     return None
-
-
-# TODO: make a script for tidying up potentially wrong server addresses. Ie if they give the port number, removing slashes from the end and removing http:// from the start (to be added later if needed.
