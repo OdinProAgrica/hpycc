@@ -5,6 +5,9 @@ Documentation
 -------------
 The below readme and package documentation is available at http://hpycc.readthedocs.io
 
+The package's github is available at: https://github.com/OdinProAgrica/hpycc
+
+
 Installation
 ------------
 Install with
@@ -59,4 +62,6 @@ TODO but check the tests directory for some example ECL scripts and calls.
 
 Issues, Bugs, Comments? 
 -----------------------
-Use the github tools to report them, any contributions welcome.
+Please use the package's github: https://github.com/OdinProAgrica/hpycc
+
+Any contributions are also welcome.
