@@ -24,7 +24,7 @@ def parse_json_output(results, column_names, csv_file):
     """
 
     logger = logging.getLogger('parse_json_output')
-    logger.info('Parsing JSON response, converting to dict')
+    logger.debug('Parsing JSON response, converting to dict')
     logger.debug('See _run_url_request log for JSON. Column_names: %s, csv_file: %s' % (column_names, csv_file))
 
     out_info = {col: [] for col in column_names}

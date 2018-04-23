@@ -38,7 +38,7 @@ def make_url_request(server, port, username, password, logical_file, current_row
         workunit result as result['WUResultResponse']
     """
     logger = logging.getLogger('make_url_request')
-    logger.info('Getting Chunk %s from %s' % (chunk, server))
+    logger.debug('Getting Chunk %s from %s' % (chunk, server))
 
     server = re.sub(r'(?i)http://', '', server)
     request = 'http://' + server + ':' + port + GET_FILE_URL % (logical_file, current_row, chunk)
@@ -68,7 +68,7 @@ def _run_url_request(url_request, username, password):
     """
 
     logger = logging.getLogger('_run_url_request')
-    logger.info('Running url_request: %s' % url_request)
+    logger.debug('Running url_request: %s' % url_request)
 
     attempts = 0
     max_attempts = 3

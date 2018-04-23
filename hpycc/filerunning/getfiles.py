@@ -177,7 +177,7 @@ def _get_file_chunk(logical_file, csv_file, server, port,
     """
 
     logger = logging.getLogger('_get_file_chunk')
-    logger.info('Acquiring file chunk. Row: %s, chunk size: %s' % (current_row, chunk))
+    logger.info('Acquiring file chunk. Row: %s, to: %s' % (current_row, chunk))
 
     response = hpycc.utils.datarequests.make_url_request(server, port, username, password, logical_file, current_row, chunk)
     logger.debug('Extracting results from response')
