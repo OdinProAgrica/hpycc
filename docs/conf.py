@@ -21,6 +21,14 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
+# See http://blog.rtwilson.com/how-to-make-your-sphinx-documentation-compile-with-readthedocs-when-youre-using-numpy-and-scipy/
+import mock
+ 
+# MOCK_MODULES = ['numpy', 'numpy.ma', 'scipy', 'scipy.stats']
+MOCK_MODULES = ['pandas']
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = mock.Mock()
+
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -49,7 +57,7 @@ master_doc = 'index'
 # General information about the project.
 project = 'hpycc'
 copyright = '2018, Rob Mansfield'
-author = 'Rob Mansfield (mansfieldbitter@gmail.com'
+author = 'Rob Mansfield (mansfieldbitter@gmail.com)'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -70,7 +78,7 @@ language = 'en'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'tests']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
