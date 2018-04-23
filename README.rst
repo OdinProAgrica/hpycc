@@ -44,12 +44,12 @@ run_script_internal(script, server...)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Run a given ECL script. 10 rows will be returned but they will be dumped, no output is given. 
 
-key_parameters
-^^^^^^^^^^^^^^
+Frequently Used Arguments
+^^^^^^^^^^^^^^^^^^^^^^^^^
 See function documentation for full list but those of note include:
 * Specifying a local ECL repository for scripts (repo=...)
 * Allowing files to be overridden when saving (refresh=...)
-* Altering the default HPCC port (port=...) 
+* Altering the default HPCC port (port=...)
 * Adding usernames (username=...) and passwords (password=...)
 * Suppressing all but essential messages (silent=...)
 
