@@ -1,11 +1,16 @@
 hpycc Readme
 ============
 
+.. image:: img/logo.jpg
+   :scale: 100 %
+
 Documentation
 -------------
 The below readme and package documentation is available at http://hpycc.readthedocs.io
 
 The package's github is available at: https://github.com/OdinProAgrica/hpycc
+
+This package is released under GNU GPLv3 Licence: https://www.gnu.org/licenses/gpl-3.0.en.html
 
 
 Installation

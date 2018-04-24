@@ -6,6 +6,9 @@
 Welcome to hpycc's documentation!
 =================================
 
+.. image:: img/logo.jpg
+   :scale: 100 %
+
 .. toctree::
    :maxdepth: 4
    :caption: Contents:
