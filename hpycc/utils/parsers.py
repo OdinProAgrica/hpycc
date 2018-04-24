@@ -30,7 +30,7 @@ def parse_json_output(results, column_names, csv_file):
     out_info = {col: [] for col in column_names}
 
     for i, result in enumerate(results):
-        logger.debug('Parsing result %s' % i)
+        #logger.debug('Parsing result %s' % i)
         if csv_file:
             res = result['line']
             if res is None:

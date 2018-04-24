@@ -2,6 +2,8 @@ eclcc.log
 hpycc.log
 *.pyc
 .idea/
+tests/ECLtest_makeBIGTestData.ecl
+ECLtest_makeBIGTestData.ecl
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

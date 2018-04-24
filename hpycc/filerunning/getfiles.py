@@ -49,22 +49,21 @@ def get_file_internal(logical_file, server, port, username, password, csv_file, 
     logical_file = re.sub(r'[:]', '%3A', logical_file)
     logger.debug('Adjusted name to HTML. After: %s' % logical_file)
 
-    column_names, chunks, current_row = _get_file_structure(logical_file, server, port,
-                                                            username, password,
-                                                            csv_file)
+    column_names, file_size = _get_file_structure(logical_file, server, port,
+                                                  username, password, csv_file)
+    start_rows, chunks = _make_chunks(file_size, csv_file)
 
     logger.info('Dumping download tasks to thread pools. See _get_file_structure log for file structure')
-    logger.debug('No. chunks: %s, start row (0 for Thor, 1 for csv): %s' % (len(chunks), current_row))
+    logger.debug('Chunks: %s, start rows: %s' % (chunks, start_rows))
 
     pool = concurrent.futures.ThreadPoolExecutor(download_threads)
     futures = []
-    for chunk in chunks:
-        logger.debug('Booting chunk: %s' % chunk)
+    for start, chunk in zip(start_rows, chunks):
+        logger.debug('Booting chunk starting at: %s and size: %s' % (start, chunk))
         futures.append(pool.submit(_get_file_chunk,
                                    logical_file, csv_file, server, port,
-                                   username, password, current_row, chunk,
+                                   username, password, start, chunk,
                                    column_names))
-        current_row = chunk + 1
 
     logger.info('Waiting for %s threads to complete' % len(futures))
     concurrent.futures.wait(futures)
@@ -75,7 +74,7 @@ def get_file_internal(logical_file, server, port, username, password, csv_file, 
             logger.error("Chunk failed! Do not have full file: %s" % future.exception())
             raise future.exception()
 
-    logger.debug('Concatanating outputs')
+    logger.debug('Concatenating outputs')
     results = pd.concat([future.result() for future in futures])
 
     logger.debug('Returning: %s' % results)
@@ -102,11 +101,9 @@ def _get_file_structure(logical_file, server, port, username, password, csv_file
          Is the logical file a CSV?
 
      :return: list
-        list of column names
-     :return: list
-        list of chunk positions
+        List of column names
      :return: int
-        starting row for download
+        File size
      """
     logger = logging.getLogger('_get_file_structure')
     logger.info('Getting file structure for %s' % logical_file)
@@ -119,31 +116,17 @@ def _get_file_structure(logical_file, server, port, username, password, csv_file
     logger.debug('file_size: %s, first row: %s' % (file_size, results))
 
     if csv_file:
-        logger.debug('csv fiele so parsing out columns from row 0')
+        logger.debug('csv file so parsing out columns from row 0')
         column_names = results[0]['line'].split(',')
-        current_row = 1  # start row, miss first line (header)
     else:
         logger.debug('logical file so parsing out columns from result keys')
         column_names = results[0].keys()
-        current_row = 0  # start row, use first line
 
     logger.debug('Returned column names: %s' % column_names)
     column_names = [col for col in column_names if col != '__fileposition__']
     logger.debug('Dropping _file_position_column: %s' % column_names)
 
-    logger.debug('Row count is %s, determining number of chunks....' % file_size)
-    if file_size > 10000:
-        # TODO: this code can be made much more succinct
-        chunks = list(range(10000, file_size - 1, 10000))
-        if chunks[-1] is not (file_size - 1):
-            chunks.append(file_size)
-        logger.info('Large table, downloading in %s chunks' % len(chunks))
-    else:
-        logger.info('Small table, running all at once')
-        chunks = [file_size]
-
-    logger.debug('Chunk List: %s' % chunks)
-    return column_names, chunks, current_row
+    return column_names, file_size
 
 
 def _get_file_chunk(logical_file, csv_file, server, port,
@@ -193,4 +176,47 @@ def _get_file_chunk(logical_file, csv_file, server, port,
         raise
 
     logger.debug('Returning. See Parse_json_output log for contents')
+
+    # out_info.to_csv(str(current_row) + 'test.csv')
     return out_info
+
+
+def _make_chunks(file_size, csv_file, chunk_size=10000):
+    """
+    Makes start row and chunk size lists for threading logical file
+    downloads.
+
+    :param file_size: int
+        Total size of file for chunking
+    :param csv_file: bool
+        Is it a CSV file? Alters starting row to avoid headers
+    :param chunk_size: int, optional
+        Max chunk size, defaults to 10,000
+
+    :return: list
+       List of starting rows
+    :return: int
+       List of chunk sizes
+
+    """
+    logger = logging.getLogger('_make_chunks')
+    logger.debug('Row count is %s, determining number of chunks....' % file_size)
+
+    start_rows = [1] if csv_file else [0]
+    if file_size > chunk_size:
+        logger.debug('Large table, downloading in chunks')
+        chunks = [chunk_size]
+
+        while start_rows[-1] + chunks[-1] < file_size:
+            next_chunk_start = start_rows[-1] + chunk_size
+            start_rows.append(next_chunk_start)
+
+            ending_row = next_chunk_start + chunk_size
+            next_chunk_length = chunk_size if ending_row < file_size else file_size - start_rows[-1]
+            chunks.append(next_chunk_length)
+
+    else:
+        logger.debug('Small table, running all at once')
+        chunks = [file_size]
+
+    return start_rows, chunks
