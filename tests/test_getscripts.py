@@ -2,6 +2,9 @@ import hpycc.scriptrunning.getscripts as get
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
 
+# script_loc = ''
+script_loc = './tests/'
+
 server = 'localhost'
 port = "8010"
 repo = None
@@ -14,6 +17,13 @@ do_syntaxcheck = True
 expected_result_1 = pd.DataFrame({'a': [1, 3, 5, 7, 9, 11], 'b': [2, 4, 6, 8, 10, 12]})
 expected_result_2 = pd.DataFrame({'a': [11, 13, 15, 17, 19, 111], 'b': [12, 14, 16, 18, 110, 112]})
 
+
+def make_small_data():
+    script = script_loc + 'ECLtest_makeTestData.ecl'
+    repo = None
+    legacy = False
+    do_syntaxcheck = False
+    run.run_script_internal(script, server, port, repo, username, password, legacy, do_syntaxcheck)
 
 def test_get_script():
     script = 'tests/ECLtest_runScript_1output.ecl'

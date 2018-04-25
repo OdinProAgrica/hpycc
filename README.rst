@@ -12,6 +12,9 @@ The package's github is available at: https://github.com/OdinProAgrica/hpycc
 
 This package is released under GNU GPLv3 Licence: https://www.gnu.org/licenses/gpl-3.0.en.html
 
+Want to use this in R? Then the reticulate package is your friend! Just save as a CSV and read back in. That
+or you can use an R notebook with a Python chunk.
+
 
 Installation
 ------------

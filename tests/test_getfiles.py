@@ -3,26 +3,27 @@ import hpycc.scriptrunning.runscript as run
 from hpycc.utils.datarequests import run_command
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
+import os
 
 
 # script_loc = ''
 script_loc = './tests/'
+
 server = 'localhost'
 port = '8010'
 column_names = ['a', 'b']
-expected_result = pd.DataFrame({'a': [1, 3, 5, 7, 9, 11], 'b': [2, 4, 6, 8, 10, 12]})
-expected_result_chunk = pd.DataFrame({'a': [3, 5, 7], 'b': [4, 6, 8]})
 username = "hpycc_get_output"
 password = '" "'
 silent = False
 download_threads = 15
-
+expected_result = pd.DataFrame({'a': [1, 3, 5, 7, 9, 11], 'b': [2, 4, 6, 8, 10, 12]})
+expected_result_chunk = pd.DataFrame({'a': [3, 5, 7], 'b': [4, 6, 8]})
 
 def make_small_data():
     script = script_loc + 'ECLtest_makeTestData.ecl'
     repo = None
     legacy = False
-    do_syntaxcheck = True
+    do_syntaxcheck = False
     run.run_script_internal(script, server, port, repo, username, password, legacy, do_syntaxcheck)
 
 
@@ -52,6 +53,7 @@ def make_large_data(start_row=0, size=25000):
     legacy = False
     do_syntaxcheck = True
     run.run_script_internal(script, server, port, repo, username, password, legacy, do_syntaxcheck)
+    os.remove(script)
 
     return expected_big_data
 

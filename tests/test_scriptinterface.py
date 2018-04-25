@@ -45,5 +45,4 @@ xml_2Datasets = """<Result>
 
 def test_parse_XML():
     result = hpycc.utils.parsers.parse_xml(xml)
-    print(result)
     assert_frame_equal(result, expected_result_1, check_dtype=False, check_like=False)
