@@ -61,7 +61,7 @@ def parse_xml(xml):
         Parsed xml.
     """
     logger = logging.getLogger('parse_xml')
-    logger.info("Parsing Results from XML")
+    logger.debug("Parsing Results from XML")
 
     vls = []
     lvls = []

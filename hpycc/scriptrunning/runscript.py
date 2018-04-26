@@ -10,7 +10,7 @@ import hpycc.utils.parsers
 from hpycc.utils import syntaxcheck
 
 
-def run_script_internal(script, server, port, repo, username, password, legacy, do_syntaxcheck):
+def run_script_internal(script, hpcc_server, do_syntaxcheck):
     """
     Runs an ECL script, waits for completion and then returns None. No
     data is downloaded or returned.
@@ -37,21 +37,28 @@ def run_script_internal(script, server, port, repo, username, password, legacy, 
         No return as just runs a script
     """
     logger = logging.getLogger('runscripts.run_script_internal')
-    logger.info('Running %s from %s:XXXXXXX@%s : %s using repo %s. Legacy is %s and syntaxcheck is %s'
-                % (script, username, server, port, repo, legacy, do_syntaxcheck))
+    logger.debug('Connection Parameters %s:' % hpcc_server)
 
     if do_syntaxcheck:
-        syntaxcheck.syntax_check(script, repo, legacy)
+        syntaxcheck.syntax_check(script, hpcc_server)
+
+    legacy = hpcc_server['legacy']
+    repo = hpcc_server['repo']
+
+    if do_syntaxcheck:
+        syntaxcheck.syntax_check(script, hpcc_server)
 
     repo_flag = " -I {}".format(repo) if repo else ""
     legacy_flag = '-legacy ' if legacy else ''
 
-    command = ("ecl run --limit=10 --server {} --port {} --username {} --password {} {}"
-               "thor {} {}").format(server, port, username, password, legacy_flag, script, repo_flag)
+    command = ("ecl run --server {} --port {} --username {} --password {} {}"
+               "thor {} {}").format(hpcc_server['server'], hpcc_server['port'],
+                                    hpcc_server['username'], hpcc_server['password'],
+                                    legacy_flag, script, repo_flag)
 
-    logger.info('Running ECL script')
+    logger.info('Script running')
     hpycc.utils.datarequests.run_command(command)
 
-    logger.debug('Script completed, check run_command log for any issues')
-
+    logger.info('Script completed')
+    logger.debug('Check run_command log for any issues')
     return None

@@ -13,7 +13,7 @@ import requests
 GET_FILE_URL = """/WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s&Count=%s"""
 
 
-def make_url_request(server, port, username, password, logical_file, current_row, chunk):
+def make_url_request(hpcc_server, logical_file, current_row, chunk):
     """
     Construct a url request for data and parse the response. Request is actually
     run by _run_url_request()
@@ -38,11 +38,11 @@ def make_url_request(server, port, username, password, logical_file, current_row
         workunit result as result['WUResultResponse']
     """
     logger = logging.getLogger('make_url_request')
-    logger.debug('Getting Chunk %s from %s' % (chunk, server))
+    logger.debug('Getting Chunk %s from %s' % (chunk, hpcc_server['server']))
 
-    server = re.sub(r'(?i)http://', '', server)
-    request = 'http://' + server + ':' + port + GET_FILE_URL % (logical_file, current_row, chunk)
-    response = _run_url_request(request, username, password)
+    server = re.sub(r'(?i)http://', '', hpcc_server['server'])
+    request = 'http://' + server + ':' + hpcc_server['port'] + GET_FILE_URL % (logical_file, current_row, chunk)
+    response = _run_url_request(request, hpcc_server['username'], hpcc_server['password'])
 
     try:
         response = response['WUResultResponse']
@@ -102,7 +102,7 @@ def run_command(cmd):
         dict of stdout and stderr
     """
     logger = logging.getLogger('run_command')
-    logger.info('Executing syntax check command: %s' % cmd)
+    logger.debug('Executing syntax check command: %s' % cmd)
 
     result = subprocess.run(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
