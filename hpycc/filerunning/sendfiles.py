@@ -1,15 +1,23 @@
 import pandas as pd
-import hpycc.get as get
+import hpycc.scriptrunning.runscript as run
+import hpycc.filerunning.getfiles as getfiles
 import os
-server = 'localhost'
+import logging
 
-# def get_file_internal(source_name, destination_name, server, port, username, password, csv_file, download_threads):
-
-source_name = 'bitest.csv'
-script_loc = 'testscript.ecl'
+# source_name = 'bitest.csv'
+# script_loc = 'testscript.ecl'
 
 
-def get_type(typ):
+def _get_type(typ):
+    """
+    Takes a dtyp and matches it to the relevent HPCC datatype
+
+    :param typ, dtype:
+        pandas dtype, obtained by getting a columns type.
+    :return: str
+        the relevent ECL datatype, assumes the largest, least
+        space efficient to prevent truncation
+    """
 
     typ = str(typ)
     if 'float' in typ:
@@ -22,67 +30,83 @@ def get_type(typ):
         return 'STRING' # TODO: do we need to convert dates more cleanly?
 
 
-def send_file_internal(source_name, target_name):#, destination_name, server, port, username, password, csv_file, download_threads):
-    chunk_size = 10000
+def send_file_internal(source_name, target_name, server, port,
+                       username, password, csv_file, overwrite,
+                       delete, server, port, repo, username, password, legacy
+                       , temp_script='sendFileTemp.ecl',
+                       chunk_size=10000):
+
+    logger = logging.getLogger('send_file_internal')
+    logger.debug("sending file %s to %s" % (source_name, target_name))
 
     df = pd.read_csv(source_name, encoding='latin')
     df, record_set = make_recordset(df)
 
-    df_len = len(df)
-    if df_len > chunk_size:
-        break_positions, _ = _make_chunks(df_len, False, chunk_size=chunk_size) #TODO use the original function
-        end_rows = break_positions[1:-1]
-        end_rows.append(df_len)
-
-        start_rows = [0] + [pos+1 for pos in break_positions[1:-1]]
-
-        # print(break_positions)
-        # print(start_rows)
-        # input(end_rows)
-
-        target_names = []
-        for start, end in zip(start_rows, end_rows):
-            target_name_tmp = "TEMPHPYCC::%sfrom%sto%s" % (target_name, start, end)
-            target_names.append(target_name_tmp)
-
-            all_rows = make_rows(df, start, end)
-            send_data(all_rows, record_set, target_name_tmp)
-
-        concat_files(target_names, target_name, record_set, delete=True)
-
+    if len(df) > chunk_size:
+        _send_file_in_chunks(df, target_name, chunk_size, record_set, overwrite, delete, temp_script, server, port, repo, username, password, legacy)
     else:
         all_rows = make_rows(df, 0, len(df))
-        send_data(all_rows, record_set, target_name)
+        send_data(all_rows, record_set, target_name, temp_script)
+
+    return None
 
 
-def concat_files(target_names, target_name, record_set, delete=True):
-    script_in = """ a := %s;\nOUTPUT(a, ,'%s',EXPIRE(1), OVERWRITE);"""
+def _send_file_in_chunks(df, target_name, chunk_size, record_set, overwrite, delete, temp_script, server, port, repo, username, password, legacy):
+    logger = logging.getLogger('_send_file_in_chunks')
+
+    logger.debug('Establishing rownumbers for chunks')
+    break_positions, _ = getfiles._make_chunks(len(df), csv_file=False, chunk_size=chunk_size)
+    end_rows = break_positions[1:-1] + [len(df)]
+
+    start_rows = [0] + [pos + 1 for pos in break_positions[1:-1]]
+    logger.debug('Running upload in chunks. Starts: %s, ends: %s' % (start_rows, end_rows))
+
+    logger.debug('Uploading %s chunks' % len(start_rows))
+    target_names = []
+    for start, end in zip(start_rows, end_rows):
+        target_name_tmp = "TEMPHPYCC::%sfrom%sto%s" % (target_name, start, end)
+        logger.debug('Sending row %s to %s to file: %s' % (start, end, target_name_tmp))
+
+        target_names.append(target_name_tmp)
+        all_rows = make_rows(df, start, end)
+        send_data(all_rows, record_set, target_name_tmp, overwrite)
+
+    concat_files(target_names, target_name, record_set, overwrite, delete, temp_script, server, port, repo, username, password, legacy)
+
+    return None
+
+
+def concat_files(target_names, target_name, record_set, overwrite, delete, temp_script, server, port, repo, username, password, legacy):
+
+    overwrite_flag = ', OVERWRITE' if overwrite else ''
+    script_in = "a := %s;\nOUTPUT(a, ,'%s' %s);"
+
     read_script = "DATASET('%s', {%s}, THOR)"
     read_files = [read_script % (nam, record_set) for nam in target_names]
     read_files = '+\n'.join(read_files)
 
-    script = script_in % (read_files, target_name)
+    script = script_in % (read_files, target_name, overwrite_flag)
 
     if delete:
         delete_script = "STD.File.DeleteLogicalFile('%s')"
-        delete_files = [delete_script % (nam) for nam in target_names]
+        delete_files = [delete_script % nam for nam in target_names]
         delete_files = ';'.join(delete_files)
         script += '\n\nIMPORT std;\n' + delete_files + ';'
 
-    print(script)
-    with open(script_loc, 'w') as f:
+    logger.debug(script)
+    with open(temp_script, 'w') as f:
         f.writelines(script)
 
-    get.run_script(script_loc, server, port="8010", repo=None,
-                   username="hpycc_get_output", password='" "',
-                   legacy=False, do_syntaxcheck=True,
-                   silent=True, debg=False, log_to_file=False)
-    os.remove(script_loc)
+    run.run_script_internal(script, server, port, repo, username, password, legacy, do_syntaxcheck=False)
+    os.remove(temp_script)
+
+    return None
 
 
 def make_rows(df, start, end):
     rows = '{' + df.loc[start:end, :].apply(lambda x: ','.join(x.astype('str').values.tolist()), axis=1) + '}'
     all_rows = ','.join(rows.tolist())
+
     return all_rows
 
 
@@ -96,7 +120,7 @@ def make_recordset(df):
     print(col_names)
 
     for typ, nam in zip(col_types, col_names):
-        ECL_typ = get_type(typ)
+        ECL_typ = _get_type(typ)
         record_set.append(ECL_typ + ' ' + nam)
 
         if ECL_typ == 'STRING':
@@ -106,57 +130,23 @@ def make_recordset(df):
     return df, record_set
 
 
-def send_data(all_rows, record_set, target_name):
+def send_data(all_rows, record_set, target_name, overwrite, temp_script):
+    overwrite_flag = ', OVERWRITE' if overwrite else ''
+    script_in = """a := DATASET([%s], {%s});\nOUTPUT(a, ,'%s' , EXPIRE(1)%s);"""
 
-    script_in = """a := DATASET([%s], {%s});\nOUTPUT(a, ,'%s' , EXPIRE(1), OVERWRITE);"""
-
-    script = script_in % (all_rows, record_set, target_name)
+    script = script_in % (all_rows, record_set, target_name, overwrite_flag)
     print(script)
-    with open(script_loc, 'w') as f:
+    with open(temp_script, 'w') as f:
         f.writelines(script)
 
-    get.run_script(script_loc, server, port="8010", repo=None,
+    get.run_script(temp_script, server, port="8010", repo=None,
                    username="hpycc_get_output", password='" "',
                    legacy=False, do_syntaxcheck=True,
                    silent=True, debg=False, log_to_file=False)
-    os.remove(script_loc)
+    os.remove(temp_script)
+
+    return None
+
+send_file_internal('bitest.csv', 'a:temp:file')
 
 
-def _make_chunks(file_size, csv_file, chunk_size=10000):
-    """
-    Makes start row and chunk size lists for threading logical file
-    downloads.
-
-    :param file_size: int
-        Total size of file for chunking
-    :param csv_file: bool
-        Is it a CSV file? Alters starting row to avoid headers
-    :param chunk_size: int, optional
-        Max chunk size, defaults to 10,000
-
-    :return: list
-       List of starting rows
-    :return: int
-       List of chunk sizes
-
-    """
-
-    start_rows = [1] if csv_file else [0]
-    if file_size > chunk_size:
-        chunks = [chunk_size]
-
-        while start_rows[-1] + chunks[-1] < file_size:
-            next_chunk_start = start_rows[-1] + chunk_size
-            start_rows.append(next_chunk_start)
-
-            ending_row = next_chunk_start + chunk_size
-            next_chunk_length = chunk_size if ending_row < file_size else file_size - start_rows[-1]
-            chunks.append(next_chunk_length)
-
-    else:
-        chunks = [file_size]
-
-    return start_rows, chunks
-
-
-send_file_internal(source_name, 'a:temp:file')
