@@ -4,9 +4,10 @@ import hpycc.filerunning.getfiles as getfiles
 import os
 import logging
 
-# source_name = 'bitest.csv'
+source_name = 'bigtest.csv'
 # script_loc = 'testscript.ecl'
 
+#TODO: nan handling
 
 def _get_type(typ):
     """
@@ -32,7 +33,7 @@ def _get_type(typ):
 
 def send_file_internal(source_name, target_name, server, port,
                        username, password, csv_file, overwrite,
-                       delete, server, port, repo, username, password, legacy
+                       delete, hpcc_server
                        , temp_script='sendFileTemp.ecl',
                        chunk_size=10000):
 
@@ -124,7 +125,10 @@ def make_recordset(df):
         record_set.append(ECL_typ + ' ' + nam)
 
         if ECL_typ == 'STRING':
+            df.loc[df[nam] == 'nan': nam] = '' # TODO: Make this work
             df[nam] = "'" + df[nam].astype('str').str.replace("'", "\\'") + "'"
+        else:
+            df[nam] = df[nam].fillna(0) # TODO: Shite, let's just make everything a string then.
     record_set = ';'.join(record_set)
 
     return df, record_set
@@ -148,5 +152,3 @@ def send_data(all_rows, record_set, target_name, overwrite, temp_script):
     return None
 
 send_file_internal('bitest.csv', 'a:temp:file')
-
-
