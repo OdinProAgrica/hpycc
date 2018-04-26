@@ -17,6 +17,39 @@ from hpycc.utils.logfunctions import boot_logger
 LOG_PATH = 'hpycc.log'
 
 
+def _make_hpcc_server(server, port, repo, username, password, legacy):
+    """
+    Creates a dict storing HPCC server parameters. Saves verbosity in function calls
+
+    :param server: str
+        IP address or url of the HPCC server, supply usernames, passwords and ports
+        using other arguments.
+    :param port: str, optional
+        Port number ECL Watch is running on. "8010" by default.
+    :param repo: str, optional
+        Path to the root of local ECL repository if applicable.
+    :param username: str, optional
+        Username to execute the ECL workunit. "hpycc_get_output" by
+        default.
+    :param password: str, optional
+        Password to execute the ECL workunit. " " by default
+    :param legacy: bool, optional
+        Should ECL commands be sent with the -legacy flag, False by default
+
+    :return: dict
+        Basically all the above in a single dict.
+    """
+
+    return {
+        'server': server,
+        'port': port,
+        'repo': repo,
+        'username': username,
+        'password': password,
+        'legacy': legacy
+    }
+
+
 def get_output(script, server, port="8010", repo=None,
                username="hpycc_get_output", password='" "',
                legacy=False, do_syntaxcheck=True,
@@ -62,10 +95,9 @@ def get_output(script, server, port="8010", repo=None,
     logger = logging.getLogger('get_output')
     logger.debug('Starting get_script_internal')
 
-    parsed_data_frames = getscripts.get_script_internal(
-        script, server, port, repo,
-        username, password,
-        legacy, do_syntaxcheck)
+    hpcc_server = _make_hpcc_server(server, port, repo, username, password, legacy)
+
+    parsed_data_frames = getscripts.get_script_internal(script, hpcc_server, do_syntaxcheck)
 
     logger.debug('Extracting outputs')
     try:
@@ -120,10 +152,8 @@ def get_outputs(script, server, port="8010", repo=None,
     logger = logging.getLogger('get_outputs')
     logger.debug('Starting get_script_internal')
 
-    parsed_data_frames = getscripts.get_script_internal(
-        script, server, port, repo,
-        username, password,
-        legacy, do_syntaxcheck)
+    hpcc_server = _make_hpcc_server(server, port, repo, username, password, legacy)
+    parsed_data_frames = getscripts.get_script_internal(script, hpcc_server, do_syntaxcheck)
 
     logger.debug('Converting response to Dict')
     as_dict = dict(parsed_data_frames)
@@ -176,10 +206,9 @@ def get_file(logical_file, server, port='8010',
     logger = logging.getLogger('get_file_internal')
     logger.debug('Starting get_file_internal')
 
+    hpcc_server = _make_hpcc_server(server, port, None, username, password, None)
     try:
-        df = getfiles.get_file_internal(logical_file, server, port,
-                                        username, password, csv_file,
-                                        download_threads)
+        df = getfiles.get_file_internal(logical_file, hpcc_server, csv_file, download_threads)
     except KeyError:
         logger.error('Key error, have you specified a CSV or THOR file correctly?')
         raise
@@ -299,8 +328,8 @@ def save_outputs(
     logger = logging.getLogger('get_outputs')
     logger.debug('Starting get_script_internal')
 
-    parsed_data_frames = getscripts.get_script_internal(
-        script, server, port, repo, username, password, legacy, do_syntaxcheck)
+    hpcc_server = _make_hpcc_server(server, port, None, username, password, None)
+    parsed_data_frames = getscripts.get_script_internal(script, hpcc_server, do_syntaxcheck)
 
     if filenames:
         if len(filenames) != len(parsed_data_frames):
@@ -422,9 +451,7 @@ def run_script(script, server, port="8010", repo=None,
     logger = logging.getLogger('run_script_internal')
     logger.debug('Starting run_script_internal')
 
-    runscript.run_script_internal(
-        script, server, port, repo,
-        username, password,
-        legacy, do_syntaxcheck)
+    hpcc_server = _make_hpcc_server(server, port, None, username, password, None)
+    runscript.run_script_internal(script, hpcc_server, do_syntaxcheck)
 
     return None

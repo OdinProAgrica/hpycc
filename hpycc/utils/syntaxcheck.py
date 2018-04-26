@@ -7,7 +7,7 @@ import logging
 import hpycc.utils.datarequests
 
 
-def syntax_check(script, repo, legacy):
+def syntax_check(script, hpcc_server):
     """
     Use ECLCC to run a syntax check on a script.
 
@@ -23,8 +23,11 @@ def syntax_check(script, repo, legacy):
         [(output_name, output_xml)].
     """
 
+    legacy = hpcc_server['legacy']
+    repo = hpcc_server['repo']
+
     logger = logging.getLogger('syntaxcheck')
-    logger.info('Checking %s using repo %s and legacy %s' % (script, repo, legacy))
+    logger.debug('Checking %s using repo %s and legacy %s' % (script, repo, legacy))
 
     if not os.path.isfile(script):
         raise FileNotFoundError('Script %s not found' % script)
@@ -44,4 +47,4 @@ def syntax_check(script, repo, legacy):
     elif err and ': warning' not in err.lower():
         raise EnvironmentError('Script %s contains unhandled feedback: \n %s' % (script, err))
     else:
-        logger.info("Script %s passes syntax check" % script)
+        logger.debug("Script %s passes syntax check" % script)
