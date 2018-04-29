@@ -1,13 +1,11 @@
 import pandas as pd
+import re
+import hpycc.run
 import hpycc.scriptrunning.runscript as run
-import hpycc.filerunning.getfiles as getfiles
 import os
 import logging
 
-source_name = 'bigtest.csv'
-# script_loc = 'testscript.ecl'
-
-#TODO: nan handling
+import hpycc.utils.filechunker
 
 def _get_type(typ):
     """
@@ -20,21 +18,22 @@ def _get_type(typ):
         space efficient to prevent truncation
     """
 
-    typ = str(typ)
-    if 'float' in typ:
-        return 'DECIMAL32_12'
-    elif 'int' in typ:
-        return 'INTEGER'
-    elif 'bool' in typ:
-        return 'BOOLEAN'
-    else:
-        return 'STRING' # TODO: do we need to convert dates more cleanly?
+    # typ = str(typ)
+    # if 'float' in typ:
+    #     return 'DECIMAL32_12'
+    # elif 'int' in typ:
+    #     return 'INTEGER'
+    # elif 'bool' in typ:
+    #     return 'BOOLEAN'
+    # else:
+    #     return 'STRING' # TODO: do we need to convert dates more cleanly?
+    # TODO: at present we just return string as we have an issue with nans in ECL
+    return 'STRING'
 
 
-def send_file_internal(source_name, target_name, server, port,
-                       username, password, csv_file, overwrite,
-                       delete, hpcc_server
-                       , temp_script='sendFileTemp.ecl',
+def send_file_internal(source_name, target_name,
+                       overwrite, delete, hpcc_connection,
+                       temp_script='sendFileTemp.ecl',
                        chunk_size=10000):
 
     logger = logging.getLogger('send_file_internal')
@@ -44,19 +43,19 @@ def send_file_internal(source_name, target_name, server, port,
     df, record_set = make_recordset(df)
 
     if len(df) > chunk_size:
-        _send_file_in_chunks(df, target_name, chunk_size, record_set, overwrite, delete, temp_script, server, port, repo, username, password, legacy)
+        _send_file_in_chunks(df, target_name, chunk_size, record_set, overwrite, delete, temp_script, hpcc_connection)
     else:
         all_rows = make_rows(df, 0, len(df))
-        send_data(all_rows, record_set, target_name, temp_script)
+        send_data(all_rows, record_set, target_name, overwrite, temp_script, hpcc_connection, delete)
 
     return None
 
 
-def _send_file_in_chunks(df, target_name, chunk_size, record_set, overwrite, delete, temp_script, server, port, repo, username, password, legacy):
+def _send_file_in_chunks(df, target_name, chunk_size, record_set, overwrite, delete, temp_script, hpcc_connection):
     logger = logging.getLogger('_send_file_in_chunks')
 
     logger.debug('Establishing rownumbers for chunks')
-    break_positions, _ = getfiles._make_chunks(len(df), csv_file=False, chunk_size=chunk_size)
+    break_positions, _ = hpycc.utils.filechunker.make_chunks(len(df), csv_file=False, chunk_size=chunk_size)
     end_rows = break_positions[1:-1] + [len(df)]
 
     start_rows = [0] + [pos + 1 for pos in break_positions[1:-1]]
@@ -70,14 +69,14 @@ def _send_file_in_chunks(df, target_name, chunk_size, record_set, overwrite, del
 
         target_names.append(target_name_tmp)
         all_rows = make_rows(df, start, end)
-        send_data(all_rows, record_set, target_name_tmp, overwrite)
+        send_data(all_rows, record_set, target_name, overwrite, temp_script, hpcc_connection, delete)
 
-    concat_files(target_names, target_name, record_set, overwrite, delete, temp_script, server, port, repo, username, password, legacy)
+    concat_files(target_names, target_name, record_set, overwrite, delete, temp_script, hpcc_connection)
 
     return None
 
 
-def concat_files(target_names, target_name, record_set, overwrite, delete, temp_script, server, port, repo, username, password, legacy):
+def concat_files(target_names, target_name, record_set, overwrite, delete, temp_script, hpcc_connection):
 
     overwrite_flag = ', OVERWRITE' if overwrite else ''
     script_in = "a := %s;\nOUTPUT(a, ,'%s' %s);"
@@ -94,11 +93,11 @@ def concat_files(target_names, target_name, record_set, overwrite, delete, temp_
         delete_files = ';'.join(delete_files)
         script += '\n\nIMPORT std;\n' + delete_files + ';'
 
-    logger.debug(script)
+    # logger.debug(script)
     with open(temp_script, 'w') as f:
         f.writelines(script)
 
-    run.run_script_internal(script, server, port, repo, username, password, legacy, do_syntaxcheck=False)
+    hpcc_connection.run_command(script, 'ecl')
     os.remove(temp_script)
 
     return None
@@ -112,7 +111,6 @@ def make_rows(df, start, end):
 
 
 def make_recordset(df):
-
     col_names = df.columns.tolist()
     col_types = df.dtypes.tolist()
     record_set = []
@@ -120,21 +118,40 @@ def make_recordset(df):
     print(col_types)
     print(col_names)
 
+    unnamed_iterator = 0
     for typ, nam in zip(col_types, col_names):
-        ECL_typ = _get_type(typ)
-        record_set.append(ECL_typ + ' ' + nam)
+        ecl_script = _get_type(typ)
 
-        if ECL_typ == 'STRING':
-            df.loc[df[nam] == 'nan': nam] = '' # TODO: Make this work
-            df[nam] = "'" + df[nam].astype('str').str.replace("'", "\\'") + "'"
+        # Make sure name is allowed by ECL syntax
+        safe_name = re.sub('[^A-Za-z0-9]', '', nam)
+        if safe_name == '':
+            safe_name = 'unnamed%s' % unnamed_iterator
+            unnamed_iterator += 1
+        if re.match('^[0-9]', safe_name):
+            safe_name = 'num' + safe_name
+        new_entry = ecl_script + ' ' + safe_name
+
+        # Make sure name is unique
+        column_append = ''
+        while new_entry + str(column_append) in record_set:
+            column_append = 1 if column_append == '' else (column_append + 1)
+        record_set.append(new_entry + str(column_append))
+
+        # If a string, make sure quotes are escaped and nans are blank. Else nulls == 0 (thanks ecl)
+        if ecl_script == 'STRING':
+            df[nam] = df[nam].astype('str')
+            df.loc[df[nam].str.lower() == 'nan', nam] = ''
+            df.loc[df[nam].str.lower() == 'na', nam] = ''
+            df.loc[df[nam].str.lower() == 'null', nam] = ''
+            df[nam] = "'" + df[nam].str.replace("'", "\\'") + "'"
         else:
-            df[nam] = df[nam].fillna(0) # TODO: Shite, let's just make everything a string then.
+            df[nam] = df[nam].fillna(0)
     record_set = ';'.join(record_set)
 
     return df, record_set
 
 
-def send_data(all_rows, record_set, target_name, overwrite, temp_script):
+def send_data(all_rows, record_set, target_name, overwrite, temp_script, hpcc_connection, delete):
     overwrite_flag = ', OVERWRITE' if overwrite else ''
     script_in = """a := DATASET([%s], {%s});\nOUTPUT(a, ,'%s' , EXPIRE(1)%s);"""
 
@@ -143,12 +160,9 @@ def send_data(all_rows, record_set, target_name, overwrite, temp_script):
     with open(temp_script, 'w') as f:
         f.writelines(script)
 
-    get.run_script(temp_script, server, port="8010", repo=None,
-                   username="hpycc_get_output", password='" "',
-                   legacy=False, do_syntaxcheck=True,
-                   silent=True, debg=False, log_to_file=False)
-    os.remove(temp_script)
+    run.run_script_internal(temp_script, hpcc_connection, True)
+
+    if delete:
+        os.remove(temp_script)
 
     return None
-
-send_file_internal('bitest.csv', 'a:temp:file')
