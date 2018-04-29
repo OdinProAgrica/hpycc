@@ -1,11 +1,16 @@
 import hpycc.get as get
-from hpycc.utils.datarequests import run_command
+import hpycc.run
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
 import os
+from hpycc.utils.HPCCconnector import HPCCconnector
+import tests.make_data as md
 
 # test_script_location = ''
-test_script_location = 'tests/'
+test_script_location = './tests/'
+do_syntaxcheck = True
+log_to_file = True
+debg = True
 server = 'localhost'
 port = "8010"
 repo = None
@@ -13,27 +18,23 @@ username = "hpycc_get_output"
 password = '" "'
 silent = False
 legacy = True
-do_syntaxcheck = True
-log_to_file = True
-debg = True
-
 
 expected_result_1 = pd.DataFrame({'a': [1, 3, 5, 7, 9, 11], 'b': [2, 4, 6, 8, 10, 12]})
 expected_result_2 = pd.DataFrame({'a': [11, 13, 15, 17, 19, 111], 'b': [12, 14, 16, 18, 110, 112]})
 expected_result = pd.DataFrame({'a': [1, 3, 5, 7, 9, 11], 'b': [2, 4, 6, 8, 10, 12]})
 expected_result_chunk = pd.DataFrame({'a': [3, 5, 7], 'b': [4, 6, 8]})
 
-# Create HPCC test files
-run_command(("ecl run --server {} --port {} --username {} --password {} -legacy "
-               "thor {} {}").format(server, '8010', 'test_call', '" "', './tests/ECLtest_makeTestData.ecl', ''))
+hpcc_connection = HPCCconnector(server, port, repo, username, password, legacy)
+md.upload_small_data(hpcc_connection)
 
 
 def test_get_output():
     script = test_script_location + 'ECLtest_runScript_1output.ecl'
 
     result = get.get_output(script, server, port="8010", repo=None,
-               username="hpycc_get_output", password='" "', silent=False,
-               legacy=False, do_syntaxcheck=True, log_to_file=log_to_file, debg=debg)
+               username="hpycc_get_output", password='" "',
+               legacy=False, do_syntaxcheck=True,
+               silent=False, debg=True)
 
     assert_frame_equal(result, expected_result_1, check_dtype=False, check_like=False)
 
@@ -108,8 +109,8 @@ def test_run_script():
     # TODO: should check it's been run on the server to be a proper test.
     script = test_script_location + 'ECLtest_runScript_1output.ecl'
 
-    get.run_script(script, server, port="8010", repo=None,
-                   username="hpycc_get_output", password='" "', silent=False,
-                   legacy=False, do_syntaxcheck=True, log_to_file=log_to_file, debg=debg)
+    hpycc.run.run_script(script, server, port="8010", repo=None,
+                         username="hpycc_get_output", password='" "', silent=False,
+                         legacy=False, do_syntaxcheck=True, log_to_file=log_to_file, debg=debg)
 
     assert True

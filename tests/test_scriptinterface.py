@@ -46,3 +46,11 @@ xml_2Datasets = """<Result>
 def test_parse_XML():
     result = hpycc.utils.parsers.parse_xml(xml)
     assert_frame_equal(result, expected_result_1, check_dtype=False, check_like=False)
+
+
+def test_make_col_bool():
+    df = pd.DataFrame({'log': ['TRUE', 'true', 'True'], 'notlog': [1, 2, 3]})
+    expected_result = pd.DataFrame({'log': [True, True, True], 'notlog': [1, 2, 3]})
+    result = hpycc.utils.parsers.make_col_bool(df)
+
+    assert_frame_equal(result, expected_result, check_dtype=False, check_like=False)
