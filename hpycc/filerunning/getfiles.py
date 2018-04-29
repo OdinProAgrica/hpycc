@@ -5,15 +5,16 @@ handled by the data requests module in utils. Results are parsed to dataframes u
 relevent parser from utils, in this case JSON.
 """
 
-import re
-import logging
 import concurrent.futures
+import logging
+import re
 import pandas as pd
-import hpycc.utils.datarequests
+import hpycc.utils.HPCCconnector
 import hpycc.utils.parsers
+from hpycc.utils.filechunker import make_chunks
 
 
-def get_file_internal(logical_file, hpcc_server, csv_file, download_threads):
+def get_file_internal(logical_file, hpcc_connection, csv_file, download_threads):
     """
      Download an HPCC logical file and return a pandas dataframe. To save to csv
      without a return use save_file(). This process has an advantage over scripts as it can be
@@ -41,16 +42,16 @@ def get_file_internal(logical_file, hpcc_server, csv_file, download_threads):
      """
 
     logger = logging.getLogger('getfiles.get_file_internal')
-    logger.debug('Getting file %s from %s:XXXXXXX@%s : %s. csv_file is %s'
-                % (logical_file, hpcc_server['username'], ['server'], ['port'], csv_file))
+    logger.debug('Getting file %s from %s. csv_file is %s'
+                % (logical_file, hpcc_connection.get_string(), csv_file))
 
     logger.debug('Adjusting name to HTML. Before: %s' % logical_file)
     logical_file = re.sub('[~]', '', logical_file)
     logical_file = re.sub(r'[:]', '%3A', logical_file)
     logger.debug('Adjusted name to HTML. After: %s' % logical_file)
 
-    column_names, file_size = _get_file_structure(logical_file, hpcc_server, csv_file)
-    start_rows, chunks = _make_chunks(file_size, csv_file)
+    column_names, file_size = _get_file_structure(logical_file, hpcc_connection, csv_file)
+    start_rows, chunks = make_chunks(file_size, csv_file)
 
     logger.debug('Dumping download tasks to thread pools.')
     logger.debug('See _get_file_structure log for file structure. Chunks: %s, start rows: %s' % (chunks, start_rows))
@@ -59,9 +60,8 @@ def get_file_internal(logical_file, hpcc_server, csv_file, download_threads):
     futures = []
     for start, chunk in zip(start_rows, chunks):
         logger.debug('Booting chunk starting at: %s and size: %s' % (start, chunk))
-        futures.append(pool.submit(_get_file_chunk,
-                                   logical_file, csv_file, hpcc_server, start, chunk,
-                                   column_names))
+        futures.append(pool.submit(_get_file_chunk, logical_file, csv_file,
+                                   hpcc_connection, start, chunk, column_names))
 
     logger.info('Requests sent. Waiting for downloads to complete')
     concurrent.futures.wait(futures)
@@ -74,13 +74,14 @@ def get_file_internal(logical_file, hpcc_server, csv_file, download_threads):
 
     logger.info('File downloaded, tidying results')
     results = pd.concat([future.result() for future in futures])
+    results.reset_index(inplace=True, drop=True)
 
     logger.debug('Returning: %s' % results)
     logger.info('Done')
     return results
 
 
-def _get_file_structure(logical_file, hpcc_server, csv_file):
+def _get_file_structure(logical_file, hpcc_connection, csv_file):
     """
      Downloads a single row from the given logical file and uses it to get column names and
      row count.
@@ -108,7 +109,7 @@ def _get_file_structure(logical_file, hpcc_server, csv_file):
     logger.debug('Getting file structure for %s' % logical_file)
 
     logger.debug('Getting 1 row to determine structure')
-    response = hpycc.utils.datarequests.make_url_request(hpcc_server, logical_file, 0, 2)
+    response = hpcc_connection.make_url_request(logical_file, 0, 2)
     file_size = response['Total']
     results = response['Result']['Row']
 
@@ -128,8 +129,7 @@ def _get_file_structure(logical_file, hpcc_server, csv_file):
     return column_names, file_size
 
 
-def _get_file_chunk(logical_file, csv_file, hpcc_server, current_row,
-                    chunk, column_names):
+def _get_file_chunk(logical_file, csv_file, hpcc_connection, current_row, chunk, column_names):
     """
     Downloads a part of a logical file.
 
@@ -160,7 +160,7 @@ def _get_file_chunk(logical_file, csv_file, hpcc_server, current_row,
     logger = logging.getLogger('_get_file_chunk')
     logger.debug('Acquiring file chunk. Row: %s, to: %s' % (current_row, chunk))
 
-    response = hpycc.utils.datarequests.make_url_request(hpcc_server, logical_file, current_row, chunk)
+    response = hpcc_connection.make_url_request(logical_file, current_row, chunk)
     logger.debug('Extracting results from response')
     results = response['Result']['Row']
 
@@ -179,42 +179,3 @@ def _get_file_chunk(logical_file, csv_file, hpcc_server, current_row,
     return out_info
 
 
-def _make_chunks(file_size, csv_file, chunk_size=10000):
-    """
-    Makes start row and chunk size lists for threading logical file
-    downloads.
-
-    :param file_size: int
-        Total size of file for chunking
-    :param csv_file: bool
-        Is it a CSV file? Alters starting row to avoid headers
-    :param chunk_size: int, optional
-        Max chunk size, defaults to 10,000
-
-    :return: list
-       List of starting rows
-    :return: int
-       List of chunk sizes
-
-    """
-    logger = logging.getLogger('_make_chunks')
-    logger.debug('Row count is %s, determining number of chunks....' % file_size)
-
-    start_rows = [1] if csv_file else [0]
-    if file_size > chunk_size:
-        logger.debug('Large table, downloading in chunks')
-        chunks = [chunk_size]
-
-        while start_rows[-1] + chunks[-1] < file_size:
-            next_chunk_start = start_rows[-1] + chunk_size
-            start_rows.append(next_chunk_start)
-
-            ending_row = next_chunk_start + chunk_size
-            next_chunk_length = chunk_size if ending_row < file_size else file_size - start_rows[-1]
-            chunks.append(next_chunk_length)
-
-    else:
-        logger.debug('Small table, running all at once')
-        chunks = [file_size]
-
-    return start_rows, chunks

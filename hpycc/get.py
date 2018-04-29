@@ -9,46 +9,13 @@ which script outputs cannot do.
 
 import logging
 import os
+
 from hpycc.filerunning import getfiles
 from hpycc.scriptrunning import getscripts
-from hpycc.scriptrunning import runscript
+from hpycc.utils.HPCCconnector import HPCCconnector
 from hpycc.utils.logfunctions import boot_logger
 
 LOG_PATH = 'hpycc.log'
-
-
-def _make_hpcc_server(server, port, repo, username, password, legacy):
-    """
-    Creates a dict storing HPCC server parameters. Saves verbosity in function calls
-
-    :param server: str
-        IP address or url of the HPCC server, supply usernames, passwords and ports
-        using other arguments.
-    :param port: str, optional
-        Port number ECL Watch is running on. "8010" by default.
-    :param repo: str, optional
-        Path to the root of local ECL repository if applicable.
-    :param username: str, optional
-        Username to execute the ECL workunit. "hpycc_get_output" by
-        default.
-    :param password: str, optional
-        Password to execute the ECL workunit. " " by default
-    :param legacy: bool, optional
-        Should ECL commands be sent with the -legacy flag, False by default
-
-    :return: dict
-        Basically all the above in a single dict.
-    """
-
-    return {
-        'server': server,
-        'port': port,
-        'repo': repo,
-        'username': username,
-        'password': password,
-        'legacy': legacy
-    }
-
 
 def get_output(script, server, port="8010", repo=None,
                username="hpycc_get_output", password='" "',
@@ -95,9 +62,8 @@ def get_output(script, server, port="8010", repo=None,
     logger = logging.getLogger('get_output')
     logger.debug('Starting get_script_internal')
 
-    hpcc_server = _make_hpcc_server(server, port, repo, username, password, legacy)
-
-    parsed_data_frames = getscripts.get_script_internal(script, hpcc_server, do_syntaxcheck)
+    hpcc_connection = HPCCconnector(server, port, repo, username, password, legacy)
+    parsed_data_frames = getscripts.get_script_internal(script, hpcc_connection, do_syntaxcheck)
 
     logger.debug('Extracting outputs')
     try:
@@ -152,8 +118,8 @@ def get_outputs(script, server, port="8010", repo=None,
     logger = logging.getLogger('get_outputs')
     logger.debug('Starting get_script_internal')
 
-    hpcc_server = _make_hpcc_server(server, port, repo, username, password, legacy)
-    parsed_data_frames = getscripts.get_script_internal(script, hpcc_server, do_syntaxcheck)
+    hpcc_connection = HPCCconnector(server, port, repo, username, password, legacy)
+    parsed_data_frames = getscripts.get_script_internal(script, hpcc_connection, do_syntaxcheck)
 
     logger.debug('Converting response to Dict')
     as_dict = dict(parsed_data_frames)
@@ -206,9 +172,10 @@ def get_file(logical_file, server, port='8010',
     logger = logging.getLogger('get_file_internal')
     logger.debug('Starting get_file_internal')
 
-    hpcc_server = _make_hpcc_server(server, port, None, username, password, None)
+    hpcc_connection = HPCCconnector(server, port, None, username, password, False)
+
     try:
-        df = getfiles.get_file_internal(logical_file, hpcc_server, csv_file, download_threads)
+        df = getfiles.get_file_internal(logical_file, hpcc_connection, csv_file, download_threads)
     except KeyError:
         logger.error('Key error, have you specified a CSV or THOR file correctly?')
         raise
@@ -328,8 +295,8 @@ def save_outputs(
     logger = logging.getLogger('get_outputs')
     logger.debug('Starting get_script_internal')
 
-    hpcc_server = _make_hpcc_server(server, port, None, username, password, None)
-    parsed_data_frames = getscripts.get_script_internal(script, hpcc_server, do_syntaxcheck)
+    hpcc_connection = HPCCconnector(server, port, None, username, password, False)
+    parsed_data_frames = getscripts.get_script_internal(script, hpcc_connection, do_syntaxcheck)
 
     if filenames:
         if len(filenames) != len(parsed_data_frames):
@@ -404,54 +371,5 @@ def save_file(logical_file, path, server, port='8010',
                   silent=silent)
 
     df.to_csv(path, index=False, encoding='utf-8', compression=compression)
-
-    return None
-
-
-def run_script(script, server, port="8010", repo=None,
-               username="hpycc_get_output", password='" "',
-               legacy=False, do_syntaxcheck=True,
-               silent=False, debg=False, log_to_file=False, logpath=LOG_PATH):
-    """
-    Run an ECL script but do not download, save or process the response.
-
-
-    :param script: str
-         Path of script to execute.
-    :param server: str
-        IP address or url of the HPCC server, supply usernames, passwords and ports
-        using other arguments
-    :param port: str, optional
-        Port number ECL Watch is running on. "8010" by default.
-    :param repo: str, optional
-        Path to the root of local ECL repository if applicable.
-    :param username: str, optional
-        Username to execute the ECL workunit. "hpycc_get_output" by
-        default.
-    :param password: str, optional
-        Password to execute the ECL workunit. " " by default
-    :param legacy: bool, optional
-        Should ECL commands be sent with the -legacy flag, False by default
-    :param do_syntaxcheck: bool, optional
-        Should a syntaxcheck be completed on the script before running. True by default
-    :param silent: bool, optional
-        Should all feedback except warnings and errors be suppressed. False by default
-    :param debg: bool, optional
-        Should debug info be logged. False by default
-    :param log_to_file: bool, optional
-        Should log info be dumped to a file. False by default
-    :param logpath: str, optional
-        If logging to file, what is the filename? hpycc.log by default.
-
-    :return: None
-
-    """
-
-    boot_logger(silent, debg, log_to_file, logpath)
-    logger = logging.getLogger('run_script_internal')
-    logger.debug('Starting run_script_internal')
-
-    hpcc_server = _make_hpcc_server(server, port, None, username, password, None)
-    runscript.run_script_internal(script, hpcc_server, do_syntaxcheck)
 
     return None

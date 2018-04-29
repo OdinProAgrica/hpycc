@@ -44,7 +44,9 @@ def parse_json_output(results, column_names, csv_file):
                 out_info[col].append(result[col])
 
     df = pd.DataFrame(out_info)
-    df = make_cols_numeric(df)
+    df = make_col_numeric(df)
+    df = make_col_bool(df)
+
     logger.debug('Returning: %s' % df)
 
     return df
@@ -80,13 +82,14 @@ def parse_xml(xml):
 
     df = pd.DataFrame(vls, columns=lvls)
 
-    df = make_cols_numeric(df)
+    df = make_col_numeric(df)
+    df = make_col_bool(df)
 
     logger.debug('Returning: %s' % df)
     return df
 
 
-def make_cols_numeric(df):
+def make_col_numeric(df):
     """
     Attempts to convert every column to numeric, if an error
     is raised (ie they contain characters) then leave as is
@@ -97,7 +100,7 @@ def make_cols_numeric(df):
         Data frame with all numeric columns converted to numeric.
     """
 
-    logger = logging.getLogger('make_cols_numeric')
+    logger = logging.getLogger('make_col_numeric')
     logger.debug('Converting numeric cols')
 
     for col in df.columns:
@@ -108,4 +111,24 @@ def make_cols_numeric(df):
         except ValueError:
             logger.debug('%s cannot be converted to numeric' % col)
             pass
+
+    return df
+
+
+def make_col_bool(df):
+    logger = logging.getLogger('make_col_bool')
+    logger.debug('Converting boolean cols')
+
+    for col in df.columns:
+        try:
+            if df.loc[0, col].lower() in ['true', 'false']:
+                bool_test = [val.lower() in ['true', 'false'] for val in df[col].unique().tolist()]
+                if all(bool_test):
+                    df[col] = df[col].str.lower()
+                    df[col] = df[col] == 'true'
+                    logger.debug('%s converted to boolean' % col)
+        except AttributeError:
+            logger.debug('%s cannot be converted to boolean' % col)
+            pass
+
     return df

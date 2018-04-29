@@ -5,15 +5,14 @@ relevent parser from utils, in this case XML.
 """
 import re
 import logging
-import hpycc.utils.datarequests
+import hpycc.utils.HPCCconnector
 import hpycc.utils.parsers
-from hpycc.utils import syntaxcheck
-
+import hpycc.utils.syntaxcheck as syntaxcheck
 
 GET_FILE_URL = """WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s&Count=%s"""
 
 
-def get_script_internal(script, hpcc_server, do_syntaxcheck):
+def get_script_internal(script, hpcc_connection, do_syntaxcheck):
     """
     Return the xml portion of the response from HPCC. Can then be parsed by other functions in this class
 
@@ -40,24 +39,13 @@ def get_script_internal(script, hpcc_server, do_syntaxcheck):
     """
 
     logger = logging.getLogger('getscripts.get_script_internal')
-    logger.debug('Connection Parameters: %s' % hpcc_server)
-
-    legacy = hpcc_server['legacy']
-    repo = hpcc_server['repo']
+    logger.debug('Connection Parameters: %s' % hpcc_connection)
 
     if do_syntaxcheck:
-        syntaxcheck.syntax_check(script, hpcc_server)
-
-    repo_flag = " -I {}".format(repo) if repo else ""
-    legacy_flag = '-legacy ' if legacy else ''
-
-    command = ("ecl run --server {} --port {} --username {} --password {} {}"
-               "thor {} {}").format(hpcc_server['server'], hpcc_server['port'],
-                                    hpcc_server['username'], hpcc_server['password'],
-                                    legacy_flag, script, repo_flag)
+        syntaxcheck.syntax_check(script, hpcc_connection)
 
     logger.info('Script Running')
-    result = hpycc.utils.datarequests.run_command(command)
+    result = hpcc_connection.run_command(script, 'ecl')
     result = result['stdout']
 
     logger.info("Script complete, Parsing response")

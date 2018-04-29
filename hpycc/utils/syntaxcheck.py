@@ -4,10 +4,9 @@ saving resources on the main server.
 """
 import os
 import logging
-import hpycc.utils.datarequests
 
 
-def syntax_check(script, hpcc_server):
+def syntax_check(script, hpcc_connection):
     """
     Use ECLCC to run a syntax check on a script.
 
@@ -22,22 +21,13 @@ def syntax_check(script, hpcc_server):
         List of processed tuples in the form
         [(output_name, output_xml)].
     """
-
-    legacy = hpcc_server['legacy']
-    repo = hpcc_server['repo']
-
     logger = logging.getLogger('syntaxcheck')
-    logger.debug('Checking %s using repo %s and legacy %s' % (script, repo, legacy))
+    logger.debug('Checking script %s against %s' % (script, hpcc_connection.get_string()))
 
     if not os.path.isfile(script):
         raise FileNotFoundError('Script %s not found' % script)
 
-    repo_flag = " " if repo is None else "-I {}".format(repo)
-    legacy_flag = '-legacy ' if legacy else ''
-
-    command = "eclcc -syntax {}{} {}".format(legacy_flag, repo_flag, script)
-
-    result = hpycc.utils.datarequests.run_command(command)
+    result = hpcc_connection.run_command(script, 'eclcc')
     err = result['stderr']
 
     if err and ': error' in err.lower():
