@@ -22,15 +22,8 @@ def get_file_internal(logical_file, hpcc_connection, csv_file, download_threads)
 
      :param logical_file: str
          Logical file to be downloaded
-     :param server: str
-        IP address or url of the HPCC server, supply usernames, passwords and ports
-        using other arguments.
-     :param port: str
-         Port number ECL Watch is running on.
-     :param username: str
-         Username to execute the ECL workunit.
-     :param password: str
-         Password to execute the ECL workunit.
+    :param hpcc_connection: HPCCconnector,
+        Connection details for an HPCC instance.
      :param csv_file: bool
          Is the logical file a CSV?
      :param download_threads: int
@@ -88,15 +81,8 @@ def _get_file_structure(logical_file, hpcc_connection, csv_file):
 
      :param logical_file: str
          Logical file to be downloaded
-     :param server: str
-        IP address or url of the HPCC server, supply usernames, passwords and ports
-        using other arguments.
-     :param port: str
-         Port number ECL Watch is running on.
-     :param username: str
-         Username to execute the ECL workunit.
-     :param password: str
-         Password to execute the ECL workunit.
+    :param hpcc_connection: HPCCconnector,
+        Connection details for an HPCC instance.
      :param csv_file: bool
          Is the logical file a CSV?
 
@@ -137,15 +123,8 @@ def _get_file_chunk(logical_file, csv_file, hpcc_connection, current_row, chunk,
         Logical file to be downloaded
     :param csv_file: bool
         Is the logical file a CSV?
-    :param server: str
-        IP address or url of the HPCC server, supply usernames, passwords and ports
-        using other arguments.
-    :param port: str
-        Port number ECL Watch is running on.
-    :param username: str
-        Username to execute the ECL workunit.
-    :param password: str
-       Password to execute the ECL workunit.
+    :param hpcc_connection: HPCCconnector,
+        Connection details for an HPCC instance.
     :param current_row: int
         Starting row for chunk
     :param chunk: int

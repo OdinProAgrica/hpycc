@@ -116,6 +116,16 @@ def make_col_numeric(df):
 
 
 def make_col_bool(df):
+    """
+    Function to loop over a df and convert any boolean columns.
+
+    :param df: pd.DataFrame
+        data frame to check for boolean columns
+    :return: pd.DataFrame
+        Data frame with all numeric columns converted to numeric.
+
+    """
+
     logger = logging.getLogger('make_col_bool')
     logger.debug('Converting boolean cols')
 

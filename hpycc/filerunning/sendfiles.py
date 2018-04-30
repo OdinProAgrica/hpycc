@@ -36,6 +36,27 @@ def send_file_internal(source_name, target_name,
                        temp_script='sendFileTemp.ecl',
                        chunk_size=10000):
 
+    """
+    Internal call fo sending a file. Creates chunks and orchestrates upload.
+
+    :param source_name: str,
+        The source CSV to spray
+    :param target_name: str,
+        Logical file to spray too
+    :param overwrite: bool,
+        Should we allow overriding of files that have the same name as target_name
+    :param delete: bool,
+        Should temporary files and scripts be deleted at completion
+    :param hpcc_connection: HPCCconnector,
+        Connection details for an HPCC instance.
+    :param temp_script:
+        Name for temporary ECL script created to upload data
+    :param chunk_size:
+        Size at which chunks should be created (and size of said chunks)
+
+    :return: None
+    """
+
     logger = logging.getLogger('send_file_internal')
     logger.debug("sending file %s to %s" % (source_name, target_name))
 
@@ -52,6 +73,28 @@ def send_file_internal(source_name, target_name,
 
 
 def _send_file_in_chunks(df, target_name, chunk_size, record_set, overwrite, delete, temp_script, hpcc_connection):
+    """
+    File chunker for sending files to an HPCC instance
+
+    :param df: pd.DataFrame,
+        The source df to chunk
+    :param target_name: str,
+        Logical file to spray too
+    :param chunk_size: int,
+        Size of chunk
+    :param record_set: str,
+        Recordset for sprayed dataset
+    :param overwrite: bool,
+        Should we allow overriding of files that have the same name as target_name
+    :param delete: bool,
+        Should temporary files and scripts be deleted at completion
+    :param temp_script:
+        Name for temporary ECL script created to upload data
+    :param hpcc_connection: HPCCconnector,
+        Connection details for an HPCC instance.
+
+    :return: None
+    """
     logger = logging.getLogger('_send_file_in_chunks')
 
     logger.debug('Establishing rownumbers for chunks')
@@ -71,13 +114,32 @@ def _send_file_in_chunks(df, target_name, chunk_size, record_set, overwrite, del
         all_rows = make_rows(df, start, end)
         send_data(all_rows, record_set, target_name, overwrite, temp_script, hpcc_connection, delete)
 
-    concat_files(target_names, target_name, record_set, overwrite, delete, temp_script, hpcc_connection)
+    _concat_files(target_names, target_name, record_set, overwrite, delete, temp_script, hpcc_connection)
 
     return None
 
 
-def concat_files(target_names, target_name, record_set, overwrite, delete, temp_script, hpcc_connection):
+def _concat_files(target_names, target_name, record_set, overwrite, delete, temp_script, hpcc_connection):
+    """
+    When files have been uploaded in chunks, this will concatenate them.
 
+    :param target_names: list,
+        list of temporary files to be concatenated
+    :param target_name: str,
+        Logical file to spray too
+    :param record_set: str,
+        Recordset for sprayed dataset
+    :param overwrite: bool,
+        Should we allow overriding of files that have the same name as target_name
+    :param delete: bool,
+        Should temporary files and scripts be deleted at completion
+    :param temp_script:
+        Name for temporary ECL script created to upload data
+    :param hpcc_connection: HPCCconnector,
+        Connection details for an HPCC instance.
+
+    :return: None
+    """
     overwrite_flag = ', OVERWRITE' if overwrite else ''
     script_in = "a := %s;\nOUTPUT(a, ,'%s' %s);"
 
@@ -104,6 +166,19 @@ def concat_files(target_names, target_name, record_set, overwrite, delete, temp_
 
 
 def make_rows(df, start, end):
+    """
+    Make rows to be written to HPCC. This is then inserted into the upload script.
+
+    :param df: pd.DataFrame,
+        Data frame whose rows you want to parse
+    :param start: int
+        start row
+    :param end: int
+        end row
+
+    :return: str,
+        Rows to be inserted into the upload script
+    """
     rows = '{' + df.loc[start:end, :].apply(lambda x: ','.join(x.astype('str').values.tolist()), axis=1) + '}'
     all_rows = ','.join(rows.tolist())
 
@@ -111,6 +186,15 @@ def make_rows(df, start, end):
 
 
 def make_recordset(df):
+    """
+    Makes an ECL type recordset for uploading a file.
+
+    :param df: pd.DataFrame
+        DataFrame to create a recordset for
+
+    :return: str,
+        ECl recordset
+    """
     col_names = df.columns.tolist()
     col_types = df.dtypes.tolist()
     record_set = []
@@ -152,6 +236,24 @@ def make_recordset(df):
 
 
 def send_data(all_rows, record_set, target_name, overwrite, temp_script, hpcc_connection, delete):
+    """
+    Creates an upload script and sends the data to HPCC.
+
+    :param all_rows: str,
+        All rows to be inserted
+    :param record_set: str,
+        Recordset for sprayed dataset
+    :param overwrite: bool,
+        Should we allow overriding of files that have the same name as target_name
+    :param temp_script:
+        Name for temporary ECL script created to upload data
+    :param hpcc_connection: HPCCconnector,
+        Connection details for an HPCC instance.
+    :param delete: bool,
+        Should temporary files and scripts be deleted at completion
+
+    :return: None
+    """
     overwrite_flag = ', OVERWRITE' if overwrite else ''
     script_in = """a := DATASET([%s], {%s});\nOUTPUT(a, ,'%s' , EXPIRE(1)%s);"""
 

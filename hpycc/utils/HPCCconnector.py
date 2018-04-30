@@ -1,5 +1,4 @@
 import json
-import logging
 import re
 import subprocess
 from time import sleep
@@ -11,7 +10,8 @@ GET_FILE_URL = """/WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%
 
 class HPCCconnector(object):
     '''
-    classdocs
+    Class saves the connection details for an HPCC instance and then fires off a test request to ensure it works.
+    Also contains functions to fire off requests via url or command line.
     '''
 
     def __init__(self, server, port, repo, username, password, legacy):
@@ -53,7 +53,7 @@ class HPCCconnector(object):
         logger = logging.getLogger('make_url_request')
         logger.debug('Getting Chunk %s from %s' % (chunk, self.server))
 
-        server = re.sub(r'(?i)http://', '', self.server)
+        self.server = re.sub(r'(?i)http://', '', self.server)
         request = 'http://' + self.server + ':' + self.port + GET_FILE_URL % (logical_file, current_row, chunk)
         response = self.run_url_request(request)
 

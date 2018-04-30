@@ -14,19 +14,8 @@ def run_script_internal(script, hpcc_connection, do_syntaxcheck):
 
     :param script: str
         Path of script to execute.
-    :param server: str
-        IP address or url of the HPCC server, supply usernames, passwords and ports
-        using other arguments.
-    :param port: str, optional
-        Port number ECL Watch is running on.
-    :param repo: str, optional
-        Path to the root of local ECL repository if applicable.
-    :param username: str, optional
-        Username to execute the ECL workunit.
-    :param password: str, optional
-        Password to execute the ECL workunit.
-    :param legacy: bool
-        Should ECL scripts be run with -legacy flag?
+    :param hpcc_connection: HPCCconnector
+        Connection details for an HPCC instance.
     :param do_syntaxcheck: bool
         Should the script be syntax checked before running?
 

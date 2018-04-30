@@ -12,10 +12,8 @@ def syntax_check(script, hpcc_connection):
 
     :param script: str
         Path of script to execute.
-    :param repo: str
-        Path to the root of local ECL repository if applicable.
-    :param legacy: bool
-        should the -legacy flag be added to the call?
+    :param hpcc_connection: HPCCconnector,
+        Connection details for an HPCC instance.
 
     :return: parsed: list of tuples
         List of processed tuples in the form
