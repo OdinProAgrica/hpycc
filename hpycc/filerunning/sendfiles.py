@@ -31,7 +31,7 @@ def _get_type(typ):
     return 'STRING'
 
 
-def send_file_internal(source_name, target_name,
+def send_file_internal(source_file, target_name,
                        overwrite, delete, hpcc_connection,
                        temp_script='sendFileTemp.ecl',
                        chunk_size=10000):
@@ -39,8 +39,8 @@ def send_file_internal(source_name, target_name,
     """
     Internal call fo sending a file. Creates chunks and orchestrates upload.
 
-    :param source_name: str,
-        The source CSV to spray
+    :param source_file: str, pd.DataFrame
+        The source CSV or pd.DataFrame to spray
     :param target_name: str,
         Logical file to spray too
     :param overwrite: bool,
@@ -58,9 +58,17 @@ def send_file_internal(source_name, target_name,
     """
 
     logger = logging.getLogger('send_file_internal')
-    logger.debug("sending file %s to %s" % (source_name, target_name))
+    logger.debug("sending file %s to %s" % (source_file, target_name))
 
-    df = pd.read_csv(source_name, encoding='latin')
+    if isinstance(source_file, pd.DataFrame):
+        logger.debug('Source file has been given as a pd.DataFrame, using asis')
+        df = source_file
+    elif isinstance(source_file, str):
+        logger.debug('Source file has been given as a string, using as path')
+        df = pd.read_csv(source_file, encoding='latin')
+    else:
+        raise TypeError('Input file is neither a path nor a pd.DataFrame')
+
     df, record_set = make_recordset(df)
 
     if len(df) > chunk_size:
