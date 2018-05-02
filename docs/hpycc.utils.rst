@@ -1,15 +1,26 @@
-hpycc\.utils Package
+hpycc\.utils package
 ====================
 
-hpycc\.utils\.datarequests Module
----------------------------------
+Submodules
+----------
 
-.. automodule:: hpycc.utils.datarequests
+hpycc\.utils\.HPCCconnector module
+----------------------------------
+
+.. automodule:: hpycc.utils.HPCCconnector
     :members:
     :undoc-members:
     :show-inheritance:
 
-hpycc\.utils\.logfunctions Module
+hpycc\.utils\.filechunker module
+--------------------------------
+
+.. automodule:: hpycc.utils.filechunker
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+hpycc\.utils\.logfunctions module
 ---------------------------------
 
 .. automodule:: hpycc.utils.logfunctions
@@ -17,7 +28,7 @@ hpycc\.utils\.logfunctions Module
     :undoc-members:
     :show-inheritance:
 
-hpycc\.utils\.parsers Module
+hpycc\.utils\.parsers module
 ----------------------------
 
 .. automodule:: hpycc.utils.parsers
@@ -25,7 +36,7 @@ hpycc\.utils\.parsers Module
     :undoc-members:
     :show-inheritance:
 
-hpycc\.utils\.syntaxcheck Module
+hpycc\.utils\.syntaxcheck module
 --------------------------------
 
 .. automodule:: hpycc.utils.syntaxcheck
@@ -33,6 +44,9 @@ hpycc\.utils\.syntaxcheck Module
     :undoc-members:
     :show-inheritance:
 
+
+Module contents
+---------------
 
 .. automodule:: hpycc.utils
     :members:

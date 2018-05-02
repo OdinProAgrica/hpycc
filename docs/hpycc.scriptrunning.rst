@@ -1,7 +1,10 @@
-hpycc\.scriptrunning Package
+hpycc\.scriptrunning package
 ============================
 
-hpycc\.scriptrunning\.getscripts Module
+Submodules
+----------
+
+hpycc\.scriptrunning\.getscripts module
 ---------------------------------------
 
 .. automodule:: hpycc.scriptrunning.getscripts
@@ -9,14 +12,17 @@ hpycc\.scriptrunning\.getscripts Module
     :undoc-members:
     :show-inheritance:
 
-hpycc\.scriptrunning\.runscript Module
+hpycc\.scriptrunning\.runscript module
 --------------------------------------
 
 .. automodule:: hpycc.scriptrunning.runscript
     :members:
     :undoc-members:
     :show-inheritance:
-    
+
+
+Module contents
+---------------
 
 .. automodule:: hpycc.scriptrunning
     :members:

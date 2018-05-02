@@ -1,7 +1,10 @@
-hpycc\.filerunning Package
+hpycc\.filerunning package
 ==========================
 
-hpycc\.filerunning\.getfiles Module
+Submodules
+----------
+
+hpycc\.filerunning\.getfiles module
 -----------------------------------
 
 .. automodule:: hpycc.filerunning.getfiles
@@ -9,6 +12,17 @@ hpycc\.filerunning\.getfiles Module
     :undoc-members:
     :show-inheritance:
 
+hpycc\.filerunning\.sendfiles module
+------------------------------------
+
+.. automodule:: hpycc.filerunning.sendfiles
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
 
 .. automodule:: hpycc.filerunning
     :members:

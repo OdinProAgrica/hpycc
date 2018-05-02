@@ -8,9 +8,21 @@ hpycc\.get Module
     :members:
     :undoc-members:
     :show-inheritance:
+    
+hpycc\.run Module
+-----------------
 
-
-.. automodule:: hpycc
+.. automodule:: hpycc.run
     :members:
     :undoc-members:
     :show-inheritance:
+    
+hpycc\.send Module
+-------------------
+
+.. automodule:: hpycc.send
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    
+    
