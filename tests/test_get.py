@@ -1,13 +1,16 @@
-import hpycc.get as get
-import hpycc.run
+import os
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
-import os
-from hpycc.utils.HPCCconnector import HPCCconnector
+import hpycc.get as get
+import hpycc.run as run
 import tests.make_data as md
+from hpycc.utils.HPCCconnector import HPCCconnector
 
-# test_script_location = ''
-test_script_location = './tests/'
+if __name__ == "__main__":
+    test_script_location = ''
+else:
+    test_script_location = './tests/'
+
 do_syntaxcheck = True
 log_to_file = True
 debg = True
@@ -18,14 +21,17 @@ username = "hpycc_get_output"
 password = '" "'
 silent = False
 legacy = True
+logical_file = '~TEMP::HPYCC::TEST::FILE'
+hpcc_connection = HPCCconnector(server, port, repo, username, password, legacy)
 
+
+# TODO this should use the data generator.
 expected_result_1 = pd.DataFrame({'a': [1, 3, 5, 7, 9, 11], 'b': [2, 4, 6, 8, 10, 12]})
 expected_result_2 = pd.DataFrame({'a': [11, 13, 15, 17, 19, 111], 'b': [12, 14, 16, 18, 110, 112]})
 expected_result = pd.DataFrame({'a': [1, 3, 5, 7, 9, 11], 'b': [2, 4, 6, 8, 10, 12]})
 expected_result_chunk = pd.DataFrame({'a': [3, 5, 7], 'b': [4, 6, 8]})
 
-hpcc_connection = HPCCconnector(server, port, repo, username, password, legacy)
-md.upload_small_data(hpcc_connection)
+result_df = md.upload_data(logical_file, 15000, hpcc_connection)
 
 
 def test_get_output():
@@ -51,11 +57,15 @@ def test_get_outputs():
 
 
 def test_get_file():
-    logical_file = '~a::test::file'
-    result = get.get_file(logical_file, server, port='8010', username=username,
+    logical_file_getfile = '~TEMP::HPYCC::TEST::GETFILE'
+    result_df_getfile = md.upload_data(logical_file_getfile, 15000, hpcc_connection)
+
+    result = get.get_file(logical_file_getfile, server, port='8010', username=username,
                           password=password, csv_file=False, silent=silent, debg=debg)
 
-    assert_frame_equal(result, expected_result, check_dtype=False, check_like=False)
+    run.delete_logical_file(logical_file_getfile, 'localhost')
+
+    assert_frame_equal(result, result_df_getfile, check_dtype=False, check_like=False)
 
 
 def test_save_output():
@@ -92,25 +102,19 @@ def test_save_outputs():
 
 
 def test_save_file():
-    logical_file = '~a::test::file'
+    logical_file_savefile = '~TEMP::HPYCC::TEST::SAVEFILE'
+    result_df_savefile = md.upload_data(logical_file_savefile, 15000, hpcc_connection)
     path = 'testOuputSave.csv'
 
-    get.save_file(logical_file, path, server, port, username=username,
+    get.save_file(logical_file_savefile, path, server, port, username=username,
                   password=password, csv_file=False, compression=None,
                   silent=silent, log_to_file=log_to_file, debg=debg)
 
     result = pd.read_csv(path)
     os.remove(path)
+    run.delete_logical_file(logical_file_savefile, 'localhost')
+    assert_frame_equal(result, result_df_savefile, check_dtype=False, check_like=False)
 
-    assert_frame_equal(result, expected_result_1, check_dtype=False, check_like=False)
 
-
-def test_run_script():
-    # TODO: should check it's been run on the server to be a proper test.
-    script = test_script_location + 'ECLtest_runScript_1output.ecl'
-
-    hpycc.run.run_script(script, server, port="8010", repo=None,
-                         username="hpycc_get_output", password='" "', silent=False,
-                         legacy=False, do_syntaxcheck=True, log_to_file=log_to_file, debg=debg)
-
-    assert True
+def test_tidy_up():
+    run.delete_logical_file(logical_file, 'localhost')

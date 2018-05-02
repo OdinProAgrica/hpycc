@@ -1,6 +1,5 @@
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
-
 import hpycc.utils.parsers
 
 xml = """<Result>
@@ -35,12 +34,6 @@ xml_2Datasets = """<Result>
             <Row><a>111</a><b>112</b></Row>
            </Dataset>
         </Result>"""
-
-# TODO: basically runs all other functions in scripts. Doesn't seem much point as all it does is return teh console.
-# If stdout breaks it'll break get_script_internal. if stderr breaks it'll break the syntax checker.
-# def test_run_command():
-#
-#     assert False
 
 
 def test_parse_XML():

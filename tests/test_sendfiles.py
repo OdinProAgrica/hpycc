@@ -1,5 +1,6 @@
 import pytest
 import pandas as pd
+import os
 import hpycc.filerunning.sendfiles as sendfiles
 import hpycc.run as run
 from hpycc.utils.HPCCconnector import HPCCconnector
@@ -7,9 +8,10 @@ import tests.make_data as md
 import hpycc.filerunning.getfiles as getfiles
 from pandas.util.testing import assert_frame_equal
 
-
-# script_loc = ''
-script_loc = './tests/'
+if __name__ == "__main__":
+    test_script_location = ''
+else:
+    test_script_location = './tests/'
 
 upload_loc_sml = '~a::temp::filesml'
 upload_loc_lrg = '~a::temp::filelrg'
@@ -46,8 +48,6 @@ def test_send_file_internal_sml():
                                  chunk_size=10000)
 
     result = getfiles.get_file_internal(upload_loc_sml, hpcc_connection, False, 3)
-    run.delete(upload_loc_sml, 'localhost')
-
     assert_frame_equal(result, small_expected_result, check_dtype=False, check_like=False)
 
 
@@ -57,6 +57,12 @@ def test_send_file_internal_lrg():
                                  chunk_size=10000)
 
     lrg_result = getfiles.get_file_internal(upload_loc_lrg, hpcc_connection, False, 3)
-    run.delete(upload_loc_lrg, 'localhost')
-
     assert_frame_equal(lrg_result, large_expected_result, check_dtype=False, check_like=False)
+
+
+def test_tidyup():
+    run.delete_logical_file(upload_loc_lrg, 'localhost')
+    run.delete_logical_file(upload_loc_sml, 'localhost')
+    os.remove(large_test_csv)
+    os.remove(small_test_csv)
+    assert True
