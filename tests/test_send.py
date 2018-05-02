@@ -2,6 +2,7 @@ import tests.make_data as md
 import hpycc.send as send
 import hpycc.run as run
 from hpycc.utils.HPCCconnector import HPCCconnector
+import os
 
 server = 'localhost'
 hpcc_connection = HPCCconnector(server, '8010', None, "hpycc_get_output", '" "', False)
@@ -22,3 +23,8 @@ def test_send_file_1():
 
     file_uploaded = md.check_exists(logical_file, hpcc_connection)
     assert file_uploaded  # File contents is tested in test_sendfiles
+
+
+def test_tidy():
+    os.remove(source_file)
+    run.delete_logical_file(logical_file, server)
