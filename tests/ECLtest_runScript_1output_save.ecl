@@ -6,7 +6,4 @@ a := DATASET([{1,2},
               {11,12}
               ], {INTEGER a; INTEGER b});
 
-OUTPUT(a, ,'~a::test::file', EXPIRE(1), OVERWRITE);
-
-OUTPUT(a, , '~a::test::filecsv', OVERWRITE,CSV(HEADING(SINGLE), QUOTE('"')), EXPIRE(1));
-
+OUTPUT(a, ,'~TEMP::HPYCC::TEST::FILE', EXPIRE(1), OVERWRITE);
