@@ -62,10 +62,10 @@ def run_script(script, server, port="8010", repo=None,
     return None
 
 
-def delete(logical_file, server, port="8010", repo=None,
-           username="hpycc_get_output", password='" "',
-           legacy=False, do_syntaxcheck=True,
-           silent=False, debg=False, log_to_file=False, logpath=LOG_PATH):
+def delete_logical_file(logical_file, server, port="8010", repo=None,
+                        username="hpycc_get_output", password='" "',
+                        legacy=False, do_syntaxcheck=True,
+                        silent=False, debg=False, log_to_file=False, logpath=LOG_PATH):
     """
     Delete a logical file.
 
@@ -102,8 +102,8 @@ def delete(logical_file, server, port="8010", repo=None,
     """
 
     boot_logger(silent, debg, log_to_file, logpath)
-    logger = logging.getLogger('delete file')
-    logger.debug('Starting delete file')
+    logger = logging.getLogger('delete_logical_file file')
+    logger.debug('Starting delete_logical_file file')
 
     script = "IMPORT std; STD.File.DeleteLogicalFile('%s');" % logical_file
 
