@@ -67,7 +67,7 @@ def send_file_internal(source_file, target_name,
         logger.debug('Source file has been given as a string, using as path')
         df = pd.read_csv(source_file, encoding='latin')
     else:
-        raise TypeError('Input file is neither a path nor a pd.DataFrame')
+        raise TypeError('Input file is neither a path nor a pd.DataFrame but %s' % type(source_file))
 
     df, record_set = make_recordset(df)
 
@@ -263,7 +263,7 @@ def send_data(all_rows, record_set, target_name, overwrite, temp_script, hpcc_co
     :return: None
     """
     overwrite_flag = ', OVERWRITE' if overwrite else ''
-    script_in = """a := DATASET([%s], {%s});\nOUTPUT(a, ,'%s' , EXPIRE(1)%s);"""
+    script_in = "a := DATASET([%s], {%s});\nOUTPUT(a, ,'%s' , EXPIRE(1)%s);"
 
     script = script_in % (all_rows, record_set, target_name, overwrite_flag)
     print(script)

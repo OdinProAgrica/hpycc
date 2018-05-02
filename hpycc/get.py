@@ -1,8 +1,10 @@
 """
-This module contains the callable functions in hpycc related to getting data.
-Basically you may get data via a script with one
+This module contains the callable functions in hpycc. Basically you may get data via a script with one
 result (..._output), a script with multiple results (..._outputs) or a logical file (..._file).
-Data may be saved or simply returned as a pandas dataframe.
+Data may be saved or simply returned as a pandas dataframe. The module also contains a function to
+run a script with no import. The main  use case I had in mind was for running a script, saving a
+logical file and then accessing with get_file(). This takes advantage of multi-threading, something
+which script outputs cannot do.
 """
 
 import logging

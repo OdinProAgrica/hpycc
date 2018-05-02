@@ -3,7 +3,6 @@ The module contains functions to send files to HPCC.
 """
 
 import logging
-import pandas as pd
 from hpycc.get import LOG_PATH
 from hpycc.filerunning.sendfiles import send_file_internal
 from hpycc.utils.logfunctions import boot_logger
