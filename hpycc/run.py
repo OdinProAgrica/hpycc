@@ -10,12 +10,9 @@ import os
 from hpycc.get import LOG_PATH
 from hpycc.scriptrunning import runscript
 from hpycc.utils.logfunctions import boot_logger
-from hpycc.utils.HPCCconnector import HPCCconnector
 
 
-def run_script(script, server, port="8010", repo=None,
-               username="hpycc_get_output", password='" "',
-               legacy=False, do_syntaxcheck=True,
+def run_script(script, connection, do_syntaxcheck=True,
                silent=False, debg=False, log_to_file=False, logpath=LOG_PATH):
     """
     Run an ECL script but do not download, save or process the response.
@@ -56,15 +53,12 @@ def run_script(script, server, port="8010", repo=None,
     logger = logging.getLogger('run_script')
     logger.debug('Starting run_script')
 
-    hpcc_server = HPCCconnector(server, port, repo, username, password, legacy)
-    runscript.run_script_internal(script, hpcc_server, do_syntaxcheck)
+    connection.run_ecl_script(script, do_syntaxcheck)
 
     return None
 
 
-def delete_logical_file(logical_file, server, port="8010", repo=None,
-                        username="hpycc_get_output", password='" "',
-                        legacy=False, do_syntaxcheck=True,
+def delete_logical_file(logical_file, connection, do_syntaxcheck=True,
                         silent=False, debg=False, log_to_file=False, logpath=LOG_PATH):
     """
     Delete a logical file.
@@ -111,9 +105,8 @@ def delete_logical_file(logical_file, server, port="8010", repo=None,
     with open(script_loc, 'w') as f:
         f.writelines(script)
 
-    hpcc_server = HPCCconnector(server, port, repo, username, password, legacy)
 
-    runscript.run_script_internal(script_loc, hpcc_server, do_syntaxcheck)
+    runscript.run_script_internal(script_loc, connection, do_syntaxcheck)
     os.remove(script_loc)
 
     return None
