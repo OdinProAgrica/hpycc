@@ -7,12 +7,11 @@ for deleting logical files.
 
 import logging
 import os
-from hpycc.get import LOG_PATH
 from hpycc.utils.logfunctions import boot_logger
 
 
 def run_script(script, connection, do_syntaxcheck=True,
-               silent=False, debg=False, log_to_file=False, logpath=LOG_PATH):
+               silent=False, debg=False, log_to_file=False):
     """
     Run an ECL script but do not download, save or process the response.
 
@@ -48,7 +47,7 @@ def run_script(script, connection, do_syntaxcheck=True,
 
     """
 
-    boot_logger(silent, debg, log_to_file, logpath)
+    boot_logger(silent, debg, log_to_file, )
     logger = logging.getLogger('run_script')
     logger.debug('Starting run_script')
 
@@ -58,7 +57,7 @@ def run_script(script, connection, do_syntaxcheck=True,
 
 
 def delete_logical_file(logical_file, connection, do_syntaxcheck=True,
-                        silent=False, debg=False, log_to_file=False, logpath=LOG_PATH):
+                        silent=False, debg=False, log_to_file=False):
     """
     Delete a logical file.
 
@@ -94,7 +93,7 @@ def delete_logical_file(logical_file, connection, do_syntaxcheck=True,
 
     """
 
-    boot_logger(silent, debg, log_to_file, logpath)
+    boot_logger(silent, debg, log_to_file)
     logger = logging.getLogger('delete_logical_file file')
     logger.debug('Starting delete_logical_file file')
 

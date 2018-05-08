@@ -106,6 +106,7 @@ def _send_file_in_chunks(df, target_name, chunk_size, record_set, overwrite, del
     logger = logging.getLogger('_send_file_in_chunks')
 
     logger.debug('Establishing rownumbers for chunks')
+    # TODO now broken
     break_positions, _ = hpycc.utils.filechunker.make_chunks(len(df), csv_file=False, chunk_size=chunk_size)
     end_rows = break_positions[1:-1] + [len(df)]
 

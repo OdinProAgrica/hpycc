@@ -3,14 +3,12 @@ The module contains functions to send files to HPCC.
 """
 
 import logging
-from hpycc.get import LOG_PATH
 from hpycc.filerunning.sendfiles import send_file_internal
 from hpycc.utils.logfunctions import boot_logger
 
 
 def send_file(source_file, logical_file, connection, overwrite=False,
-              delete=True, silent=False, debg=False, log_to_file=False,
-              logpath=LOG_PATH):
+              delete=True, silent=False, debg=False, log_to_file=False):
     """
     Send a file to HPCC.
 
@@ -52,7 +50,7 @@ def send_file(source_file, logical_file, connection, overwrite=False,
 
     """
 
-    boot_logger(silent, debg, log_to_file, logpath)
+    boot_logger(silent, debg, log_to_file)
     logger = logging.getLogger('run_script')
     logger.debug('Starting run_script')
 

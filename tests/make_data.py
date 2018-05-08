@@ -85,7 +85,11 @@ def check_exists(logical_file, connection):
     with open(script, 'w') as f:
         f.writelines(ecl_command)
 
-    check = getscript.get_script_internal(script, connection, True)
+    result = connection.run_ecl_script(script, True)
+    regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
+    results = re.findall(regex, result.stdout)
+    check = [(name, parsers.parse_xml(xml)) for name, xml in
+                          results]
     os.remove(script)
 
     return check[0][1].ix[0, 0].tolist()

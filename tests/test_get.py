@@ -3,6 +3,7 @@ import pandas as pd
 from pandas.util.testing import assert_frame_equal
 import hpycc.get as get
 import hpycc.run as run
+import hpycc.save
 import tests.make_data as md
 from hpycc.utils.HPCCconnector import HPCCconnector
 
@@ -38,9 +39,9 @@ def test_get_output():
     script = test_script_location + 'ECLtest_runScript_1output.ecl'
 
     result = get.get_output(script, server, port="8010", repo=None,
-               username="hpycc_get_output", password='" "',
-               legacy=False, do_syntaxcheck=True,
-               silent=False, debg=True)
+                            username="hpycc_get_output", password='" "',
+                            legacy=False, syntax_check=True,
+                            silent=False, debg=True)
 
     assert_frame_equal(result, expected_result_1, check_dtype=False, check_like=False)
 
@@ -49,8 +50,8 @@ def test_get_outputs():
     script = test_script_location + 'ECLtest_runScript_2outputs.ecl'
 
     result = get.get_outputs(script, server, port="8010", repo=None,
-                username="hpycc_get_output", password='" "', silent=False,
-                legacy=False, do_syntaxcheck=True, log_to_file=log_to_file, debg=debg)
+                             username="hpycc_get_output", password='" "', silent=False,
+                             legacy=False, syntax_check=True, log_to_file=log_to_file, debg=debg)
 
     assert_frame_equal(result['Result 1'], expected_result_1, check_dtype=False, check_like=False)
     assert_frame_equal(result['Result 2'], expected_result_2, check_dtype=False, check_like=False)
@@ -61,7 +62,7 @@ def test_get_file():
     result_df_getfile = md.upload_data(logical_file_getfile, 15000, hpcc_connection)
 
     result = get.get_file(logical_file_getfile, server, port='8010', username=username,
-                          password=password, csv_file=False, silent=silent, debg=debg)
+                          password=password, csv=False, silent=silent, debg=debg)
 
     run.delete_logical_file(logical_file_getfile, 'localhost')
 
@@ -72,9 +73,9 @@ def test_save_output():
     script = test_script_location + 'ECLtest_runScript_1output.ecl'
     path = 'testOuputSave.csv'
 
-    get.save_output(script, server, path, port="8010", repo=None,
-                username="hpycc_get_output", password='" "', silent=False,
-                compression=None, legacy=False, log_to_file=log_to_file, debg=debg)
+    hpycc.save.save_output(script, server, path, port="8010", repo=None,
+                           username="hpycc_get_output", password='" "', silent=False,
+                           compression=None, legacy=False, log_to_file=log_to_file, debg=debg)
 
     result = pd.read_csv(path)
     os.remove(path)
@@ -85,7 +86,7 @@ def test_save_output():
 def test_save_outputs():
     script = test_script_location + 'ECLtest_runScript_2outputs.ecl'
 
-    get.save_outputs(
+    hpycc.save.save_outputs(
         script, server, directory=".", port="8010", repo=None,
         username="hpycc_get_output", password='" "', silent=False,
         compression=None, filenames=None, prefix="", legacy=False,
@@ -106,9 +107,9 @@ def test_save_file():
     result_df_savefile = md.upload_data(logical_file_savefile, 15000, hpcc_connection)
     path = 'testOuputSave.csv'
 
-    get.save_file(logical_file_savefile, path, server, port, username=username,
-                  password=password, csv_file=False, compression=None,
-                  silent=silent, log_to_file=log_to_file, debg=debg)
+    hpycc.save.save_file(logical_file_savefile, path, server, port, username=username,
+                         password=password, csv_file=False, compression=None,
+                         silent=silent, log_to_file=log_to_file, debg=debg)
 
     result = pd.read_csv(path)
     os.remove(path)
