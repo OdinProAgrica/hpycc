@@ -1,153 +1,142 @@
+import itertools
 import re
 import os
 
 from hpycc import get_output, get_file
 from hpycc.utils import parsers
 
+# TODO logging
 
-def save_output(script, connection, path, compression=None, refresh=False,
-                silent=False, debg=False, log_to_file=False):
+
+def save_output(connection, script, path_or_buf=None, syntax_check=True,
+                **kwargs):
     """
-    Save the first output of an ECL script as a csv. See save_outputs() for downloading multiple files
-    and get_output() for returning a pandas df.
+    Save the first output of an ECL script as a csv. See
+    save_outputs() for saving multiple outputs to file and
+    get_output() for returning as a DataFrame.
 
-    :param path: str
-        Path of target destination.
+    Parameters
+    ----------
+    :param connection: `Connection`
+        HPCC Connection instance, see also `Connection`.
+    :param script: str
+        Path of script to execute.
+    :param path_or_buf: str, optional.
+        File path or object, if None is provided the result is
+        returned as a string. None by default.
+    :param syntax_check: bool, optional
+        Should script be syntax checked before execution. True by
+        default.
+    :param kwargs
+        Additional parameters to be provided to
+        pandas.DataFrame.to_csv().
+
+    Returns
+    -------
+    :return: None if path_or_buf is not None, else a string
+        representation of the output csv.
+    """
+    result = get_output(connection=connection, script=script,
+                        syntax_check=syntax_check)
+    return result.to_csv(path_or_buf=path_or_buf, **kwargs)
+
+
+def save_outputs(connection, script, directory=".", filenames=None,
+                 prefix=None, syntax_check=True, **kwargs):
+
+    """
+    Save all outputs of an ECL script as csvs. See get_outputs()
+    for returning DataFrames and save_output() for writing a single
+    output to file.
+
+    Parameters
+    ----------
+    :param connection: `Connection`
+        HPCC Connection instance, see also `Connection`.
     :param script: str
          Path of script to execute.
-    :param compression: str, optional
-        Compression format to give to pandas. None by default.
-    :param refresh: bool, optional
-        Should the file be overriden if it's already there? False by default which will cause a FileExistsException
-        (unless silent=True, then you'll get a one line acknowledgement)
-    :param silent: bool, optional
-        Should all feedback except warnings and errors be suppressed. False by default
-    :param debg: bool, optional
-        Should debug info be logged. False by default
-    :param log_to_file: bool, optional
-        Should log info be dumped to a file. False by default
-    :param logpath: str, optional
-        If logging to file, what is the filename? hpycc.log by default.
-
-    :return: None
-    """
-
-    # boot_logger(silent, debg, log_to_file, logpath) # No logger as get_output boots logger
-    if os.path.isfile(path) and not refresh and not silent:
-        raise FileExistsError('File already exists, set refresh=True to override or silent=True to suppress this error')
-    elif os.path.isfile(path) and not refresh:
-        return None
-
-    result = get_output(script, connection, debg=debg,
-                        log_to_file=log_to_file,  silent=silent)
-    result.to_csv(path_or_buf=path, compression=compression, index=False)
-    return None
-
-
-def save_outputs(
-        script, connection, directory=".", compression=None, filenames=None,
-        prefix="", do_syntaxcheck=True, silent=False, debg=False,
-        log_to_file=False):
-
-    """
-    Save all outputs of an ECL script as csvs using their output
-    name. The file names can be changed using the filenames and
-    prefix parameters. See get_outputs() for returning pandas
-    dataframes and save_output() for single outputs.
-
-    :param script: str
-         Path of script to execute.
-        using other arguments.
     :param directory: str, optional
         Directory to save output files in. "." by default.
-    :param compression: str, optional
-        Compression format to give to pandas. None by default.
     :param filenames: list, optional
-        File names to save results as. If filenames is shorter than
-        number of outputs, only those with a filename will be saved.
-        If not specified, all files will be named their output name
-        assigned by the ECL script.
+        File names to save results as. If not specified, files will
+        be named as their output name assigned by the ECL script.
+        None by default.
     :param prefix: str, optional
-        Prefix to prepend to all file names. "" by default.
-    :param do_syntaxcheck: bool, optional
-        Should a syntax check be completed on the script before running. True by default
-    :param silent: bool, optional
-        Should all feedback except warnings and errors be suppressed. False by default
-    :param debg: bool, optional
-        Should debug info be logged. False by default
-    :param log_to_file: bool, optional
-        Should log info be dumped to a file. False by default
-    :param logpath: str, optional
-        If logging to file, what is the filename? hpycc.log by default.
+        Prefix to prepend to all file names. None by default.
+    :param syntax_check: bool, optional
+        Should the script be syntax checked before execution. True by
+        default.
+    :param kwargs:
+        Additional parameters to be provided to
+        pandas.DataFrame.to_csv().
 
+
+    Returns
+    -------
     :return: None
     """
-    result = connection.run_ecl_script(script, do_syntaxcheck)
+    result = connection.run_ecl_script(script, syntax_check)
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
     results = re.findall(regex, result.stdout)
     parsed_data_frames = [(name, parsers.parse_xml(xml)) for name, xml in
                           results]
 
-    if filenames:
-        if len(filenames) != len(parsed_data_frames):
-            zipped = list(zip(parsed_data_frames, filenames))
-    else:
-        zipped = [(p, "{}.csv".format(p[0])) for p in parsed_data_frames]
+    parsed_filenames = ["{}.csv".format(res[0]) for res in parsed_data_frames]
+    chosen_filenames = itertools.zip_longest(filenames, parsed_filenames)
+    if prefix:
+        chosen_filenames = [prefix + name for name in chosen_filenames]
 
-    for result in zipped:
-        file_name = "{}{}".format(prefix, result[1])
-        path = os.path.join(directory, file_name)
-        result[0][1].to_csv(path, compression=compression, index=False)
+    if filenames is not None and len(filenames) > len(parsed_data_frames):
+        add_names = filenames[len(parsed_data_frames):]
+        UserWarning("Too many file names specified, ignoring {}".format(
+            add_names))
+    elif filenames is not None and len(filenames) < len(parsed_data_frames):
+        add_names = parsed_filenames[len(filenames):]
+        UserWarning("Too few file names specified. Additional files will be "
+                    "named {}".format(add_names))
 
-    return None
+    for name, result in zip(chosen_filenames, parsed_data_frames):
+        path = os.path.join(directory, name)
+        result[1].to_csv(path, **kwargs)
 
 
-def save_file(logical_file, path, connection,
-              csv_file=False, compression=None,
-              refresh=False, silent=False, debg=False,
-              log_to_file=False,
-              download_threads=15):
+def save_file(connection, logical_file, path_or_buf, csv=False, max_workers=15,
+              chunk_size=10000, max_attempts=3, **kwargs):
     """
-    Save an HPCC file to disk, see get_file_internal for returning a dataframe.
-    Getting logical files has an advantage over scripts as they can
-    be chunked and multi-threaded.
+    Save a logical file to disk, see get_file() for returning a
+    DataFrame.
 
+    Parameters
+    ----------
+    :param connection: `Connection`
+        HPCC Connection instance, see also `Connection`.
     :param logical_file: str
         Logical file to be downloaded
-    :param path: str
-        Path of target destination.
-    :param csv_file: bool, optional
-        Is the logical file a CSV? False by default
-    :param compression: str, optional
-        Handed to pandas' compression command when writing output file. Note that the path variable is respected.
-    :param refresh: bool, optional
-        Should the file be overridden if it's already there? False by default which will cause a FileExistsException
-        (unless silent=True, then you'll get a one line acknowledgement)
-    :param silent: bool, optional
-        Should all feedback except warnings and errors be suppressed. False by default
-    :param debg: bool, optional
-        Should debug info be logged. False by default
-    :param log_to_file: bool, optional
-        Should log info be dumped to a file. False by default
-    :param logpath: str, optional
-        If logging to file, what is the filename? hpycc.log by default.
-    :param download_threads: int, optional
-        Number of concurrent download threads for the file. Warning: too many will likely
-        cause either your script or you cluster to crash! 15 by default
+    :param path_or_buf: str, optional.
+        File path or object, if None is provided the result is
+        returned as a string. None by default.
+    :param csv: bool, optional
+        Is the logical file a CSV? False by default.
+    :param max_workers: int, optional
+        Number of concurrent threads to use when downloading.
+        Warning: too many will likely cause either your machine or
+        your cluster to crash! 15 by default.
+     :param chunk_size: int, optional.
+        Size of chunks to use when downloading file. 10000 by
+        default.
+    :param max_attempts: int, optional
+        Max number of attempts to download a chunk. 3 by default.
+    :param kwargs
+        Additional parameters to be provided to
+        pandas.DataFrame.to_csv().
 
-    :return: None
+    Returns
+    -------
+    :return: None if path_or_buf is not None, else a string
+        representation of the output csv.
     """
 
-    if os.path.isfile(path) and not refresh and not silent:
-        raise FileExistsError('File already exists, set refresh=True to override or silent=True to suppress this error')
-    elif os.path.isfile(path) and not refresh:
-        # print('File exists, nothing to do so exiting.')
-        return None
+    file = get_file(connection, logical_file, csv, max_workers, chunk_size,
+                    max_attempts)
 
-    df = get_file(logical_file, connection, csv_file, debg=debg,
-                  log_to_file=log_to_file, max_workers=download_threads,
-                  silent=silent)
-
-    df.to_csv(path, index=False, encoding='utf-8', compression=compression)
-
-    return None
+    return file.to_csv(path_or_buf, **kwargs)

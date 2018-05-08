@@ -24,7 +24,7 @@ def get_output(connection, script, syntax_check=True):
     :param script: str
          Path of script to execute.
     :param syntax_check: bool, optional
-        If the script be syntax checked before execution. True by
+        Should the script be syntax checked before execution. True by
         default.
 
     Returns
@@ -65,7 +65,7 @@ def get_outputs(connection, script, syntax_check=True):
     result = connection.run_ecl_script(script, syntax_check)
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
     results = re.findall(regex, result.stdout)
-    as_dict = dict((name, parsers.parse_xml(xml)) for name, xml in results)
+    as_dict = dict([(name, parsers.parse_xml(xml)) for name, xml in results])
 
     return as_dict
 
