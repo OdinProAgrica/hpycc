@@ -8,7 +8,6 @@ for deleting logical files.
 import logging
 import os
 from hpycc.get import LOG_PATH
-from hpycc.scriptrunning import runscript
 from hpycc.utils.logfunctions import boot_logger
 
 
@@ -105,8 +104,7 @@ def delete_logical_file(logical_file, connection, do_syntaxcheck=True,
     with open(script_loc, 'w') as f:
         f.writelines(script)
 
-
-    runscript.run_script_internal(script_loc, connection, do_syntaxcheck)
+    connection.run_ecl_script(script_loc, do_syntaxcheck)
     os.remove(script_loc)
 
     return None

@@ -6,13 +6,11 @@ import logging
 from hpycc.get import LOG_PATH
 from hpycc.filerunning.sendfiles import send_file_internal
 from hpycc.utils.logfunctions import boot_logger
-from hpycc.utils.HPCCconnector import HPCCconnector
 
 
-def send_file(source_file, logical_file, server, port="8010", repo=None,
-               username="hpycc_get_output", password='" "',
-               legacy=False, overwrite=False, delete=True,
-               silent=False, debg=False, log_to_file=False, logpath=LOG_PATH):
+def send_file(source_file, logical_file, connection, overwrite=False,
+              delete=True, silent=False, debg=False, log_to_file=False,
+              logpath=LOG_PATH):
     """
     Send a file to HPCC.
 
@@ -58,7 +56,6 @@ def send_file(source_file, logical_file, server, port="8010", repo=None,
     logger = logging.getLogger('run_script')
     logger.debug('Starting run_script')
 
-    hpcc_server = HPCCconnector(server, port, repo, username, password, legacy)
-    send_file_internal(source_file, logical_file, overwrite, delete, hpcc_server)
+    send_file_internal(source_file, logical_file, overwrite, delete, connection)
 
     return None

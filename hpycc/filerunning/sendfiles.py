@@ -1,11 +1,11 @@
 import pandas as pd
 import re
 import hpycc.run
-import hpycc.scriptrunning.runscript as run
 import os
 import logging
 
 import hpycc.utils.filechunker
+
 
 def _get_type(typ):
     """
@@ -32,7 +32,7 @@ def _get_type(typ):
 
 
 def send_file_internal(source_file, target_name,
-                       overwrite, delete, hpcc_connection,
+                       overwrite, delete, connection,
                        temp_script='sendFileTemp.ecl',
                        chunk_size=10000):
 
@@ -47,7 +47,7 @@ def send_file_internal(source_file, target_name,
         Should we allow overriding of files that have the same name as target_name
     :param delete: bool,
         Should temporary files and scripts be deleted at completion
-    :param hpcc_connection: HPCCconnector,
+    :param connection: HPCCconnector,
         Connection details for an HPCC instance.
     :param temp_script:
         Name for temporary ECL script created to upload data
@@ -72,15 +72,15 @@ def send_file_internal(source_file, target_name,
     df, record_set = make_recordset(df)
 
     if len(df) > chunk_size:
-        _send_file_in_chunks(df, target_name, chunk_size, record_set, overwrite, delete, temp_script, hpcc_connection)
+        _send_file_in_chunks(df, target_name, chunk_size, record_set, overwrite, delete, temp_script, connection)
     else:
         all_rows = make_rows(df, 0, len(df))
-        send_data(all_rows, record_set, target_name, overwrite, temp_script, hpcc_connection, delete)
+        send_data(all_rows, record_set, target_name, overwrite, temp_script, connection, delete)
 
     return None
 
 
-def _send_file_in_chunks(df, target_name, chunk_size, record_set, overwrite, delete, temp_script, hpcc_connection):
+def _send_file_in_chunks(df, target_name, chunk_size, record_set, overwrite, delete, temp_script, connection):
     """
     File chunker for sending files to an HPCC instance
 
@@ -98,7 +98,7 @@ def _send_file_in_chunks(df, target_name, chunk_size, record_set, overwrite, del
         Should temporary files and scripts be deleted at completion
     :param temp_script:
         Name for temporary ECL script created to upload data
-    :param hpcc_connection: HPCCconnector,
+    :param connection: HPCCconnector,
         Connection details for an HPCC instance.
 
     :return: None
@@ -120,14 +120,14 @@ def _send_file_in_chunks(df, target_name, chunk_size, record_set, overwrite, del
 
         target_names.append(target_name_tmp)
         all_rows = make_rows(df, start, end)
-        send_data(all_rows, record_set, target_name, overwrite, temp_script, hpcc_connection, delete)
+        send_data(all_rows, record_set, target_name, overwrite, temp_script, connection, delete)
 
-    _concat_files(target_names, target_name, record_set, overwrite, delete, temp_script, hpcc_connection)
+    _concat_files(target_names, target_name, record_set, overwrite, delete, temp_script, connection)
 
     return None
 
 
-def _concat_files(target_names, target_name, record_set, overwrite, delete, temp_script, hpcc_connection):
+def _concat_files(target_names, target_name, record_set, overwrite, delete, temp_script, connection):
     """
     When files have been uploaded in chunks, this will concatenate them.
 
@@ -143,7 +143,7 @@ def _concat_files(target_names, target_name, record_set, overwrite, delete, temp
         Should temporary files and scripts be deleted at completion
     :param temp_script:
         Name for temporary ECL script created to upload data
-    :param hpcc_connection: HPCCconnector,
+    :param connection: HPCCconnector,
         Connection details for an HPCC instance.
 
     :return: None
@@ -167,7 +167,7 @@ def _concat_files(target_names, target_name, record_set, overwrite, delete, temp
     with open(temp_script, 'w') as f:
         f.writelines(script)
 
-    hpcc_connection.run_command(script, 'ecl')
+    connection.run_command(script, 'ecl')
     os.remove(temp_script)
 
     return None
@@ -243,7 +243,7 @@ def make_recordset(df):
     return df, record_set
 
 
-def send_data(all_rows, record_set, target_name, overwrite, temp_script, hpcc_connection, delete):
+def send_data(all_rows, record_set, target_name, overwrite, temp_script, connection, delete):
     """
     Creates an upload script and sends the data to HPCC.
 
@@ -270,7 +270,7 @@ def send_data(all_rows, record_set, target_name, overwrite, temp_script, hpcc_co
     with open(temp_script, 'w') as f:
         f.writelines(script)
 
-    run.run_script_internal(temp_script, hpcc_connection, True)
+    connection.run_ecl_script(script, True)
 
     if delete:
         os.remove(temp_script)

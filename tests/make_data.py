@@ -1,5 +1,4 @@
 import os
-import hpycc.scriptrunning.runscript as runscript
 import hpycc.scriptrunning.getscripts as getscript
 import hpycc.filerunning.sendfiles as sendfiles
 import pandas as pd
@@ -8,7 +7,7 @@ overwrite = True
 delete = True
 
 
-def upload_large_data(hpcc_connection, start_row=0, size=25000):
+def upload_large_data(connection, start_row=0, size=25000):
     syntax_check = False
 
     wrapper = "a := DATASET([%s], {INTEGER a; INTEGER b}); OUTPUT(a, ,'~a::test::bigfile', EXPIRE(1), OVERWRITE);"
@@ -31,7 +30,7 @@ def upload_large_data(hpcc_connection, start_row=0, size=25000):
     backwards_data.append(0)
     expected_big_data = pd.DataFrame({'a': some_data, 'b': backwards_data})
 
-    runscript.run_script_internal(script, hpcc_connection, syntax_check)
+    connection.run_ecl_script(script, syntax_check)
     os.remove(script)
 
     return expected_big_data
@@ -55,7 +54,7 @@ def get_recordset():
     return 'string charcol; string floatcol; string intcol; string logicalcol;'
 
 
-def make_csv_format_logicalfile(logicalfile, new_file, hpcc_connection, syntax_check):
+def make_csv_format_logicalfile(logicalfile, new_file, connection, syntax_check):
     ecl_command = "a := DATASET('%s', {%s}, THOR); OUTPUT(a, , '%s', CSV(HEADING(SINGLE), QUOTE('\"')), OVERWRITE);"
     ecl_command = ecl_command % (logicalfile, get_recordset(), new_file)
 
@@ -63,7 +62,7 @@ def make_csv_format_logicalfile(logicalfile, new_file, hpcc_connection, syntax_c
     with open(script, 'w') as f:
         f.writelines(ecl_command)
 
-    runscript.run_script_internal(script, hpcc_connection, syntax_check)
+    connection.run_ecl_script(script, syntax_check)
     os.remove(script)
 
 
@@ -73,20 +72,20 @@ def make_csv(save_loc, size):
     return df
 
 
-def upload_data(target_name, size, hpcc_connection):
+def upload_data(target_name, size, connection):
     df = make_df(size)
-    sendfiles.send_file_internal(df.copy(), target_name, overwrite, delete, hpcc_connection)
+    sendfiles.send_file_internal(df.copy(), target_name, overwrite, delete, connection)
     return df
 
 
-def check_exists(logical_file, hpcc_connection):
+def check_exists(logical_file, connection):
     ecl_command = "IMPORT std; STD.File.FileExists('%s');" % logical_file
 
     script = 'ECLtest_temp.ecl'
     with open(script, 'w') as f:
         f.writelines(ecl_command)
 
-    check = getscript.get_script_internal(script, hpcc_connection, True)
+    check = getscript.get_script_internal(script, connection, True)
     os.remove(script)
 
     return check[0][1].ix[0, 0].tolist()
