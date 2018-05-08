@@ -5,13 +5,12 @@ relevent parser from utils, in this case XML.
 """
 import re
 import logging
-import hpycc.utils.HPCCconnector
+import hpycc.connection
 import hpycc.utils.parsers
-import hpycc.utils.syntaxcheck as syntaxcheck
 
 GET_FILE_URL = """WsWorkunits/WUResult.json?LogicalName=%s&Cluster=thor&Start=%s&Count=%s"""
 
-
+# TODO rename, logging, get_file_url
 def get_script_internal(script, hpcc_connection, do_syntaxcheck):
     """
     Return the xml portion of the response from HPCC. Can then be parsed by other functions in this class
@@ -31,7 +30,7 @@ def get_script_internal(script, hpcc_connection, do_syntaxcheck):
     logger.debug('Connection Parameters: %s' % hpcc_connection)
 
     if do_syntaxcheck:
-        syntaxcheck.syntax_check(script, hpcc_connection)
+        hpcc_connection.check_syntax(script)
 
     logger.info('Script Running')
     result = hpcc_connection.run_command(script, 'ecl')
