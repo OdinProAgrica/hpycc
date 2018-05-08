@@ -5,6 +5,8 @@ then be accessing with get_file(). This method takes advantage of
 multi-threading, something which script outputs cannot do.
 """
 
+# TODO logging
+
 
 def run_script(connection, script, syntax_check=True):
     """
@@ -26,5 +28,3 @@ def run_script(connection, script, syntax_check=True):
     """
 
     connection.run_ecl_script(script, syntax_check)
-
-    return None

@@ -1,57 +1,34 @@
-import logging
 import os
 
-from hpycc import boot_logger
+
+# TODO logging
 
 
-def delete_logical_file(logical_file, connection, do_syntaxcheck=True,
-                        silent=False, debg=False, log_to_file=False):
+def delete_logical_file(connection, logical_file):
     """
     Delete a logical file.
 
-
+    Parameters
+    ----------
+    :param connection: `Connection`
+        HPCC Connection instance, see also `Connection`.
     :param logical_file: str
-         Path of script to execute.
-    :param server: str
-        IP address or url of the HPCC server, supply usernames, passwords and ports
-        using other arguments
-    :param port: str, optional
-        Port number ECL Watch is running on. "8010" by default.
-    :param repo: str, optional
-        Path to the root of local ECL repository if applicable.
-    :param username: str, optional
-        Username to execute the ECL workunit. "hpycc_get_output" by
-        default.
-    :param password: str, optional
-        Password to execute the ECL workunit. " " by default
-    :param legacy: bool, optional
-        Should ECL commands be sent with the -legacy flag, False by default
-    :param do_syntaxcheck: bool, optional
-        Should a syntaxcheck be completed on the script before running. True by default
-    :param silent: bool, optional
-        Should all feedback except warnings and errors be suppressed. False by default
-    :param debg: bool, optional
-        Should debug info be logged. False by default
-    :param log_to_file: bool, optional
-        Should log info be dumped to a file. False by default
-    :param logpath: str, optional
-        If logging to file, what is the filename? hpycc.log by default.
+        Logical file to be downloaded.
 
+    Returns
+    -------
     :return: None
-
     """
-
-    boot_logger(silent, debg, log_to_file)
-    logger = logging.getLogger('delete_logical_file file')
-    logger.debug('Starting delete_logical_file file')
-
-    script = "IMPORT std; STD.File.DeleteLogicalFile('%s');" % logical_file
+    script = "IMPORT std; STD.File.DeleteLogicalFile('{}');".format(
+        logical_file)
 
     script_loc = 'tempScript.ecl'
     with open(script_loc, 'w') as f:
         f.writelines(script)
 
-    connection.run_ecl_script(script_loc, do_syntaxcheck)
-    os.remove(script_loc)
-
-    return None
+    try:
+        connection.run_ecl_script(script_loc, True)
+    except Exception as e:
+        raise e
+    finally:
+        os.remove(script_loc)

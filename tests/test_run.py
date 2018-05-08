@@ -35,7 +35,7 @@ def test_delete_script_1():
 
     hpycc.delete.delete_logical_file(logical_file, server, port="8010", repo=None,
                                      username="hpycc_get_output", password='" "',
-                                     legacy=False, do_syntaxcheck=True,
+                                     legacy=False, syntax_check=True,
                                      silent=False, debg=False, log_to_file=False)
 
     assert not md.check_exists(logical_file, hpcc_connection)
@@ -48,7 +48,7 @@ def test_delete_script_no_file():
 
     hpycc.delete.delete_logical_file(file_doesnt_exist, server, port="8010", repo=None,
                                      username="hpycc_get_output", password='" "',
-                                     legacy=False, do_syntaxcheck=True,
+                                     legacy=False, syntax_check=True,
                                      silent=False, debg=False, log_to_file=False)
 
     assert not md.check_exists(file_doesnt_exist, hpcc_connection)  # Fail if exists after.
