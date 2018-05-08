@@ -1,5 +1,7 @@
 import hpycc.filerunning.getfiles as getfiles
 from pandas.util.testing import assert_frame_equal
+
+import hpycc.delete
 import hpycc.run as run
 import hpycc.utils.filechunker
 from hpycc.utils.HPCCconnector import HPCCconnector
@@ -122,5 +124,5 @@ def test_make_chunks_4():
 
 
 def test_tidy_up():
-    run.delete_logical_file(test_logical_file, 'localhost')
-    run.delete_logical_file(test_logical_file_csv, 'localhost')
+    hpycc.delete.delete_logical_file(test_logical_file, 'localhost')
+    hpycc.delete.delete_logical_file(test_logical_file_csv, 'localhost')

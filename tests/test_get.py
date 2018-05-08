@@ -1,6 +1,8 @@
 import os
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
+
+import hpycc.delete
 import hpycc.get as get
 import hpycc.run as run
 import hpycc.save
@@ -64,7 +66,7 @@ def test_get_file():
     result = get.get_file(logical_file_getfile, server, port='8010', username=username,
                           password=password, csv=False, silent=silent, debg=debg)
 
-    run.delete_logical_file(logical_file_getfile, 'localhost')
+    hpycc.delete.delete_logical_file(logical_file_getfile, 'localhost')
 
     assert_frame_equal(result, result_df_getfile, check_dtype=False, check_like=False)
 
@@ -113,9 +115,9 @@ def test_save_file():
 
     result = pd.read_csv(path)
     os.remove(path)
-    run.delete_logical_file(logical_file_savefile, 'localhost')
+    hpycc.delete.delete_logical_file(logical_file_savefile, 'localhost')
     assert_frame_equal(result, result_df_savefile, check_dtype=False, check_like=False)
 
 
 def test_tidy_up():
-    run.delete_logical_file(logical_file, 'localhost')
+    hpycc.delete.delete_logical_file(logical_file, 'localhost')

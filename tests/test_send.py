@@ -1,3 +1,4 @@
+import hpycc.delete
 import tests.make_data as md
 import hpycc.send as send
 import hpycc.run as run
@@ -11,7 +12,7 @@ source_file = 'testData.csv'
 
 # make DF and ensure file doesn't exist.
 df = md.make_csv(source_file, 15000)
-run.delete_logical_file(logical_file, server)
+hpycc.delete.delete_logical_file(logical_file, server)
 
 
 def test_send_file_1():
@@ -27,4 +28,4 @@ def test_send_file_1():
 
 def test_tidy():
     os.remove(source_file)
-    run.delete_logical_file(logical_file, server)
+    hpycc.delete.delete_logical_file(logical_file, server)

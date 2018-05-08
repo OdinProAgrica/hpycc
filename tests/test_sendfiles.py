@@ -1,6 +1,8 @@
 import pytest
 import pandas as pd
 import os
+
+import hpycc.delete
 import hpycc.filerunning.sendfiles as sendfiles
 import hpycc.run as run
 from hpycc.utils.HPCCconnector import HPCCconnector
@@ -61,8 +63,8 @@ def test_send_file_internal_lrg():
 
 
 def test_tidyup():
-    run.delete_logical_file(upload_loc_lrg, 'localhost')
-    run.delete_logical_file(upload_loc_sml, 'localhost')
+    hpycc.delete.delete_logical_file(upload_loc_lrg, 'localhost')
+    hpycc.delete.delete_logical_file(upload_loc_sml, 'localhost')
     os.remove(large_test_csv)
     os.remove(small_test_csv)
     assert True

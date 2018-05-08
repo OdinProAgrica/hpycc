@@ -1,3 +1,4 @@
+import hpycc.delete
 import hpycc.utils.parsers
 from hpycc.utils.HPCCconnector import HPCCconnector
 import hpycc.run as run
@@ -34,8 +35,8 @@ def test_parse_json_output_2():
 
 
 def test_tidy_up():
-    run.delete_logical_file(test_logical_file_small, 'localhost')
-    run.delete_logical_file(test_logical_file_smallcsv, 'localhost')
+    hpycc.delete.delete_logical_file(test_logical_file_small, 'localhost')
+    hpycc.delete.delete_logical_file(test_logical_file_smallcsv, 'localhost')
 
 
 # def test_make_url_request_1():
