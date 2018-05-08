@@ -9,7 +9,7 @@ import concurrent.futures
 import logging
 import re
 import pandas as pd
-import hpycc.utils.HPCCconnector
+import hpycc.connection
 import hpycc.utils.parsers
 from hpycc.utils.filechunker import make_chunks
 
@@ -95,7 +95,7 @@ def _get_file_structure(logical_file, hpcc_connection, csv_file):
     logger.debug('Getting file structure for %s' % logical_file)
 
     logger.debug('Getting 1 row to determine structure')
-    response = hpcc_connection.make_url_request(logical_file, 0, 2)
+    response = hpcc_connection.get_logical_file_chunk(logical_file, 0, 2)
     file_size = response['Total']
     results = response['Result']['Row']
 
@@ -139,7 +139,7 @@ def _get_file_chunk(logical_file, csv_file, hpcc_connection, current_row, chunk,
     logger = logging.getLogger('_get_file_chunk')
     logger.debug('Acquiring file chunk. Row: %s, to: %s' % (current_row, chunk))
 
-    response = hpcc_connection.make_url_request(logical_file, current_row, chunk)
+    response = hpcc_connection.get_logical_file_chunk(logical_file, current_row, chunk)
     logger.debug('Extracting results from response')
     results = response['Result']['Row']
 
