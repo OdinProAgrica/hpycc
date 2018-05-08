@@ -5,7 +5,6 @@ import subprocess
 
 # TODO logging
 # TODO docstrings
-# TODO make front end take connection
 
 def _run_command(cmd):
     # TODO logging
