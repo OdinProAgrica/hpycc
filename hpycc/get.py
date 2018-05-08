@@ -12,15 +12,13 @@ import os
 
 from hpycc.filerunning import getfiles
 from hpycc.scriptrunning import getscripts
-from hpycc.utils.HPCCconnector import HPCCconnector
+# from hpycc import Connection
 from hpycc.utils.logfunctions import boot_logger
 
 LOG_PATH = 'hpycc.log'
 
 
-def get_output(script, server, port="8010", repo=None,
-               username="hpycc_get_output", password='" "',
-               legacy=False, do_syntaxcheck=True,
+def get_output(connection, script, do_syntaxcheck=True,
                silent=False, debg=False, log_to_file=False,
                logpath=LOG_PATH):
 
@@ -63,8 +61,7 @@ def get_output(script, server, port="8010", repo=None,
     logger = logging.getLogger('get_output')
     logger.debug('Starting get_script_internal')
 
-    hpcc_connection = HPCCconnector(server, port, repo, username, password, legacy)
-    parsed_data_frames = getscripts.get_script_internal(script, hpcc_connection, do_syntaxcheck)
+    parsed_data_frames = getscripts.get_script_internal(script, connection, do_syntaxcheck)
 
     logger.debug('Extracting outputs')
     try:
@@ -76,9 +73,7 @@ def get_output(script, server, port="8010", repo=None,
     return first_parsed_result
 
 
-def get_outputs(script, server, port="8010", repo=None,
-                username="hpycc_get_output", password='" "',
-                legacy=False, do_syntaxcheck=True,
+def get_outputs(connection, script, do_syntaxcheck=True,
                 silent=False, debg=False, log_to_file=False,
                 logpath=LOG_PATH):
     """
@@ -119,8 +114,8 @@ def get_outputs(script, server, port="8010", repo=None,
     logger = logging.getLogger('get_outputs')
     logger.debug('Starting get_script_internal')
 
-    hpcc_connection = HPCCconnector(server, port, repo, username, password, legacy)
-    parsed_data_frames = getscripts.get_script_internal(script, hpcc_connection, do_syntaxcheck)
+    parsed_data_frames = getscripts.get_script_internal(script, connection,
+                                                        do_syntaxcheck)
 
     logger.debug('Converting response to Dict')
     as_dict = dict(parsed_data_frames)
@@ -128,9 +123,7 @@ def get_outputs(script, server, port="8010", repo=None,
     return as_dict
 
 
-def get_file(logical_file, server, port='8010',
-             username="hpycc_get_output", password='" "',
-             csv_file=False, silent=False, debg=False,
+def get_file(logical_file, connection, csv_file=False, silent=False, debg=False,
              log_to_file=False, logpath=LOG_PATH,
              download_threads=15):
 
@@ -173,10 +166,8 @@ def get_file(logical_file, server, port='8010',
     logger = logging.getLogger('get_file_internal')
     logger.debug('Starting get_file_internal')
 
-    hpcc_connection = HPCCconnector(server, port, None, username, password, False)
-
     try:
-        df = getfiles.get_file_internal(logical_file, hpcc_connection, csv_file, download_threads)
+        df = getfiles.get_file_internal(logical_file, connection, csv_file, download_threads)
     except KeyError:
         logger.error('Key error, have you specified a CSV or THOR file correctly?')
         raise
@@ -184,11 +175,8 @@ def get_file(logical_file, server, port='8010',
     return df
 
 
-def save_output(script, server, path, port="8010", repo=None,
-                username="hpycc_get_output", password='" "',
-                compression=None, legacy=False,
-                refresh=False, silent=False, debg=False,
-                log_to_file=False, logpath=LOG_PATH):
+def save_output(script, connection, path, compression=None, refresh=False,
+                silent=False, debg=False, log_to_file=False, logpath=LOG_PATH):
     """
     Save the first output of an ECL script as a csv. See save_outputs() for downloading multiple files
     and get_output() for returning a pandas df.
@@ -233,17 +221,15 @@ def save_output(script, server, path, port="8010", repo=None,
     elif os.path.isfile(path) and not refresh:
         return None
 
-    result = get_output(script, server, port, repo, username, password, legacy=legacy, debg=debg,
+    result = get_output(script, connection, debg=debg,
                         log_to_file=log_to_file, logpath=logpath, silent=silent)
     result.to_csv(path_or_buf=path, compression=compression, index=False)
     return None
 
 
 def save_outputs(
-        script, server, directory=".", port="8010", repo=None,
-        username="hpycc_get_output", password='" "',
-        compression=None, filenames=None, prefix="", legacy=False,
-        do_syntaxcheck=True, silent=False, debg=False,
+        script, connection, directory=".", compression=None, filenames=None,
+        prefix="", do_syntaxcheck=True, silent=False, debg=False,
         log_to_file=False, logpath=LOG_PATH):
 
     """
@@ -296,8 +282,7 @@ def save_outputs(
     logger = logging.getLogger('get_outputs')
     logger.debug('Starting get_script_internal')
 
-    hpcc_connection = HPCCconnector(server, port, repo, username, password, legacy)
-    parsed_data_frames = getscripts.get_script_internal(script, hpcc_connection, do_syntaxcheck)
+    parsed_data_frames = getscripts.get_script_internal(script, connection, do_syntaxcheck)
 
     if filenames:
         if len(filenames) != len(parsed_data_frames):
@@ -315,8 +300,7 @@ def save_outputs(
     return None
 
 
-def save_file(logical_file, path, server, port='8010',
-              username="hpycc_get_output", password='" "',
+def save_file(logical_file, path, connection,
               csv_file=False, compression=None,
               refresh=False, silent=False, debg=False,
               log_to_file=False, logpath=LOG_PATH,
@@ -367,7 +351,7 @@ def save_file(logical_file, path, server, port='8010',
         # print('File exists, nothing to do so exiting.')
         return None
 
-    df = get_file(logical_file, server, port, username, password, csv_file, debg=debg,
+    df = get_file(logical_file, connection, csv_file, debg=debg,
                   log_to_file=log_to_file, logpath=logpath, download_threads=download_threads,
                   silent=silent)
 
