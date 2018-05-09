@@ -3,17 +3,32 @@ The module contains functions to send files to HPCC.
 """
 import pandas as pd
 
+from hpycc.delete import delete_logical_file
 from hpycc.utils.filechunker import make_chunks
 
 # TODO make sure this shouts at the user if they use bad column names
+# TODO logging
 
 
-def format_df_for_ecl(df):
+def format_df_for_hpcc(df):
+    """
+    Return a DataFrame in a format accepted by HPCC.
+
+    Parameters
+    ----------
+    :param df: DataFrame
+        DataFrame to be sprayed.
+
+    Returns
+    -------
+    :return df: DataFrame
+        DataFrame with NaNs filled and single quotes escaped.
+    """
     for col in df.columns:
         dtype = df.dtypes[col]
-        ecl_type = _get_type(dtype)
+        ecl_type = get_type(dtype)
         if ecl_type == "STRING":
-            df[col] = df[col].fillna("").str.replace("'\\'")
+            df[col] = df[col].fillna("").str.replace("'", "\\'")
             df[col] = "'" + df[col] + "'"
         else:
             df[col] = df[col].fillna(0)
@@ -21,28 +36,44 @@ def format_df_for_ecl(df):
     return df.reset_index()
 
 
-def _get_type(typ):
+def get_type(typ):
     """
-    Takes a dtyp and matches it to the relevent HPCC datatype
+    Return the HPCC data type equivalent of a pandas/ numpy dtype.
 
-    :param typ, dtype:
-        pandas dtype, obtained by getting a columns type.
-    :return: str
-        the relevent ECL datatype, assumes the largest, least
-        space efficient to prevent truncation
+    Parameters
+    ----------
+    :param typ: dtype
+        Numpy or pandas dtype.
+
+    Returns
+    -------
+    :return type: string
+        ECL data type.
     """
-
-    # typ = str(typ)
-    # if 'float' in typ:
-    #     return 'DECIMAL32_12'
-    # elif 'int' in typ:
-    #     return 'INTEGER'
-    # elif 'bool' in typ:
-    #     return 'BOOLEAN'
-    # else:
-    #     return 'STRING' # TODO: do we need to convert dates more cleanly?
-    # TODO: at present we just return string as we have an issue with nans in ECL
+    typ = str(typ)
+    if 'float' in typ:
+        # return 'DECIMAL32_12'
+        pass
+    elif 'int' in typ:
+        # return 'INTEGER'
+        pass
+    elif 'bool' in typ:
+        # return 'BOOLEAN'
+        pass
+    else:
+        # return 'STRING'
+        pass
+    #  TODO: do we need to convert dates more cleanly?
+    # TODO: at present we just return string as we have an issue with nans in
+    # ECL
     return 'STRING'
+
+
+def format_rows(df, start_row, num_rows):
+    return ','.join(
+        ["{" + ','.join(i) + "}" for i in
+         df.astype(str).values[start_row:start_row + num_rows].tolist()]
+    )
 
 
 def send_file(source_file, logical_file, connection, overwrite=False,
@@ -69,36 +100,45 @@ def send_file(source_file, logical_file, connection, overwrite=False,
     else:
         raise TypeError
 
-    record_set = ';'.join(
-        [" ".join(a, _get_type(df.dtypes[a])) for a in df.dtypes.to_dict()])
+    record_set = ";".join([" ".join((col, "STRING")) for col, dtype in
+                           df.dtypes.to_dict().items()])
 
-    formatted_df = format_df_for_ecl(df)
+    formatted_df = format_df_for_hpcc(df)
 
     chunks = make_chunks(len(formatted_df), csv=False, chunk_size=chunk_size)
 
-    format_rows = lambda d, start, num: ','.join(
-        ["{" + ','.join(i) + "}" for i in
-         d.astype(str).values[start:start + num].tolist()]
-    )
-
-    target_names = []
-    for start_row, num_rows in chunks:
-        rowed = format_rows(formatted_df, start_row, num_rows)
-        target_name_tmp = "TEMPHPYCC::{}from{}to{}".format(
+    rows = (format_rows(formatted_df, start_row, num_rows)
+            for start_row, num_rows in chunks)
+    target_names = ["TEMPHPYCC::{}from{}to{}".format(
             logical_file, start_row, start_row + num_rows)
-        target_names.append(target_name_tmp)
+        for start_row, num_rows in chunks]
 
-        script_content = ("a := DATASET([{}], {{{}}});\nOUTPUT(a, ,'{}' , "
-                          "EXPIRE(1)").format(
-            rowed, record_set, target_name_tmp)
-        if overwrite:
-            script_content += ", OVERWRITE"
-        script_content += ");"
+    for row, name in zip(rows, target_names):
+        # TODO make concurrent
+        spray_formatted_data(connection, row, record_set, name, overwrite)
 
-        connection.run_ecl_string(script_content, True)
+    concatenate_logical_files(connection, target_names, logical_file,
+                              record_set, overwrite)
 
+    for tmp in target_names:
+        delete_logical_file(connection, tmp)
+
+
+def spray_formatted_data(connection, data, record_set, logical_file,
+                         overwrite):
+    script_content = ("a := DATASET([{}], {{{}}});\nOUTPUT(a, ,'{}' , "
+                      "EXPIRE(1)").format(
+        data, record_set, logical_file)
+    if overwrite:
+        script_content += ", OVERWRITE"
+    script_content += ");"
+    connection.run_ecl_string(script_content, True)
+
+
+def concatenate_logical_files(connection, to_concat, logical_file, record_set,
+                              overwrite):
     read_files = ["DATASET('{}', {{{}}}, THOR)".format(
-        nam, record_set) for nam in target_names]
+        nam, record_set) for nam in to_concat]
     read_files = '+\n'.join(read_files)
 
     script = "a := {};\nOUTPUT(a, ,'{}' "
@@ -106,10 +146,5 @@ def send_file(source_file, logical_file, connection, overwrite=False,
         script += ", OVERWRITE"
     script += ");"
     script = script.format(read_files, logical_file)
-
-    delete_script = "STD.File.DeleteLogicalFile('{}')"
-    delete_files = [delete_script.format(nam) for nam in target_names]
-    delete_files = ';'.join(delete_files)
-    script += '\n\nIMPORT std;\n' + delete_files + ';'
 
     connection.run_ecl_string(script, True)
