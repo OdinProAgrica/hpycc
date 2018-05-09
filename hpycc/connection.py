@@ -2,6 +2,7 @@ from collections import namedtuple
 import random
 import requests
 import subprocess
+from tempfile import NamedTemporaryFile
 from time import sleep
 
 
@@ -93,3 +94,10 @@ class Connection:
         r = self.run_url_request(url, max_attempts)
         rj = r.json()
         return rj["WUResultResponse"]
+
+    def run_ecl_string(self, string, syntax_check):
+        with NamedTemporaryFile() as tmp:
+            byte_string = string.encode()
+            tmp.write(byte_string)
+            r = self.run_ecl_script(tmp.name, syntax_check)
+        return r

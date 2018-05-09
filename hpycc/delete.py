@@ -22,13 +22,5 @@ def delete_logical_file(connection, logical_file):
     script = "IMPORT std; STD.File.DeleteLogicalFile('{}');".format(
         logical_file)
 
-    script_loc = 'tempScript.ecl'
-    with open(script_loc, 'w') as f:
-        f.writelines(script)
+    connection.run_ecl_string(script, True)
 
-    try:
-        connection.run_ecl_script(script_loc, True)
-    except Exception as e:
-        raise e
-    finally:
-        os.remove(script_loc)

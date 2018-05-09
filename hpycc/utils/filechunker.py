@@ -5,6 +5,7 @@ Module contains functions that are able to chunk a file request based on size.
 
 def make_chunks(file_size, csv, chunk_size=10000):
     """
+    # TODO update dpcstring
     Makes start row and chunk size lists for threading logical file
     downloads.
 

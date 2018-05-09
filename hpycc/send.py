@@ -1,14 +1,52 @@
 """
 The module contains functions to send files to HPCC.
 """
+import pandas as pd
 
-import logging
-from hpycc.filerunning.sendfiles import send_file_internal
-from hpycc.utils.logfunctions import boot_logger
+from hpycc.utils.filechunker import make_chunks
+
+# TODO make sure this shouts at the user if they use bad column names
+
+
+def format_df_for_ecl(df):
+    for col in df.columns:
+        dtype = df.dtypes[col]
+        ecl_type = _get_type(dtype)
+        if ecl_type == "STRING":
+            df[col] = df[col].fillna("").str.replace("'\\'")
+            df[col] = "'" + df[col] + "'"
+        else:
+            df[col] = df[col].fillna(0)
+
+    return df.reset_index()
+
+
+def _get_type(typ):
+    """
+    Takes a dtyp and matches it to the relevent HPCC datatype
+
+    :param typ, dtype:
+        pandas dtype, obtained by getting a columns type.
+    :return: str
+        the relevent ECL datatype, assumes the largest, least
+        space efficient to prevent truncation
+    """
+
+    # typ = str(typ)
+    # if 'float' in typ:
+    #     return 'DECIMAL32_12'
+    # elif 'int' in typ:
+    #     return 'INTEGER'
+    # elif 'bool' in typ:
+    #     return 'BOOLEAN'
+    # else:
+    #     return 'STRING' # TODO: do we need to convert dates more cleanly?
+    # TODO: at present we just return string as we have an issue with nans in ECL
+    return 'STRING'
 
 
 def send_file(source_file, logical_file, connection, overwrite=False,
-              delete=True, silent=False, debg=False, log_to_file=False):
+              chunk_size=10000):
     """
     Send a file to HPCC.
 
@@ -18,42 +56,60 @@ def send_file(source_file, logical_file, connection, overwrite=False,
          kwargs yet).
     :param logical_file: str
          destination path on THOR
-    :param server: str
-        IP address or url of the HPCC server, supply usernames, passwords and ports
-        using other arguments
-    :param port: str, optional
-        Port number ECL Watch is running on. "8010" by default.
-    :param repo: str, optional
-        Path to the root of local ECL repository if applicable.
-    :param username: str, optional
-        Username to execute the ECL workunit. "hpycc_get_output" by
-        default.
-    :param password: str, optional
-        Password to execute the ECL workunit. " " by default
-    :param legacy: bool, optional
-        Should ECL commands be sent with the -legacy flag, False by default
     :param overwrite: bool, optional
         Should files with the same name be overriden, default is no
-    :param delete: bool, optional
-        Once complete should all temporary scripts and THOR files be deleted?
-        defaulut is yes.
-    :param silent: bool, optional
-        Should all feedback except warnings and errors be suppressed. False by default
-    :param debg: bool, optional
-        Should debug info be logged. False by default
-    :param log_to_file: bool, optional
-        Should log info be dumped to a file. False by default
-    :param logpath: str, optional
-        If logging to file, what is the filename? hpycc.log by default.
 
     :return: None
 
     """
+    if isinstance(source_file, pd.DataFrame):
+        df = source_file
+    elif isinstance(source_file, str):
+        df = pd.read_csv(source_file, encoding='latin')
+    else:
+        raise TypeError
 
-    boot_logger(silent, debg, log_to_file)
-    logger = logging.getLogger('run_script')
-    logger.debug('Starting run_script')
+    record_set = ';'.join(
+        [" ".join(a, _get_type(df.dtypes[a])) for a in df.dtypes.to_dict()])
 
-    send_file_internal(source_file, logical_file, overwrite, delete, connection)
+    formatted_df = format_df_for_ecl(df)
 
-    return None
+    chunks = make_chunks(len(formatted_df), csv=False, chunk_size=chunk_size)
+
+    format_rows = lambda d, start, num: ','.join(
+        ["{" + ','.join(i) + "}" for i in
+         d.astype(str).values[start:start + num].tolist()]
+    )
+
+    target_names = []
+    for start_row, num_rows in chunks:
+        rowed = format_rows(formatted_df, start_row, num_rows)
+        target_name_tmp = "TEMPHPYCC::{}from{}to{}".format(
+            logical_file, start_row, start_row + num_rows)
+        target_names.append(target_name_tmp)
+
+        script_content = ("a := DATASET([{}], {{{}}});\nOUTPUT(a, ,'{}' , "
+                          "EXPIRE(1)").format(
+            rowed, record_set, target_name_tmp)
+        if overwrite:
+            script_content += ", OVERWRITE"
+        script_content += ");"
+
+        connection.run_ecl_string(script_content, True)
+
+    read_files = ["DATASET('{}', {{{}}}, THOR)".format(
+        nam, record_set) for nam in target_names]
+    read_files = '+\n'.join(read_files)
+
+    script = "a := {};\nOUTPUT(a, ,'{}' "
+    if overwrite:
+        script += ", OVERWRITE"
+    script += ");"
+    script = script.format(read_files, logical_file)
+
+    delete_script = "STD.File.DeleteLogicalFile('{}')"
+    delete_files = [delete_script.format(nam) for nam in target_names]
+    delete_files = ';'.join(delete_files)
+    script += '\n\nIMPORT std;\n' + delete_files + ';'
+
+    connection.run_ecl_string(script, True)
