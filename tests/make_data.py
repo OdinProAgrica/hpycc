@@ -3,6 +3,8 @@ import hpycc.scriptrunning.getscripts as getscript
 import hpycc.filerunning.sendfiles as sendfiles
 import pandas as pd
 
+import hpycc.send
+
 overwrite = True
 delete = True
 
@@ -74,7 +76,7 @@ def make_csv(save_loc, size):
 
 def upload_data(target_name, size, connection):
     df = make_df(size)
-    sendfiles.send_file_internal(df.copy(), target_name, overwrite, delete, connection)
+    hpycc.send.send_file_internal(df.copy(), target_name, overwrite, delete, connection)
     return df
 
 
