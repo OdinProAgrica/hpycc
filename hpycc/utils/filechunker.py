@@ -25,7 +25,6 @@ def make_chunks(file_size, csv, chunk_size=10000):
     chs = [(ch * chunk_size + start, chunk_size) for ch in
            range(file_size // chunk_size)]
     if (file_size + start) % chunk_size:
-        print("here")
         chs.append((file_size - (file_size % chunk_size) + start,
                     file_size % chunk_size + start))
 
