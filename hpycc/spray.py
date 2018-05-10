@@ -11,32 +11,6 @@ from hpycc.utils.filechunker import make_chunks
 # TODO tests
 
 
-def _format_df_for_hpcc(df):
-    """
-    Return a DataFrame in a format accepted by HPCC.
-
-    Parameters
-    ----------
-    :param df: DataFrame
-        DataFrame to be sprayed.
-
-    Returns
-    -------
-    :return df: DataFrame
-        DataFrame with NaNs filled and single quotes escaped.
-    """
-    for col in df.columns:
-        dtype = df.dtypes[col]
-        ecl_type = _get_type(dtype)
-        if ecl_type == "STRING":
-            df[col] = df[col].fillna("").str.replace("'", "\\'")
-            df[col] = "'" + df[col] + "'"
-        else:
-            df[col] = df[col].fillna(0)
-
-    return df.reset_index()
-
-
 def _get_type(typ):
     """
     Return the HPCC data type equivalent of a pandas/ numpy dtype.
@@ -71,10 +45,8 @@ def _get_type(typ):
 
 
 def _stringify_rows(df, start_row, num_rows):
-    # TODO combine with format_data_for_hpcc?
     """
-    Return rows of a pre-formatted DataFrame as a HPCC ready string.
-    To format the data, see `format_data_for_hpcc()`.
+    Return rows of a DataFrame as a HPCC ready string.
 
     Parameters
     ----------
@@ -90,9 +62,21 @@ def _stringify_rows(df, start_row, num_rows):
     :return: str
         ECL ready string of the slice.
     """
+    sliced_df = df.loc[start_row:start_row + num_rows, df.columns]
+
+    for col in sliced_df.columns:
+        dtype = sliced_df.dtypes[col]
+        ecl_type = _get_type(dtype)
+        if ecl_type == "STRING":
+            sliced_df[col] = sliced_df[col].fillna("").str.replace("'", "\\'")
+            sliced_df[col] = "'" + sliced_df[col] + "'"
+        else:
+            sliced_df[col] = sliced_df[col].fillna(0)
+    sliced_df.reset_index(inplace=True)
+
     return ','.join(
         ["{" + ','.join(i) + "}" for i in
-         df.astype(str).values[start_row:start_row + num_rows].tolist()]
+         sliced_df.astype(str).values.tolist()]
     )
 
 
@@ -130,18 +114,16 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
 
     record_set = _make_record_set(df)
 
-    formatted_df = _format_df_for_hpcc(df)
-
-    chunks = make_chunks(len(formatted_df), logical_csv=False,
+    chunks = make_chunks(len(df), logical_csv=False,
                          chunk_size=chunk_size)
 
-    rows = (_stringify_rows(formatted_df, start_row, num_rows)
+    stringified_rows = (_stringify_rows(df, start_row, num_rows)
             for start_row, num_rows in chunks)
     target_names = ["TEMPHPYCC::{}from{}to{}".format(
             logical_file, start_row, start_row + num_rows)
         for start_row, num_rows in chunks]
 
-    for row, name in zip(rows, target_names):
+    for row, name in zip(stringified_rows, target_names):
         # TODO make concurrent
         _spray_stringified_data(connection, row, record_set, name, overwrite)
 
