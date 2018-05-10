@@ -62,48 +62,30 @@ def make_col_bool(df):
     return df
 
 
-def parse_json_output(results, column_names, csv_file):
+def parse_json_output(results, column_names, csv):
     """
-    Return a dict that can be converted to a pandas df from a JSON.
+    Return a DataFrame from a HPCC workunit JSON.
 
-    :param results: dict
-        json to be parsed.
+    Parameters
+    ----------
+    :param results: dict, json
+        JSON to be parsed.
     :param column_names: list
-        column names to parse
-    :param csv_file: bool
-        Is this a csv file? Requires different parsing
+        Column names to parse.
+    :param csv: bool
+        Is this a csv file?
 
-    :return: outInfo: pd.DataFrame
-        Parsed json converted to DataFrame.
+    :return: df: .DataFrame
+        JSON converted to DataFrame.
     """
+    if not csv:
+        df = pd.DataFrame(results)
+    else:
+        lines = [",".split(r["line"]) for r in results]
+        df = pd.DataFrame(map(list, zip(*lines)), columns=column_names)
 
-    logger = logging.getLogger('parse_json_output')
-    logger.debug('Parsing JSON response, converting to dict')
-    logger.debug(
-        'See _run_url_request log for JSON. Column_names: %s, csv_file: %s' %
-        (column_names, csv_file))
-
-    out_info = {col: [] for col in column_names}
-
-    for i, result in enumerate(results):
-        # logger.debug('Parsing result %s' % i)
-        if csv_file:
-            res = result['line']
-            if res is None:
-                logger.warning('Line', str(i), 'is blank! Row: %s' % result)
-                continue
-            res = res.split(',')
-            for j, col in enumerate(column_names):
-                out_info[col].append(res[j])
-        else:
-            for col in column_names:
-                out_info[col].append(result[col])
-
-    df = pd.DataFrame(out_info)
     df = make_col_numeric(df)
     df = make_col_bool(df)
-
-    logger.debug('Returning: %s' % df)
 
     return df
 
@@ -118,20 +100,15 @@ def parse_xml(xml):
     :return pd.DataFrame
         Parsed xml.
     """
-    logger = logging.getLogger('parse_xml')
-    logger.debug("Parsing Results from XML")
-
     vls = []
     lvls = []
 
     for line in re.findall("<Row>(?P<content>.+?)</Row>", xml):
-        logger.debug('Parsing line: \n%s' % line)
         with_start = '<Row>' + line + '</Row>'
         newvls = []
         etree = ElementTree.fromstring(with_start)
         for child in etree:
             if child.tag not in lvls:
-                logger.debug('New column found: %s' % child.tag)
                 lvls.append(child.tag)
             newvls.append(child.text)
         vls.append(newvls)
@@ -141,5 +118,4 @@ def parse_xml(xml):
     df = make_col_numeric(df)
     df = make_col_bool(df)
 
-    logger.debug('Returning: %s' % df)
     return df
