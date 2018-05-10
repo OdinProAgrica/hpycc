@@ -2,7 +2,6 @@
 Module contains functions that are able to chunk a file request based on size.
 """
 # TODO logging
-# TODO make private functions
 # TODO tests
 
 

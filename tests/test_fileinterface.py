@@ -1,4 +1,5 @@
 import hpycc.delete
+import hpycc.get
 import hpycc.utils.parsers
 from hpycc.utils.HPCCconnector import HPCCconnector
 import hpycc.run as run
@@ -16,7 +17,7 @@ md.make_csv_format_logicalfile(test_logical_file_small, test_logical_file_smallc
 def test_parse_json_output_1():
     csv_file = False
     results = hpcc_connection.make_url_request(test_logical_file_small, 1, 6)['Result']['Row']
-    result = hpycc.utils.parsers.parse_json_output(results, test_df_sml.columns, csv_file)
+    result = hpycc.get.parse_json_output(results, test_df_sml.columns, csv_file)
     expected_result = test_df_sml.loc[1:6, :]
     expected_result.reset_index(inplace=True, drop=True)
 
@@ -27,7 +28,7 @@ def test_parse_json_output_2():
     csv_file = True
     results = hpcc_connection.make_url_request(test_logical_file_smallcsv, 2, 6)['Result']['Row']
 
-    result = hpycc.utils.parsers.parse_json_output(results, test_df_sml.columns, csv_file)
+    result = hpycc.get.parse_json_output(results, test_df_sml.columns, csv_file)
     expected_result = test_df_sml.loc[1:6, :]
     expected_result.reset_index(inplace=True, drop=True)
 

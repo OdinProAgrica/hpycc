@@ -2,6 +2,7 @@ import itertools
 import re
 import os
 
+import hpycc.get
 from hpycc import get_output, get_logical_file
 from hpycc.utils import parsers
 
@@ -79,7 +80,7 @@ def save_outputs(connection, script, directory=".", filenames=None,
     result = connection.run_ecl_script(script, syntax_check)
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
     results = re.findall(regex, result.stdout)
-    parsed_data_frames = [(name, parsers.parse_xml(xml)) for name, xml in
+    parsed_data_frames = [(name, hpycc.get.parse_xml(xml)) for name, xml in
                           results]
 
     parsed_filenames = ["{}.csv".format(res[0]) for res in parsed_data_frames]
