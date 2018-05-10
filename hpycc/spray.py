@@ -130,7 +130,7 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
 
     formatted_df = format_df_for_hpcc(df)
 
-    chunks = make_chunks(len(formatted_df), csv=False, chunk_size=chunk_size)
+    chunks = make_chunks(len(formatted_df), logical_csv=False, chunk_size=chunk_size)
 
     rows = (stringify_rows(formatted_df, start_row, num_rows)
             for start_row, num_rows in chunks)
