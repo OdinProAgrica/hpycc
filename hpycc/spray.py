@@ -9,6 +9,7 @@ from hpycc.utils.filechunker import make_chunks
 # TODO make sure this shouts at the user if they use bad column names
 # TODO logging
 # TODO make private functions
+# TODO tests
 
 
 def format_df_for_hpcc(df):

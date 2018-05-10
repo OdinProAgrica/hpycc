@@ -9,9 +9,12 @@ import pandas as pd
 
 from hpycc.utils import parsers, filechunker
 
+# TODO logging
+# TODO make private functions
+# TODO tests
+
 
 def get_output(connection, script, syntax_check=True):
-    # TODO logging
     """
     Return the first output of an ECL script as a DataFrame. See
     save_output() for writing straight to file and get_outputs() for
@@ -44,7 +47,6 @@ def get_output(connection, script, syntax_check=True):
 
 
 def get_outputs(connection, script, syntax_check=True):
-    # TODO logging
     """
     Return all outputs of an ECL script as a dict of
     DataFrames. See get_output() for downloading a single
@@ -107,11 +109,10 @@ def _get_file_structure(connection, logical_file, csv):
 
 def get_logical_file(connection, logical_file, csv=False, max_workers=15,
                      chunk_size=10000, max_attempts=3):
-    # TODO logging
-    # TODO say ordering is not preserved
     """
     Return a DataFrame of a logical file. To write to disk
-    see save_file().
+    see save_file(). Note: Ordering of the resulting DataFrame is
+    not deterministic and may not be the same as the logical file.
 
     Parameters
     ----------

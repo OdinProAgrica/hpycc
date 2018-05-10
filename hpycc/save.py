@@ -6,6 +6,8 @@ from hpycc import get_output, get_logical_file
 from hpycc.utils import parsers
 
 # TODO logging
+# TODO make private functions
+# TODO tests
 
 
 def save_output(connection, script, path_or_buf=None, syntax_check=True,

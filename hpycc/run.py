@@ -6,6 +6,8 @@ multi-threading, something which script outputs cannot do.
 """
 
 # TODO logging
+# TODO make private functions
+# TODO tests
 
 
 def run_script(connection, script, syntax_check=True):

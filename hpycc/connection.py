@@ -8,6 +8,8 @@ from time import sleep
 
 # TODO logging
 # TODO docstrings
+# TODO make private functions
+# TODO tests
 
 
 class Connection:
@@ -31,7 +33,6 @@ class Connection:
 
     @staticmethod
     def _run_command(cmd):
-        # TODO logging
         result = subprocess.run(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             stdin=subprocess.PIPE, shell=True)

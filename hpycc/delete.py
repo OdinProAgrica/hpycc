@@ -1,4 +1,6 @@
 # TODO logging
+# TODO make private functions
+# TODO tests
 
 
 def delete_logical_file(connection, logical_file):

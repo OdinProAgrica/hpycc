@@ -1,7 +1,9 @@
 """
 Module contains functions that are able to chunk a file request based on size.
 """
-
+# TODO logging
+# TODO make private functions
+# TODO tests
 
 def make_chunks(file_size, logical_csv, chunk_size=10000):
     """
