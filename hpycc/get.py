@@ -129,6 +129,8 @@ def get_file(connection, logical_file, csv=False, max_workers=15,
     :param max_attempts: int, optional
         Max number of attempts to download a chunk. 3 by default.
 
+    Returns
+    -------
     :return: df
         DataFrame of the logical file.
     """

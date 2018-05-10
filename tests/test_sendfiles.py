@@ -7,7 +7,7 @@ import hpycc.filerunning.sendfiles as sendfiles
 import hpycc.run as run
 from hpycc.utils.HPCCconnector import HPCCconnector
 
-import hpycc.send
+import hpycc.spray
 import tests.make_data as md
 import hpycc.filerunning.getfiles as getfiles
 from pandas.util.testing import assert_frame_equal
@@ -42,23 +42,23 @@ def test_get_type():
     expected_ecl_types = ['STRING', 'STRING', 'STRING', 'STRING', 'STRING']
 
     for ecl_typ, typ in zip(expected_ecl_types, given_types):
-        typ_out = hpycc.send._get_type(typ)
+        typ_out = hpycc.spray._get_type(typ)
         assert typ_out == ecl_typ
 
 
 def test_send_file_internal_sml():
-    hpycc.send.send_file_internal(small_test_csv, upload_loc_sml, overwrite, delete,
-                                  hpcc_connection, temp_script='sendFileTemp.ecl',
-                                  chunk_size=10000)
+    hpycc.spray.send_file_internal(small_test_csv, upload_loc_sml, overwrite, delete,
+                                   hpcc_connection, temp_script='sendFileTemp.ecl',
+                                   chunk_size=10000)
 
     result = getfiles.get_file_internal(upload_loc_sml, hpcc_connection, False, 3)
     assert_frame_equal(result, small_expected_result, check_dtype=False, check_like=False)
 
 
 def test_send_file_internal_lrg():
-    hpycc.send.send_file_internal(large_test_csv, upload_loc_lrg, overwrite, delete,
-                                  hpcc_connection, temp_script='sendFileTemp.ecl',
-                                  chunk_size=10000)
+    hpycc.spray.send_file_internal(large_test_csv, upload_loc_lrg, overwrite, delete,
+                                   hpcc_connection, temp_script='sendFileTemp.ecl',
+                                   chunk_size=10000)
 
     lrg_result = getfiles.get_file_internal(upload_loc_lrg, hpcc_connection, False, 3)
     assert_frame_equal(lrg_result, large_expected_result, check_dtype=False, check_like=False)
