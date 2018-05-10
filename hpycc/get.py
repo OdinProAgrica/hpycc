@@ -3,9 +3,7 @@ This module contains functions to get either the output(s) of an ECL script,
 or a logical file.
 """
 import concurrent.futures
-import logging
 import re
-from xml.etree import ElementTree
 
 import pandas as pd
 
@@ -13,6 +11,7 @@ from hpycc.utils import filechunker
 
 # TODO logging
 # TODO tests
+from hpycc.utils.parsers import parse_xml, parse_json_output
 
 
 def get_output(connection, script, syntax_check=True):
@@ -42,7 +41,7 @@ def get_output(connection, script, syntax_check=True):
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
     results = re.findall(regex, result.stdout)
 
-    parsed = _parse_xml(results[0][1])
+    parsed = parse_xml(results[0][1])
 
     return parsed
 
@@ -69,7 +68,7 @@ def get_outputs(connection, script, syntax_check=True):
     result = connection.run_ecl_script(script, syntax_check)
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
     results = re.findall(regex, result.stdout)
-    as_dict = {name: _parse_xml(xml) for name, xml in results}
+    as_dict = {name: parse_xml(xml) for name, xml in results}
 
     return as_dict
 
@@ -94,7 +93,7 @@ def _get_file_structure(connection, logical_file, csv):
     :return: int
         Number of rows.
      """
-    response = connection._get_logical_file_chunk(logical_file, 0, 2)
+    response = connection.get_logical_file_chunk(logical_file, 0, 2)
     file_size = response['Total']
     results = response['Result']['Row']
     # TODO make 2 sep functions
@@ -146,128 +145,17 @@ def get_logical_file(connection, logical_file, csv=False, max_workers=15,
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as \
             executor:
         futures = [
-            executor.submit(connection._get_logical_file_chunk, logical_file,
+            executor.submit(connection.get_logical_file_chunk, logical_file,
                             start_row, n_rows, max_attempts)
             for start_row, n_rows in chunks
         ]
 
         finished, _ = concurrent.futures.wait(futures)
 
-    df = pd.concat([_parse_json_output(f.result()["Result"]["Row"],
-                                       column_names, csv)
+    df = pd.concat([parse_json_output(f.result()["Result"]["Row"],
+                                      column_names, csv)
                     for f in finished], ignore_index=True)
 
     return df
 
 
-def _parse_json_output(results, column_names, csv):
-    """
-    Return a DataFrame from a HPCC workunit JSON.
-
-    Parameters
-    ----------
-    :param results: dict, json
-        JSON to be parsed.
-    :param column_names: list
-        Column names to parse.
-    :param csv: bool
-        Is this a csv file?
-
-    :return: df: .DataFrame
-        JSON converted to DataFrame.
-    """
-    if not csv:
-        df = pd.DataFrame(results)
-    else:
-        lines = [",".split(r["line"]) for r in results]
-        df = pd.DataFrame(map(list, zip(*lines)), columns=column_names)
-
-    df = _make_col_numeric(df)
-    df = _make_col_bool(df)
-
-    return df
-
-
-def _parse_xml(xml):
-    """
-    Return a DataFrame from a nested XML.
-
-    :param xml: str
-        xml to be parsed.
-
-    :return pd.DataFrame
-        Parsed xml.
-    """
-    vls = []
-    lvls = []
-
-    for line in re.findall("<Row>(?P<content>.+?)</Row>", xml):
-        with_start = '<Row>' + line + '</Row>'
-        newvls = []
-        etree = ElementTree.fromstring(with_start)
-        for child in etree:
-            if child.tag not in lvls:
-                lvls.append(child.tag)
-            newvls.append(child.text)
-        vls.append(newvls)
-
-    df = pd.DataFrame(vls, columns=lvls)
-
-    df = _make_col_numeric(df)
-    df = _make_col_bool(df)
-
-    return df
-
-
-def _make_col_numeric(df):
-    """
-    Convert string numeric columns to numerics.
-
-    Parameters
-    ----------
-    :param df: pd.DataFrame
-        DataFrame to run conversion on.
-
-    Returns
-    -------
-    :return: DataFrame
-        Data frame with all string numeric columns converted to
-        numeric.
-    """
-
-    logger = logging.getLogger('make_col_numeric')
-    logger.debug('Converting numeric cols')
-
-    for col in df.columns:
-        try:
-            nums = pd.to_numeric(df[col])
-            df[col] = nums
-            logger.debug('%s converted to numeric' % col)
-        except ValueError:
-            logger.debug('%s cannot be converted to numeric' % col)
-            continue
-
-    return df
-
-
-def _make_col_bool(df):
-    """
-    Convert string boolean columns to booleans.
-
-    Parameters
-    ----------
-    :param df: pd.DataFrame
-        DataFrame to run conversion on.
-
-    Returns
-    -------
-    :return: DataFrame
-        Data frame with all string boolean columns converted to
-        boolean.
-    """
-    for col in df.columns:
-        # TODO deal with nans?
-        if set(df[col].str.lower().unique).issubset({"true", "false"}):
-            df.loc[df[col].notnull(), col] = df[col].str.lower() == "true"
-
-    return df

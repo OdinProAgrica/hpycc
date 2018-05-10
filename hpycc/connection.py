@@ -87,8 +87,8 @@ class Connection:
                 time_to_sleep = random.randint(0, 10)
                 sleep(time_to_sleep)
 
-    def _get_logical_file_chunk(self, logical_file, start_row, n_rows,
-                                max_attempts):
+    def get_logical_file_chunk(self, logical_file, start_row, n_rows,
+                               max_attempts):
         url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
                "&Cluster=thor&Start={}&Count={}").format(
             self.server, self.port, logical_file, start_row, n_rows)
