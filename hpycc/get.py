@@ -143,15 +143,16 @@ def get_logical_file(connection, logical_file, csv=False, max_workers=15,
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as \
             executor:
-        future_to_url = {
+        futures = [
             executor.submit(connection.get_logical_file_chunk, logical_file,
                             start_row, n_rows, max_attempts)
             for start_row, n_rows in chunks
-        }
-    # todo as_completed?
+        ]
+
+        finished, _ = concurrent.futures.wait(futures)
+
     df = pd.concat([parsers.parse_json_output(f.result()["Result"]["Row"],
                                               column_names, csv)
-                   for f in concurrent.futures.as_completed(future_to_url)],
-                   ignore_index=True)
+                   for f in finished], ignore_index=True)
 
     return df

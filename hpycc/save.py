@@ -81,8 +81,8 @@ def save_outputs(connection, script, directory=".", filenames=None,
                           results]
 
     parsed_filenames = ["{}.csv".format(res[0]) for res in parsed_data_frames]
-    # TODO this won't work
-    chosen_filenames = itertools.zip_longest(filenames, parsed_filenames)
+    chosen_filenames = [fn if fn else pfn for fn, pfn in
+                        itertools.zip_longest(filenames, parsed_filenames)]
     if prefix:
         chosen_filenames = [prefix + name for name in chosen_filenames]
 
