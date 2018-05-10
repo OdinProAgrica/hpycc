@@ -37,11 +37,12 @@ def get_output(connection, script, syntax_check=True):
     """
 
     result = connection.run_ecl_script(script, syntax_check)
-    # TODO just get the first with regex match
-    regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
-    results = re.findall(regex, result.stdout)
 
-    parsed = parse_xml(results[0][1])
+    regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
+    match = re.search(regex, result.stdout)
+    match_content = match.group()
+
+    parsed = parse_xml(match_content)
 
     return parsed
 
@@ -73,30 +74,27 @@ def get_outputs(connection, script, syntax_check=True):
     return as_dict
 
 
-def _get_file_structure(connection, logical_file, csv):
+def _get_columns_of_logical_file(connection, logical_file, csv):
     """
-    Get the column names and row count of a logical file.
+    Return the column names of a logical file.
 
     Parameters
     ----------
     :param connection
         HPCC Connection instance, see also `Connection`.
     :param logical_file: str
-         Logical file to be downloaded
-     :param csv: bool
-         Is the logical file a CSV?
+        Logical file to be downloaded
+    :param csv: bool
+        Is the logical file a CSV?
 
     Returns
     -------
-    :return: list
-        List of column names.
-    :return: int
-        Number of rows.
-     """
+    :return: column_names: list
+        List of column names in logical file.
+    """
     response = connection.get_logical_file_chunk(logical_file, 0, 2)
-    file_size = response['Total']
     results = response['Result']['Row']
-    # TODO make 2 sep functions
+
     if csv:
         column_names = results[0]['line'].split(',')
     else:
@@ -104,7 +102,29 @@ def _get_file_structure(connection, logical_file, csv):
 
     column_names = [col for col in column_names if col != '__fileposition__']
 
-    return column_names, file_size
+    return column_names
+
+
+def _get_logical_file_row_count(connection, logical_file):
+    """
+    Return the number of rows in a logical file.
+
+    Parameters
+    ----------
+    :param connection: `Connection`
+        HPCC Connection instance, see also `Connection`.
+    :param logical_file: str
+         Logical file to be examined.
+
+    Returns
+    -------
+    :return: file_size, int
+        Number of rows in logical file.
+    """
+    response = connection.get_logical_file_chunk(logical_file, 0, 2)
+    file_size = response['Total']
+
+    return file_size
 
 
 def get_logical_file(connection, logical_file, csv=False, max_workers=15,
@@ -137,8 +157,8 @@ def get_logical_file(connection, logical_file, csv=False, max_workers=15,
     :return: df
         DataFrame of the logical file.
     """
-    column_names, file_size = _get_file_structure(
-        logical_file, connection, csv)
+    column_names = _get_columns_of_logical_file(connection, logical_file, csv)
+    file_size = _get_logical_file_row_count(connection, logical_file)
 
     chunks = filechunker.make_chunks(file_size, csv, chunk_size)
 
