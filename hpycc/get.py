@@ -9,10 +9,9 @@ from xml.etree import ElementTree
 
 import pandas as pd
 
-from hpycc.utils import parsers, filechunker
+from hpycc.utils import filechunker
 
 # TODO logging
-# TODO make private functions
 # TODO tests
 
 
@@ -43,7 +42,7 @@ def get_output(connection, script, syntax_check=True):
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
     results = re.findall(regex, result.stdout)
 
-    parsed = parse_xml(results[0][1])
+    parsed = _parse_xml(results[0][1])
 
     return parsed
 
@@ -70,7 +69,7 @@ def get_outputs(connection, script, syntax_check=True):
     result = connection.run_ecl_script(script, syntax_check)
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
     results = re.findall(regex, result.stdout)
-    as_dict = {name: parse_xml(xml) for name, xml in results}
+    as_dict = {name: _parse_xml(xml) for name, xml in results}
 
     return as_dict
 
@@ -95,7 +94,7 @@ def _get_file_structure(connection, logical_file, csv):
     :return: int
         Number of rows.
      """
-    response = connection.get_logical_file_chunk(logical_file, 0, 2)
+    response = connection._get_logical_file_chunk(logical_file, 0, 2)
     file_size = response['Total']
     results = response['Result']['Row']
     # TODO make 2 sep functions
@@ -147,21 +146,21 @@ def get_logical_file(connection, logical_file, csv=False, max_workers=15,
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as \
             executor:
         futures = [
-            executor.submit(connection.get_logical_file_chunk, logical_file,
+            executor.submit(connection._get_logical_file_chunk, logical_file,
                             start_row, n_rows, max_attempts)
             for start_row, n_rows in chunks
         ]
 
         finished, _ = concurrent.futures.wait(futures)
 
-    df = pd.concat([parse_json_output(f.result()["Result"]["Row"],
-                                      column_names, csv)
+    df = pd.concat([_parse_json_output(f.result()["Result"]["Row"],
+                                       column_names, csv)
                     for f in finished], ignore_index=True)
 
     return df
 
 
-def parse_json_output(results, column_names, csv):
+def _parse_json_output(results, column_names, csv):
     """
     Return a DataFrame from a HPCC workunit JSON.
 
@@ -183,13 +182,13 @@ def parse_json_output(results, column_names, csv):
         lines = [",".split(r["line"]) for r in results]
         df = pd.DataFrame(map(list, zip(*lines)), columns=column_names)
 
-    df = make_col_numeric(df)
-    df = make_col_bool(df)
+    df = _make_col_numeric(df)
+    df = _make_col_bool(df)
 
     return df
 
 
-def parse_xml(xml):
+def _parse_xml(xml):
     """
     Return a DataFrame from a nested XML.
 
@@ -214,13 +213,13 @@ def parse_xml(xml):
 
     df = pd.DataFrame(vls, columns=lvls)
 
-    df = make_col_numeric(df)
-    df = make_col_bool(df)
+    df = _make_col_numeric(df)
+    df = _make_col_bool(df)
 
     return df
 
 
-def make_col_numeric(df):
+def _make_col_numeric(df):
     """
     Convert string numeric columns to numerics.
 
@@ -251,7 +250,7 @@ def make_col_numeric(df):
     return df
 
 
-def make_col_bool(df):
+def _make_col_bool(df):
     """
     Convert string boolean columns to booleans.
 

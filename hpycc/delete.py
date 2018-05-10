@@ -1,5 +1,4 @@
 # TODO logging
-# TODO make private functions
 # TODO tests
 
 

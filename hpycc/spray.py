@@ -8,11 +8,10 @@ from hpycc.utils.filechunker import make_chunks
 
 # TODO make sure this shouts at the user if they use bad column names
 # TODO logging
-# TODO make private functions
 # TODO tests
 
 
-def format_df_for_hpcc(df):
+def _format_df_for_hpcc(df):
     """
     Return a DataFrame in a format accepted by HPCC.
 
@@ -28,7 +27,7 @@ def format_df_for_hpcc(df):
     """
     for col in df.columns:
         dtype = df.dtypes[col]
-        ecl_type = get_type(dtype)
+        ecl_type = _get_type(dtype)
         if ecl_type == "STRING":
             df[col] = df[col].fillna("").str.replace("'", "\\'")
             df[col] = "'" + df[col] + "'"
@@ -38,7 +37,7 @@ def format_df_for_hpcc(df):
     return df.reset_index()
 
 
-def get_type(typ):
+def _get_type(typ):
     """
     Return the HPCC data type equivalent of a pandas/ numpy dtype.
 
@@ -71,7 +70,7 @@ def get_type(typ):
     return 'STRING'
 
 
-def stringify_rows(df, start_row, num_rows):
+def _stringify_rows(df, start_row, num_rows):
     # TODO combine with format_data_for_hpcc?
     """
     Return rows of a pre-formatted DataFrame as a HPCC ready string.
@@ -129,14 +128,14 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
     else:
         raise TypeError
 
-    record_set = make_record_set(df)
+    record_set = _make_record_set(df)
 
-    formatted_df = format_df_for_hpcc(df)
+    formatted_df = _format_df_for_hpcc(df)
 
     chunks = make_chunks(len(formatted_df), logical_csv=False,
                          chunk_size=chunk_size)
 
-    rows = (stringify_rows(formatted_df, start_row, num_rows)
+    rows = (_stringify_rows(formatted_df, start_row, num_rows)
             for start_row, num_rows in chunks)
     target_names = ["TEMPHPYCC::{}from{}to{}".format(
             logical_file, start_row, start_row + num_rows)
@@ -144,7 +143,7 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
 
     for row, name in zip(rows, target_names):
         # TODO make concurrent
-        spray_stringified_data(connection, row, record_set, name, overwrite)
+        _spray_stringified_data(connection, row, record_set, name, overwrite)
 
     concatenate_logical_files(connection, target_names, logical_file,
                               record_set, overwrite)
@@ -153,7 +152,7 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
         delete_logical_file(connection, tmp)
 
 
-def make_record_set(df):
+def _make_record_set(df):
     """
     Make an ECL recordset from a DataFrame.
 
@@ -167,13 +166,13 @@ def make_record_set(df):
     :return: record_set: string
         String recordset.
     """
-    record_set = ";".join([" ".join((col, get_type(dtype))) for col, dtype in
+    record_set = ";".join([" ".join((col, _get_type(dtype))) for col, dtype in
                            df.dtypes.to_dict().items()])
     return record_set
 
 
-def spray_stringified_data(connection, data, record_set, logical_file,
-                           overwrite):
+def _spray_stringified_data(connection, data, record_set, logical_file,
+                            overwrite):
     """
     Spray stringified data to a HPCC logical file. To generate the
     stringified data and recordset, see `stringify_rows()` &
