@@ -45,6 +45,23 @@ class Connection:
                           timeout=30) as r:
                     r.raise_for_status()
 
+    @staticmethod
+    def _run_command(cmd):
+        # TODO logging
+        result = subprocess.run(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE, shell=True)
+
+        stderr = result.stderr.decode('utf-8')
+        stdout = result.stdout.decode("utf-8")
+
+        if result.returncode:
+            raise OSError(stderr)
+
+        Result = namedtuple("Result", ["stdout", "stderr"])
+        result_tuple = Result(stdout, stderr)
+        return result_tuple
+
     def check_syntax(self, script):
         base_cmd = "eclcc -syntax "
         if self.legacy:
