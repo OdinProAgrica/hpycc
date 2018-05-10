@@ -10,13 +10,18 @@ import pandas as pd
 
 def make_col_numeric(df):
     """
-    Attempts to convert every column to numeric, if an error
-    is raised (ie they contain characters) then leave as is
+    Convert string numeric columns to numerics.
 
+    Parameters
+    ----------
     :param df: pd.DataFrame
-        Data frame to run conversion on
-    :return: pd.DataFrame
-        Data frame with all numeric columns converted to numeric.
+        DataFrame to run conversion on.
+
+    Returns
+    -------
+    :return: DataFrame
+        Data frame with all string numeric columns converted to
+        numeric.
     """
 
     logger = logging.getLogger('make_col_numeric')
@@ -29,37 +34,30 @@ def make_col_numeric(df):
             logger.debug('%s converted to numeric' % col)
         except ValueError:
             logger.debug('%s cannot be converted to numeric' % col)
-            pass
+            continue
 
     return df
 
 
 def make_col_bool(df):
     """
-    Function to loop over a df and convert any boolean columns.
+    Convert string boolean columns to booleans.
 
+    Parameters
+    ----------
     :param df: pd.DataFrame
-        data frame to check for boolean columns
-    :return: pd.DataFrame
-        Data frame with all numeric columns converted to numeric.
+        DataFrame to run conversion on.
 
+    Returns
+    -------
+    :return: DataFrame
+        Data frame with all string boolean columns converted to
+        boolean.
     """
-
-    logger = logging.getLogger('make_col_bool')
-    logger.debug('Converting boolean cols')
-
     for col in df.columns:
-        try:
-            if df.loc[0, col].lower() in ['true', 'false']:
-                bool_test = [val.lower() in ['true', 'false'] for
-                             val in df[col].unique().tolist()]
-                if all(bool_test):
-                    df[col] = df[col].str.lower()
-                    df[col] = df[col] == 'true'
-                    logger.debug('%s converted to boolean' % col)
-        except AttributeError:
-            logger.debug('%s cannot be converted to boolean' % col)
-            pass
+        # TODO deal with nans?
+        if set(df[col].str.lower().unique).issubset({"true", "false"}):
+            df.loc[df[col].notnull(), col] = df[col].str.lower() == "true"
 
     return df
 

@@ -9,22 +9,6 @@ from time import sleep
 # TODO logging
 # TODO docstrings
 
-def _run_command(cmd):
-    # TODO logging
-    result = subprocess.run(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        stdin=subprocess.PIPE, shell=True)
-
-    stderr = result.stderr.decode('utf-8')
-    stdout = result.stdout.decode("utf-8")
-
-    if result.returncode:
-        raise OSError(stderr)
-
-    Result = namedtuple("Result", ["stdout", "stderr"])
-    result_tuple = Result(stdout, stderr)
-    return result_tuple
-
 
 class Connection:
     def __init__(self, server, username, port=8010, repo=None, password=None,
@@ -70,7 +54,7 @@ class Connection:
             base_cmd += "-I {} ".format(self.repo)
         base_cmd += script
 
-        _run_command(base_cmd)
+        self._run_command(base_cmd)
 
     def run_ecl_script(self, script, syntax_check):
         base_cmd = ("ecl run --server {} --port {} --username {} "
@@ -89,7 +73,7 @@ class Connection:
         if syntax_check:
             self.check_syntax(script)
 
-        result = _run_command(script)
+        result = self._run_command(script)
         return result
 
     def run_url_request(self, url, max_attempts=3):

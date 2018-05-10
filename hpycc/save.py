@@ -2,7 +2,7 @@ import itertools
 import re
 import os
 
-from hpycc import get_output, get_file
+from hpycc import get_output, get_logical_file
 from hpycc.utils import parsers
 
 # TODO logging
@@ -43,7 +43,6 @@ def save_output(connection, script, path_or_buf=None, syntax_check=True,
 
 def save_outputs(connection, script, directory=".", filenames=None,
                  prefix=None, syntax_check=True, **kwargs):
-
     """
     Save all outputs of an ECL script as csvs. See get_outputs()
     for returning DataFrames and save_output() for writing a single
@@ -82,6 +81,7 @@ def save_outputs(connection, script, directory=".", filenames=None,
                           results]
 
     parsed_filenames = ["{}.csv".format(res[0]) for res in parsed_data_frames]
+    # TODO this won't work
     chosen_filenames = itertools.zip_longest(filenames, parsed_filenames)
     if prefix:
         chosen_filenames = [prefix + name for name in chosen_filenames]
@@ -136,7 +136,7 @@ def save_file(connection, logical_file, path_or_buf, csv=False, max_workers=15,
         representation of the output csv.
     """
 
-    file = get_file(connection, logical_file, csv, max_workers, chunk_size,
-                    max_attempts)
+    file = get_logical_file(connection, logical_file, csv, max_workers,
+                            chunk_size, max_attempts)
 
     return file.to_csv(path_or_buf, **kwargs)

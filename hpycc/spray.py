@@ -70,6 +70,7 @@ def get_type(typ):
 
 
 def stringify_rows(df, start_row, num_rows):
+    # TODO combine with format_data_for_hpcc?
     """
     Return rows of a pre-formatted DataFrame as a HPCC ready string.
     To format the data, see `format_data_for_hpcc()`.
@@ -221,6 +222,7 @@ def concatenate_logical_files(connection, to_concat, logical_file, record_set,
     -------
     :return: None
     """
+    # TODO add an expire
     read_files = ["DATASET('{}', {{{}}}, THOR)".format(
         nam, record_set) for nam in to_concat]
     read_files = '+\n'.join(read_files)

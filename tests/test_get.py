@@ -63,8 +63,8 @@ def test_get_file():
     logical_file_getfile = '~TEMP::HPYCC::TEST::GETFILE'
     result_df_getfile = md.upload_data(logical_file_getfile, 15000, hpcc_connection)
 
-    result = get.get_file(logical_file_getfile, server, port='8010', username=username,
-                          password=password, csv=False, silent=silent, debg=debg)
+    result = get.get_logical_file(logical_file_getfile, server, port='8010', username=username,
+                                  password=password, csv=False, silent=silent, debg=debg)
 
     hpycc.delete.delete_logical_file(logical_file_getfile, 'localhost')
 

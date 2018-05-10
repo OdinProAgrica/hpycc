@@ -34,6 +34,7 @@ def get_output(connection, script, syntax_check=True):
     """
 
     result = connection.run_ecl_script(script, syntax_check)
+    # TODO just get the first with regex match
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
     results = re.findall(regex, result.stdout)
 
@@ -65,7 +66,7 @@ def get_outputs(connection, script, syntax_check=True):
     result = connection.run_ecl_script(script, syntax_check)
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
     results = re.findall(regex, result.stdout)
-    as_dict = dict([(name, parsers.parse_xml(xml)) for name, xml in results])
+    as_dict = {name: parsers.parse_xml(xml) for name, xml in results}
 
     return as_dict
 
@@ -93,7 +94,7 @@ def _get_file_structure(connection, logical_file, csv):
     response = connection.get_logical_file_chunk(logical_file, 0, 2)
     file_size = response['Total']
     results = response['Result']['Row']
-
+    # TODO make 2 sep functions
     if csv:
         column_names = results[0]['line'].split(',')
     else:
@@ -104,9 +105,10 @@ def _get_file_structure(connection, logical_file, csv):
     return column_names, file_size
 
 
-def get_file(connection, logical_file, csv=False, max_workers=15,
-             chunk_size=10000, max_attempts=3):
+def get_logical_file(connection, logical_file, csv=False, max_workers=15,
+                     chunk_size=10000, max_attempts=3):
     # TODO logging
+    # TODO say ordering is not preserved
     """
     Return a DataFrame of a logical file. To write to disk
     see save_file().
@@ -146,7 +148,7 @@ def get_file(connection, logical_file, csv=False, max_workers=15,
                             start_row, n_rows, max_attempts)
             for start_row, n_rows in chunks
         }
-
+    # todo as_completed?
     df = pd.concat([parsers.parse_json_output(f.result()["Result"]["Row"],
                                               column_names, csv)
                    for f in concurrent.futures.as_completed(future_to_url)],
