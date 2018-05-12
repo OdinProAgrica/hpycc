@@ -6,6 +6,7 @@ multi-threading, something which script outputs cannot do.
 """
 
 # TODO tests
+# TODO numpy docstrings
 
 
 def run_script(connection, script, syntax_check=True):

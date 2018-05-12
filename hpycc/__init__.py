@@ -8,3 +8,5 @@ from hpycc.spray import spray_file, concatenate_logical_files
 # TODO compile docs
 # TODO testing
 # TODO think about logging?
+
+# TODO numpy docstrings

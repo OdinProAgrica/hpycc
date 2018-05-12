@@ -4,6 +4,8 @@ from xml.etree import ElementTree
 
 import pandas as pd
 
+# TODO numpy docstrings
+
 
 def parse_xml(xml):
     """

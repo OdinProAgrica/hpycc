@@ -10,6 +10,7 @@ import pandas as pd
 from hpycc.utils import filechunker
 
 # TODO tests
+# TODO numpy docstrings
 from hpycc.utils.parsers import parse_xml, parse_json_output
 
 
