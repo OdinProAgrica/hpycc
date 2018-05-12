@@ -20,9 +20,7 @@ from tempfile import NamedTemporaryFile
 from time import sleep
 
 
-# TODO docstrings
 # TODO tests
-# TODO numpy docstrings
 
 
 class Connection:
