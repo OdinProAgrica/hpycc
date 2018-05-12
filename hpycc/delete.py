@@ -1,4 +1,3 @@
-# TODO logging
 # TODO tests
 
 

@@ -6,7 +6,6 @@ import hpycc.get
 import hpycc.utils.parsers
 from hpycc import get_output, get_logical_file
 
-# TODO logging
 # TODO tests
 
 

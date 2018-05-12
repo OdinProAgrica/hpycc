@@ -6,7 +6,6 @@ from tempfile import NamedTemporaryFile
 from time import sleep
 
 
-# TODO logging
 # TODO docstrings
 # TODO tests
 

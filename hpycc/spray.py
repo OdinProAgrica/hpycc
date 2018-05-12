@@ -9,7 +9,6 @@ from hpycc.delete import delete_logical_file
 from hpycc.utils.filechunker import make_chunks
 
 # TODO make sure this shouts at the user if they use bad column names
-# TODO logging
 # TODO tests
 
 

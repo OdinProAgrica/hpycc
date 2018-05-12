@@ -5,7 +5,6 @@ then be accessing with get_file(). This method takes advantage of
 multi-threading, something which script outputs cannot do.
 """
 
-# TODO logging
 # TODO tests
 
 

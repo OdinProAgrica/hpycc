@@ -9,7 +9,6 @@ import pandas as pd
 
 from hpycc.utils import filechunker
 
-# TODO logging
 # TODO tests
 from hpycc.utils.parsers import parse_xml, parse_json_output
 
