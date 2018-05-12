@@ -78,6 +78,7 @@ class Connection:
 
         """
         # TODO make take multiple repos
+        # TODO validate server and port?
         self.server = server
         self.username = username
         self.port = port
