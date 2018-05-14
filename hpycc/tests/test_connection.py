@@ -70,6 +70,13 @@ class TestConnectionTestConnection(unittest.TestCase):
                                 auth=("user", "pass"),
                                 timeout=30)
 
+    @patch("requests.get")
+    def test_test_connection_calls_correct_get_with_no_auth(self, mock):
+        hpycc.connection.Connection("user", server="some_server", port=1337)
+        mock.assert_called_with("http://some_server:1337",
+                                auth=("user", None),
+                                timeout=30)
+
     def test_test_connection_passes_successfully(self):
         self.assertFalse(True)
 
