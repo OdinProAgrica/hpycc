@@ -60,3 +60,55 @@ class TestConnectionInitTestConnection(unittest.TestCase):
         hpycc.connection.Connection("usrname")
         mock.assert_called()
 
+
+class TestConnectionTestConnection(unittest.TestCase):
+    @patch("requests.get")
+    def test_test_connection_calls_correct_get(self, mock):
+        hpycc.connection.Connection("user", server="some_server", port=1337,
+                                    password="pass")
+        mock.assert_called_with("http://some_server:1337",
+                                auth=("user", "pass"),
+                                timeout=30)
+
+    def test_test_connection_passes_successfully(self):
+        self.assertFalse(True)
+
+    def test_test_connection_fails_wrong_server(self):
+        self.assertFalse(True)
+
+    def test_test_connection_fails_wrong_auth(self):
+        self.assertFalse(True)
+
+    def test_test_connection_passes_correct_auth(self):
+        self.assertFalse(True)
+
+    def test_test_connection_fails_missing_auth(self):
+        self.assertFalse(True)
+
+    def test_test_connection_passes_with_no_auth_needed(self):
+        self.assertFalse(True)
+
+
+
+class TestConnectionRunCommand:
+    pass
+
+
+class TestConnectionCheckSyntax:
+    pass
+
+
+class TestConnectionRunEclScript:
+    pass
+
+
+class TestConnectionRunURLRequest:
+    pass
+
+
+class TestConnectionGetLogicalFileChunk:
+    pass
+
+
+class TestConnectionRunEclString:
+    pass
