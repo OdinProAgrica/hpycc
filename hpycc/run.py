@@ -5,7 +5,7 @@ then be accessing with get_file(). This method takes advantage of
 multi-threading, something which script outputs cannot do.
 """
 
-# TODO tests
+# TODO old_tests
 # TODO numpy docstrings
 
 

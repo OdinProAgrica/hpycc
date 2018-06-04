@@ -2,12 +2,12 @@ import hpycc.scriptrunning.getscripts as getscripts
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
 from hpycc.utils.HPCCconnector import HPCCconnector
-import tests.make_data as md
+import old_tests.make_data as md
 
 if __name__ == "__main__":
     test_script_location = ''
 else:
-    test_script_location = './tests/'
+    test_script_location = './old_tests/'
 
 silent = False
 do_syntaxcheck = True

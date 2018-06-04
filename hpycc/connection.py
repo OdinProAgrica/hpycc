@@ -20,7 +20,7 @@ from tempfile import NamedTemporaryFile
 from time import sleep
 
 
-# TODO tests
+# TODO old_tests
 
 
 class Connection:
@@ -79,6 +79,8 @@ class Connection:
         """
         # TODO make take multiple repos
         # TODO validate server and port?
+        # TODO deal with request deprecation warning of none string usernames
+        # TODO add examples
         self.server = server
         self.username = username
         self.port = port
@@ -99,7 +101,7 @@ class Connection:
 
         Returns
         -------
-        None
+        True
 
         Raises
         ------
@@ -109,8 +111,9 @@ class Connection:
         """
         with requests.get("http://{}:{}".format(self.server, self.port),
                           auth=(self.username, self.password),
-                          timeout=30) as r:
+                          timeout=5) as r:
                     r.raise_for_status()
+        return True
 
     @staticmethod
     def _run_command(cmd):

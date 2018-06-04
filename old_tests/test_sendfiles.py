@@ -8,14 +8,14 @@ import hpycc.run as run
 from hpycc.utils.HPCCconnector import HPCCconnector
 
 import hpycc.spray
-import tests.make_data as md
+import old_tests.make_data as md
 import hpycc.filerunning.getfiles as getfiles
 from pandas.util.testing import assert_frame_equal
 
 if __name__ == "__main__":
     test_script_location = ''
 else:
-    test_script_location = './tests/'
+    test_script_location = './old_tests/'
 
 upload_loc_sml = '~a::temp::filesml'
 upload_loc_lrg = '~a::temp::filelrg'

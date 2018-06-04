@@ -1,4 +1,4 @@
-# TODO tests
+# TODO old_tests
 # TODO numpy docstrings
 
 

@@ -4,7 +4,7 @@ import hpycc.utils.parsers
 from hpycc.utils.HPCCconnector import HPCCconnector
 import hpycc.run as run
 from pandas.util.testing import assert_frame_equal
-import tests.make_data as md
+import old_tests.make_data as md
 
 silent = False
 hpcc_connection = HPCCconnector('localhost', '8010', None, "hpycc_get_output", '" "', False)

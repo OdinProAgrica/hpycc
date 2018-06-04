@@ -5,7 +5,7 @@ import hpycc.delete
 import hpycc.run as run
 import hpycc.utils.filechunker
 from hpycc.utils.HPCCconnector import HPCCconnector
-import tests.make_data as md
+import old_tests.make_data as md
 
 
 silent = False

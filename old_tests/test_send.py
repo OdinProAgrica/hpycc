@@ -1,5 +1,5 @@
 import hpycc.delete
-import tests.make_data as md
+import old_tests.make_data as md
 import hpycc.spray as send
 import hpycc.run as run
 from hpycc.utils.HPCCconnector import HPCCconnector

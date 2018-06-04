@@ -1,7 +1,7 @@
 """
 Module contains functions that are able to chunk a file request based on size.
 """
-# TODO tests
+# TODO old_tests
 # TODO numpy docstrings
 
 

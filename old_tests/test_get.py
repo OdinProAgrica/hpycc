@@ -6,13 +6,13 @@ import hpycc.delete
 import hpycc.get as get
 import hpycc.run as run
 import hpycc.save
-import tests.make_data as md
+import old_tests.make_data as md
 from hpycc.utils.HPCCconnector import HPCCconnector
 
 if __name__ == "__main__":
     test_script_location = ''
 else:
-    test_script_location = './tests/'
+    test_script_location = './old_tests/'
 
 do_syntaxcheck = True
 log_to_file = True

@@ -5,7 +5,7 @@ from hpycc.utils.HPCCconnector import HPCCconnector
 if __name__ == "__main__":
     test_script_location = ''
 else:
-    test_script_location = './tests/'
+    test_script_location = './old_tests/'
 
 silent = False
 legacy = True
@@ -22,7 +22,7 @@ def test_syntax_check_pass():
 # TODO: Pain in the arse to code up now logging is enabled. For now you'll see the warnings in the test log.
 def test_syntax_check_warning():
     # with pytest.warns(UserWarning) as e_info:
-    #     syntax.syntax_check('tests/ECLtest_warn.ecl', repo, legacy)
+    #     syntax.syntax_check('old_tests/ECLtest_warn.ecl', repo, legacy)
     syntax.syntax_check(test_script_location + 'ECLtest_warn.ecl', hpcc_connection)
     assert True
 
