@@ -77,7 +77,7 @@ class TestConnectionTestConnectionWithNoAuth(unittest.TestCase):
     def test_test_connection_passes_successfully_with_no_auth(self):
         conn = hpycc.connection.Connection(username=None)
         result = conn.test_connection()
-        self.assertIsTrue(result)
+        self.assertTrue(result)
 
     def test_test_connection_passes_successfully_with_username(self):
         conn = hpycc.connection.Connection(username="testuser")
@@ -118,6 +118,7 @@ class TestConnectionTestConnectionWithAuth(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.container.stop()
+        pass
 
     def test_test_connection_passes_with_correct_auth(self):
         conn = hpycc.connection.Connection(username="test1", password="1234")

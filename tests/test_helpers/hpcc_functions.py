@@ -1,24 +1,42 @@
+import os
 import tarfile
 import time
 from io import BytesIO
 
 import docker
 
+KILL_EXCEPTIONS = (ValueError, FileNotFoundError)
+
 
 def start_hpcc_container():
     client = docker.from_env()
-    b = client.containers.run("hpccsystems/platform-ce", "/bin/bash",
-                              detach=True, auto_remove=False, tty=True,
-                              ports={"8010/tcp": 8010, "8015/tcp": 8015})
-    return b
+    try:
+        b = client.containers.run("hpccsystems/platform-ce", "/bin/bash",
+                                  detach=True, auto_remove=False, tty=True,
+                                  ports={"8010/tcp": 8010, "8015/tcp": 8015})
+        return b
+    except KILL_EXCEPTIONS as e:
+        b.stop()
+        raise e
+
 
 def password_hpcc(container):
-    put_file_into_container(container, "environment.xml", "/etc/HPCCSystems")
-    put_file_into_container(container, ".htpasswd", "/etc/HPCCSystems")
+    try:
+        put_file_into_container(container, "test_helpers//environment.xml",
+                                "etc/HPCCSystems")
+        put_file_into_container(container, "test_helpers//.htpasswd",
+                                "etc/HPCCSystems")
+    except KILL_EXCEPTIONS as e:
+        container.stop()
+        raise e
 
 
 def start_hpcc(container):
-    container.exec_run("etc/init.d/hpcc-init start")
+    try:
+        container.exec_run("etc/init.d/hpcc-init start")
+    except KILL_EXCEPTIONS as e:
+        container.stop()
+        raise e
 
 
 def create_tar(file):
@@ -27,7 +45,7 @@ def create_tar(file):
 
     pw_tarstream = BytesIO()
     pw_tar = tarfile.TarFile(fileobj=pw_tarstream, mode="w")
-    tarinfo = tarfile.TarInfo(name=file)
+    tarinfo = tarfile.TarInfo(name=os.path.basename(file))
     tarinfo.size = len(file_data)
     tarinfo.mtime = time.time()
 
@@ -40,6 +58,10 @@ def create_tar(file):
 
 def put_file_into_container(container, file, destination):
     pw_tarstream = create_tar(file)
-    container.put_archive(data=pw_tarstream, path=destination)
+    try:
+        container.put_archive(data=pw_tarstream, path=destination)
+    except KILL_EXCEPTIONS as e:
+        container.stop()
+        raise e
 
     return True
