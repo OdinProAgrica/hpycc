@@ -264,7 +264,7 @@ class TestConnectionCheckSyntax(unittest.TestCase):
                 conn.check_syntax(p)
 
 
-class TestConnectionRunEclScript(unittest.TestCase):
+class TestConnectionRunECLScript(unittest.TestCase):
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_script_command_uses_server_port_and_username(self, mock):
         conn = hpycc.Connection("user", test_conn=False, server="abc",
@@ -348,24 +348,103 @@ class TestConnectionRunEclScript(unittest.TestCase):
             "ecl run --server localhost --port 8010 --username user "
             "--password 'None' thor test.ecl")
 
-    def test_run_script_checks_syntax_if_true(self):
-        pass
-    def test_run_script_does_not_check_syntax_if_false(self):
-        pass
+    @patch.object(hpycc.Connection, "_run_command")
+    @patch.object(hpycc.Connection, "check_syntax")
+    def test_run_script_checks_syntax_if_true(self, mock, _):
+        conn = hpycc.Connection("user", test_conn=False)
+        conn.run_ecl_script("test.ecl", syntax_check=True)
+        mock.assert_called()
+
+    @patch.object(hpycc.Connection, "_run_command")
+    @patch.object(hpycc.Connection, "check_syntax")
+    def test_run_script_does_not_check_syntax_if_false(self, mock, _):
+        conn = hpycc.Connection("user", test_conn=False,)
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        self.assertFalse(mock.called)
+
     def test_run_script_fails_syntax_check_with_bad_script(self):
-        pass
-    def test_run_script_passes_syntax_check_with_good_script(self):
-        pass
-    def test_run_script_calls_run_command(self):
-        pass
-    def test_run_script_runs_script(self):
-        pass
-    def test_run_script_returns_correct_tuple(self):
-        pass
+        conn = hpycc.Connection("user", test_conn=False, repo=None)
+        bad_script = "sdf"
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(bad_script)
+            with self.assertRaises(subprocess.CalledProcessError):
+                conn.run_ecl_script(p, syntax_check=True)
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_script_passes_syntax_check_with_good_script(self, mock):
+        conn = hpycc.Connection("user", test_conn=False, repo=None)
+        good_script = "output(2);"
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(good_script)
+            conn.run_ecl_script(p, syntax_check=True)
+        mock.assert_called()
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_script_calls_run_command(self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        good_script = "output(2);"
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(good_script)
+            conn.run_ecl_script(p, syntax_check=False)
+        mock.assert_called()
+
     def test_run_script_fails_if_server_unavailable(self):
-        pass
+        conn = hpycc.Connection("user", test_conn=False, repo=None)
+        good_script = "output(2);"
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(good_script)
+            with self.assertRaises(subprocess.CalledProcessError):
+                conn.run_ecl_script(p, syntax_check=False)
+
+
+class TestConnectionRunECLScriptWithServer(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.container = hpcc_functions.start_hpcc_container()
+        hpcc_functions.start_hpcc(cls.container)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.container.stop()
+
+    def test_run_script_runs_script(self):
+        conn = hpycc.Connection("user", test_conn=False)
+        good_script = "output(2);"
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(good_script)
+            self.assertTrue(conn.run_ecl_script(p, syntax_check=False))
+
+    def test_run_script_returns_correct_tuple(self):
+        conn = hpycc.Connection("user", test_conn=False)
+        good_script = "output(2);"
+        expected_out ="\r\n".join([
+            "\r\n<Result>", "<Dataset name='Result 1'>",
+            " <Row><Result_1>2</Result_1></Row>",
+            "</Dataset>", "</Result>\r\n"
+        ])
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(good_script)
+            result = conn.run_ecl_script(p, syntax_check=False)
+        self.assertEqual(result.__class__.__name__, "Result")
+        self.assertEqual(result.stdout, expected_out)
+        self.assertEqual(result.stderr, "")
+
     def test_run_script_fails_if_file_not_found(self):
-        pass
+        conn = hpycc.Connection("user", test_conn=False)
+        with self.assertRaises(subprocess.CalledProcessError):
+            conn.run_ecl_script("test.ecl", syntax_check=False)
 
 
 
