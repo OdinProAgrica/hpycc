@@ -92,17 +92,17 @@ def _stringify_rows(df, start_row, num_rows):
     :return: str
         ECL ready string of the slice.
     """
+    # TODO note this ignores the index
     sliced_df = df.loc[start_row:start_row + num_rows, df.columns]
 
     for col in sliced_df.columns:
         dtype = sliced_df.dtypes[col]
         ecl_type = _get_type(dtype)
         if ecl_type == "STRING":
-            sliced_df[col] = sliced_df[col].fillna("").str.replace("'", "\\'")
+            sliced_df[col] = sliced_df[col].fillna("").astype(str).str.replace("'", "\\'")
             sliced_df[col] = "'" + sliced_df[col] + "'"
         else:
             sliced_df[col] = sliced_df[col].fillna(0)
-    sliced_df.reset_index(inplace=True)
 
     return ','.join(
         ["{" + ','.join(i) + "}" for i in
@@ -153,6 +153,7 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
 
     stringified_rows = (_stringify_rows(df, start_row, num_rows)
                         for start_row, num_rows in chunks)
+
     target_names = ["TEMPHPYCC::{}from{}to{}".format(
             logical_file, start_row, start_row + num_rows)
         for start_row, num_rows in chunks]
@@ -186,7 +187,7 @@ def _make_record_set(df):
     :return: record_set: string
         String recordset.
     """
-    record_set = ";".join([" ".join((col, _get_type(dtype))) for col, dtype in
+    record_set = ";".join([" ".join((_get_type(dtype), col)) for col, dtype in
                            df.dtypes.to_dict().items()])
     return record_set
 
