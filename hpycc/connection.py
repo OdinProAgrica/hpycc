@@ -20,10 +20,9 @@ from tempfile import NamedTemporaryFile
 from time import sleep
 
 
-# TODO old_tests
-
-
 class Connection:
+    # todo should we validate username? and port and server
+    # todo make take multiple repos
     def __init__(self, username, server="localhost", port=8010, repo=None,
                  password=None, legacy=False, test_conn=True):
         """
@@ -159,12 +158,9 @@ class Connection:
             If the script fails the syntax check.
 
         """
-        base_cmd = "eclcc -syntax "
-        if self.legacy:
-            base_cmd += "-legacy "
-        if self.repo:
-            base_cmd += "-I {} ".format(self.repo)
-        base_cmd += script
+        legacy = "-legacy " if self.legacy else ""
+        repo = "-I {} ".format(self.repo) if self.repo else ""
+        base_cmd = "eclcc -syntax {}{}{}".format(legacy, repo, script)
 
         self._run_command(base_cmd)
 
@@ -202,23 +198,18 @@ class Connection:
         run_ecl_string
 
         """
+        pw = "'{}' ".format(self.password)
+        legacy = "-legacy " if self.legacy else ""
+        repo = " -I {}".format(self.repo) if self.repo else ""
+
         base_cmd = ("ecl run --server {} --port {} --username {} "
-                    "--password ").format(
-            self.server, self.port, self.username)
-        if self.password:
-            base_cmd += self.password + " "
-        else:
-            base_cmd += "' ' "
-        if self.legacy:
-            base_cmd += "-legacy "
-        base_cmd += "thor {}".format(script)
-        if self.repo:
-            base_cmd += "-I {}".format(self.repo)
+                    "--password {}{}thor {}{}").format(
+            self.server, self.port, self.username, pw, legacy, script, repo)
 
         if syntax_check:
             self.check_syntax(script)
 
-        result = self._run_command(script)
+        result = self._run_command(base_cmd)
         return result
 
     def run_url_request(self, url, max_attempts=3):

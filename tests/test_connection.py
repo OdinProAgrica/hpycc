@@ -264,16 +264,109 @@ class TestConnectionCheckSyntax(unittest.TestCase):
                 conn.check_syntax(p)
 
 
-class TestConnectionRunEclScript:
-    # check builds code correctly
-    # check runs syntax check
-    # check syntax check passes
-    # check syntax check fails
-    # check syntax check can be disabled
-    # check calls run_command
-    # check it outputs the right things
-    # check it fails properly
-    pass
+class TestConnectionRunEclScript(unittest.TestCase):
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_uses_server_port_and_username(self, mock):
+        conn = hpycc.Connection("user", test_conn=False, server="abc",
+                                port=123)
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        mock.assert_called_with(
+            "ecl run --server abc --port 123 --username user --password 'None' "
+            "thor test.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_uses_username_if_none(self, mock):
+        conn = hpycc.Connection(None, test_conn=False, server="abc",
+                                port=123)
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        mock.assert_called_with(
+            "ecl run --server abc --port 123 --username None --password 'None' "
+            "thor test.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_uses_password(self, mock):
+        conn = hpycc.Connection("user", password="abc", test_conn=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        mock.assert_called_with(
+            "ecl run --server localhost --port 8010 --username user "
+            "--password 'abc' thor test.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_works_with_special_password_chars(
+            self, mock):
+        conn = hpycc.Connection("user", password="a\nb", test_conn=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        mock.assert_called_with(
+            "ecl run --server localhost --port 8010 --username user "
+            "--password 'a\nb' thor test.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_uses_password_if_none(self, mock):
+        conn = hpycc.Connection("user", password=None, test_conn=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        mock.assert_called_with(
+            "ecl run --server localhost --port 8010 --username user "
+            "--password 'None' thor test.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_uses_password_if_all_spaces(self, mock):
+        conn = hpycc.Connection("user", password="  ", test_conn=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        mock.assert_called_with(
+            "ecl run --server localhost --port 8010 --username user "
+            "--password '  ' thor test.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_uses_legacy(self, mock):
+        conn = hpycc.Connection("user", legacy=True, test_conn=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        mock.assert_called_with(
+            "ecl run --server localhost --port 8010 --username user "
+            "--password 'None' -legacy thor test.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_uses_legacy_if_none(self, mock):
+        conn = hpycc.Connection("user", legacy=None, test_conn=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        mock.assert_called_with(
+            "ecl run --server localhost --port 8010 --username user "
+            "--password 'None' thor test.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_uses_repo(self, mock):
+        conn = hpycc.Connection("user", test_conn=False, repo="C:")
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        mock.assert_called_with(
+            "ecl run --server localhost --port 8010 --username user "
+            "--password 'None' thor test.ecl -I C:")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_uses_repo_if_none(self, mock):
+        conn = hpycc.Connection("user", test_conn=False, repo=None)
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        mock.assert_called_with(
+            "ecl run --server localhost --port 8010 --username user "
+            "--password 'None' thor test.ecl")
+
+    def test_run_script_checks_syntax_if_true(self):
+        pass
+    def test_run_script_does_not_check_syntax_if_false(self):
+        pass
+    def test_run_script_fails_syntax_check_with_bad_script(self):
+        pass
+    def test_run_script_passes_syntax_check_with_good_script(self):
+        pass
+    def test_run_script_calls_run_command(self):
+        pass
+    def test_run_script_runs_script(self):
+        pass
+    def test_run_script_returns_correct_tuple(self):
+        pass
+    def test_run_script_fails_if_server_unavailable(self):
+        pass
+    def test_run_script_fails_if_file_not_found(self):
+        pass
+
 
 
 class TestConnectionRunURLRequest:

@@ -177,5 +177,3 @@ def get_logical_file(connection, logical_file, csv=False, max_workers=15,
                     for f in finished], ignore_index=True)
 
     return df
-
-
