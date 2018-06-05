@@ -15,6 +15,7 @@ __all__ = ["Connection"]
 from collections import namedtuple
 import random
 import requests
+from requests.exceptions import HTTPError, RetryError
 import subprocess
 from tempfile import NamedTemporaryFile
 from time import sleep
@@ -212,14 +213,15 @@ class Connection:
         result = self._run_command(base_cmd)
         return result
 
-    def run_url_request(self, url, max_attempts=3):
+    def run_url_request(self, url, max_attempts=3, max_sleep=10):
         """
         Return the contents of a url.
 
         Use attributes `username` and `password` to return the
         contents of `url`. Parameter `max_attempts` can be used to
         retry if an exception is raised. Each attempt is delayed by
-        up to 10s, so a large number of retries may be slow.
+        up to `max_sleep` seconds, so a large number of retries may
+        be slow.
 
         Parameters
         ----------
@@ -228,23 +230,34 @@ class Connection:
         max_attempts: int, optional
             Maximum number of times url should be queried in the
             case of an exception being raised. 3 by default.
+        max_sleep: int, optional
+            Maximum time, in seconds, to sleep between attempts.
+            The true sleep time is a random int between 0 and
+            `max_sleep`. 10 by default.
 
         Returns
         -------
         r: requests.models.Response
             Response object from `url`
 
+        Raises
+        ------
+        requests.exceptions.RetryError:
+            If max_attempts is exceeded.
+
         """
         attempts = 0
         while attempts < max_attempts:
             try:
-                # TODO should this only return if 200?
                 r = requests.get(url, auth=(self.username, self.password))
+                r.raise_for_status()
                 return r
-            except Exception:
+            except (HTTPError, ValueError) as e:
                 attempts += 1
-                time_to_sleep = random.randint(0, 10)
+                time_to_sleep = random.randint(0, max_sleep)
                 sleep(time_to_sleep)
+                if attempts == max_attempts:
+                    raise RetryError(e)
 
     def get_logical_file_chunk(self, logical_file, start_row, n_rows,
                                max_attempts):

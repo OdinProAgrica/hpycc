@@ -4,11 +4,13 @@ This module contains old_tests for hpycc.connection.
 """
 from collections import namedtuple
 import os
+import random
 import subprocess
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
+import requests
 from requests.exceptions import ConnectionError, HTTPError
 
 import hpycc.connection
@@ -447,9 +449,103 @@ class TestConnectionRunECLScriptWithServer(unittest.TestCase):
             conn.run_ecl_script("test.ecl", syntax_check=False)
 
 
+class TestConnectionRunURLRequest(unittest.TestCase):
+    @patch.object(requests, "get")
+    def test_run_url_request_uses_all_attempts(self, mock):
+        final_response = requests.Response()
+        final_response.status_code = 200
+        side_effects = (ValueError, ValueError, ValueError, ValueError,
+                        final_response)
+        mock.side_effect = side_effects
+        conn = hpycc.Connection("user", test_conn=False)
+        conn.run_url_request("dfsd.dfd", max_attempts=5, max_sleep=0)
+        self.assertEqual(mock.call_count, 5)
 
-class TestConnectionRunURLRequest:
-    pass
+    @patch.object(requests, "get")
+    def test_run_url_request_counts_404_as_error(self, mock):
+        bad_response = requests.Response()
+        bad_response.status_code = 404
+        mock.return_value = bad_response
+        conn = hpycc.Connection("user", test_conn=False)
+        with self.assertRaises(requests.exceptions.RetryError):
+            conn.run_url_request("dfsd.dfd", max_attempts=2, max_sleep=0)
+
+    @patch.object(requests, "get")
+    def test_run_url_request_counts_500_as_error(self, mock):
+        bad_response = requests.Response()
+        bad_response.status_code = 500
+        mock.return_value = bad_response
+        conn = hpycc.Connection("user", test_conn=False)
+        with self.assertRaises(requests.exceptions.RetryError):
+            conn.run_url_request("dfsd.dfd", max_attempts=2, max_sleep=0)
+
+    @patch.object(requests, "get")
+    def test_run_url_request_uses_auth(self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        conn.run_url_request("dfsd.dfd", max_attempts=5, max_sleep=0)
+        mock.assert_called_with('dfsd.dfd', auth=('user', None))
+
+    @patch.object(random, "randint")
+    def test_run_url_request_uses_custom_max_sleep(self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        with self.assertRaises(requests.exceptions.RetryError):
+            conn.run_url_request("dfsd.dfd", max_attempts=1, max_sleep=0)
+        mock.assert_called_with(0, 0)
+
+    @patch.object(requests, "get")
+    def test_run_url_request_uses_max_attempts_default_3(self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        mock.side_effect = ValueError
+        with self.assertRaises(requests.exceptions.RetryError):
+            conn.run_url_request("dfsd.dfd", max_sleep=0)
+        self.assertEqual(mock.call_count, 3)
+
+    @patch.object(requests, "get")
+    def test_run_url_request_uses_max_attempts_custom(self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        mock.side_effect = ValueError
+        with self.assertRaises(requests.exceptions.RetryError):
+            conn.run_url_request("dfsd.dfd", max_attempts=4, max_sleep=0)
+        self.assertEqual(mock.call_count, 4)
+
+    @patch.object(random, "randint")
+    def test_run_url_request_uses_default_max_sleep_10(self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        with self.assertRaises(requests.exceptions.RetryError):
+            conn.run_url_request("dfsd.dfd")
+        mock.assert_called_with(0, 10)
+
+    @patch.object(requests, "get")
+    def test_run_url_request_raises_retry_error_when_exceeded(self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        mock.side_effect = ValueError
+        with self.assertRaises(requests.exceptions.RetryError):
+            conn.run_url_request("dfsd.dfd", max_sleep=0)
+
+    @patch.object(requests, "get")
+    def test_run_url_request_returns_response_after_single_error(self, mock):
+        r = requests.Response()
+        r.status_code = 200
+        mock.side_effect = (ValueError, r)
+        conn = hpycc.Connection("user", test_conn=False)
+        result = conn.run_url_request("dfsd.dfd", max_sleep=0)
+        self.assertIsInstance(result, requests.Response)
+
+
+class TestRunURLRequestWithServer(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.container = hpcc_functions.start_hpcc_container()
+        hpcc_functions.start_hpcc(cls.container)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.container.stop()
+
+    def test_run_url_request_returns_response(self):
+        conn = hpycc.Connection("user", test_conn=False)
+        result = conn.run_url_request("http://localhost:8010")
+        self.assertIsInstance(result, requests.Response)
 
 
 class TestConnectionGetLogicalFileChunk:
