@@ -13,7 +13,8 @@ def start_hpcc_container():
     try:
         b = client.containers.run("hpccsystems/platform-ce", "/bin/bash",
                                   detach=True, auto_remove=False, tty=True,
-                                  ports={"8010/tcp": 8010, "8015/tcp": 8015})
+                                  ports={"8010/tcp": 8010, "8015/tcp": 8015},
+                                  name="hpycc_tests")
         return b
     except KILL_EXCEPTIONS as e:
         b.stop()
@@ -65,3 +66,9 @@ def put_file_into_container(container, file, destination):
         raise e
 
     return True
+
+
+def stop_hpcc_container():
+    client = docker.from_env()
+    client.containers.get("hpycc_tests").stop()
+    client.api.remove_container("hpycc_tests")

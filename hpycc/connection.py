@@ -12,7 +12,6 @@ Classes
 """
 __all__ = ["Connection"]
 
-import ast
 from collections import namedtuple
 import os
 import random
@@ -27,7 +26,7 @@ class Connection:
     # todo should we validate username? and port and server
     # todo make take multiple repos
     def __init__(self, username, server="localhost", port=8010, repo=None,
-                 password=None, legacy=False, test_conn=True):
+                 password="", legacy=False, test_conn=True):
         """
         Connection to a HPCC instance.
 
@@ -52,7 +51,7 @@ class Connection:
             default.
         password: str
             Password to provide to HPCC alongside the username.
-            None by default.
+            "" by default.
         legacy: bool, optional
             Should legacy flag should be enabled when executing ECL
             commands. False by default.
@@ -74,9 +73,8 @@ class Connection:
         repo: str or None
             A path to locations to search for ecl imports. May be
             `None`.
-        password: str or None
-            Password to provide to HPCC alongside the username. May
-            be `None`.
+        password: str
+            Password to provide to HPCC alongside the username.
         legacy: bool
             If the legacy flag is enabled when executing ECL
             commands.
@@ -86,6 +84,9 @@ class Connection:
         # TODO validate server and port?
         # TODO deal with request deprecation warning of none string usernames
         # TODO add examples
+        if not isinstance(username, str) or not username:
+            raise AttributeError("username must be a string, not {}".format(
+                username))
         self.server = server
         self.username = username
         self.port = port
@@ -128,7 +129,7 @@ class Connection:
             stdin=subprocess.PIPE, shell=True)
         try:
             result.check_returncode()
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError:
             raise subprocess.SubprocessError(result.stderr)
 
         stderr = result.stderr.decode('utf-8')
