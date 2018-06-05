@@ -3,6 +3,7 @@ This module contains old_tests for hpycc.connection.
 
 """
 from collections import namedtuple
+from json.decoder import JSONDecodeError
 import os
 import random
 import subprocess
@@ -10,11 +11,36 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
+import pandas as pd
 import requests
 from requests.exceptions import ConnectionError, HTTPError
 
 import hpycc.connection
 from tests.test_helpers import hpcc_functions
+
+
+class HPCCTestInstance(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.container = hpcc_functions.start_hpcc_container()
+        hpcc_functions.start_hpcc(cls.container)
+
+    @classmethod
+    def tearDownClass(cls):
+        pass
+        cls.container.stop()
+
+
+class HPCCTestPasswordProtectedInstance(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.container = hpcc_functions.start_hpcc_container()
+        hpcc_functions.password_hpcc(cls.container)
+        hpcc_functions.start_hpcc(cls.container)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.container.stop()
 
 
 class TestConnectionDefaultAttributes(unittest.TestCase):
@@ -70,16 +96,7 @@ class TestConnectionInitTestConnection(unittest.TestCase):
         mock.assert_called()
 
 
-class TestConnectionTestConnectionWithNoAuth(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.container = hpcc_functions.start_hpcc_container()
-        hpcc_functions.start_hpcc(cls.container)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.container.stop()
-
+class TestConnectionTestConnectionWithNoAuth(HPCCTestInstance):
     def test_test_connection_passes_successfully_with_no_auth(self):
         conn = hpycc.connection.Connection(username=None)
         result = conn.test_connection()
@@ -111,20 +128,10 @@ class TestConnectionTestConnectionWithNoAuth(unittest.TestCase):
         self.assertTrue(result)
 
 
-class TestConnectionTestConnectionWithAuth(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.container = hpcc_functions.start_hpcc_container()
-        hpcc_functions.password_hpcc(cls.container)
-        hpcc_functions.start_hpcc(cls.container)
-
-        cls.error_string = ("401 Client Error: Unauthorized for url: "
-                            "http://localhost:8010/")
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.container.stop()
-        pass
+class TestConnectionTestConnectionWithAuth(HPCCTestPasswordProtectedInstance):
+    def setUp(self):
+        self.error_string = ("401 Client Error: Unauthorized for url: "
+                             "http://localhost:8010/")
 
     def test_test_connection_passes_with_correct_auth(self):
         conn = hpycc.connection.Connection(username="test1", password="1234")
@@ -407,16 +414,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
                 conn.run_ecl_script(p, syntax_check=False)
 
 
-class TestConnectionRunECLScriptWithServer(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.container = hpcc_functions.start_hpcc_container()
-        hpcc_functions.start_hpcc(cls.container)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.container.stop()
-
+class TestConnectionRunECLScriptWithServer(HPCCTestInstance):
     def test_run_script_runs_script(self):
         conn = hpycc.Connection("user", test_conn=False)
         good_script = "output(2);"
@@ -532,24 +530,46 @@ class TestConnectionRunURLRequest(unittest.TestCase):
         self.assertIsInstance(result, requests.Response)
 
 
-class TestRunURLRequestWithServer(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.container = hpcc_functions.start_hpcc_container()
-        hpcc_functions.start_hpcc(cls.container)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.container.stop()
-
+class TestRunURLRequestWithServer(HPCCTestInstance):
     def test_run_url_request_returns_response(self):
         conn = hpycc.Connection("user", test_conn=False)
         result = conn.run_url_request("http://localhost:8010")
         self.assertIsInstance(result, requests.Response)
 
 
-class TestConnectionGetLogicalFileChunk:
-    pass
+class TestConnectionGetLogicalFileChunk(unittest.TestCase):
+    @patch.object(hpycc.Connection, "run_url_request")
+    def test_get_logical_file_chunk_uses_correct_url(self, mock):
+        mock.json.return_value = {"WUResultResponse": 123}
+        conn = hpycc.Connection("user", server="aa", port=123, test_conn=False)
+        conn.get_logical_file_chunk("file", 1, 2, 1, 0)
+        mock.assert_called()
+
+    @patch.object(hpycc.Connection, "run_url_request")
+    def test_get_logical_file_chunk_fails_with_no_json(self, mock):
+        mock.return_value = requests.Response()
+        conn = hpycc.Connection("user", server="aa", port=123, test_conn=False)
+        with self.assertRaises(JSONDecodeError):
+            conn.get_logical_file_chunk("file", 1, 2, 1, 0)
+
+
+class TestConnectionGetLogicalFileChunkWithServer(HPCCTestInstance):
+    def test_get_logical_file_chunk_returns_correct_json(self):
+        expected_result = [
+            {'__fileposition__': '10', 'a': '2', 'b': 'b'},
+            {'__fileposition__': '20', 'a': '3', 'b': 'c'}
+        ]
+        conn = hpycc.Connection("user")
+        df = pd.DataFrame({"a": [1, 2, 3], "b": ["a", "b", "c"]})
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "data.csv")
+            df.to_csv(p, index=False)
+            hpycc.spray_file(conn, p, "data", chunk_size=3)
+
+        result = conn.get_logical_file_chunk("thor::data", 1, 3, 3, 0)
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], dict)
+        self.assertEqual(result, expected_result)
 
 
 class TestConnectionRunEclString:

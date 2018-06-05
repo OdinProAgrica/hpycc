@@ -12,12 +12,14 @@ Classes
 """
 __all__ = ["Connection"]
 
+import ast
 from collections import namedtuple
+import os
 import random
 import requests
 from requests.exceptions import HTTPError, RetryError
 import subprocess
-from tempfile import NamedTemporaryFile
+from tempfile import TemporaryDirectory
 from time import sleep
 
 
@@ -123,7 +125,11 @@ class Connection:
     def _run_command(cmd):
         result = subprocess.run(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            stdin=subprocess.PIPE, shell=True, check=True)
+            stdin=subprocess.PIPE, shell=True)
+        try:
+            result.check_returncode()
+        except subprocess.CalledProcessError as e:
+            raise subprocess.SubprocessError(result.stderr)
 
         stderr = result.stderr.decode('utf-8')
         stdout = result.stdout.decode("utf-8")
@@ -213,7 +219,7 @@ class Connection:
         result = self._run_command(base_cmd)
         return result
 
-    def run_url_request(self, url, max_attempts=3, max_sleep=10):
+    def run_url_request(self, url, max_attempts, max_sleep):
         """
         Return the contents of a url.
 
@@ -227,13 +233,13 @@ class Connection:
         ----------
         url: str
             URL to query.
-        max_attempts: int, optional
+        max_attempts: int
             Maximum number of times url should be queried in the
-            case of an exception being raised. 3 by default.
-        max_sleep: int, optional
+            case of an exception being raised.
+        max_sleep: int
             Maximum time, in seconds, to sleep between attempts.
             The true sleep time is a random int between 0 and
-            `max_sleep`. 10 by default.
+            `max_sleep`.
 
         Returns
         -------
@@ -260,7 +266,7 @@ class Connection:
                     raise RetryError(e)
 
     def get_logical_file_chunk(self, logical_file, start_row, n_rows,
-                               max_attempts):
+                               max_attempts, max_sleep):
         """
         Return a chunk of a logical file from a HPCC instance.
 
@@ -274,25 +280,32 @@ class Connection:
         logical_file: str
             Name of logical file.
         start_row: int
-            First row to return.
+            First row to return where 1 is the first row of the
+            dataset.
         n_rows: int
             Number of rows to return.
         max_attempts: int
             Maximum number of times url should be queried in the
             case of an exception being raised.
+        max_sleep: int
+            Maximum time, in seconds, to sleep between attempts.
+            The true sleep time is a random int between 0 and
+            `max_sleep`.
 
         Returns
         -------
-        result_response: dict
-            Rows of logical file in dict form.
+        result_response: list of dicts
+            Rows of logical file as list of dicts. In the form
+            [{"col1": 1, "col2": 2}, {"col1": 1, "col2": 2}, ...].
 
         """
+        # todo add key to returns info
         url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
                "&Cluster=thor&Start={}&Count={}").format(
             self.server, self.port, logical_file, start_row, n_rows)
-        r = self.run_url_request(url, max_attempts)
+        r = self.run_url_request(url, max_attempts, max_sleep)
         rj = r.json()
-        result_response = rj["WUResultResponse"]
+        result_response = rj["WUResultResponse"]["Result"]["Row"]
         return result_response
 
     def run_ecl_string(self, string, syntax_check):
@@ -328,8 +341,10 @@ class Connection:
         run_ecl_script
 
         """
-        with NamedTemporaryFile() as tmp:
-            byte_string = string.encode()
-            tmp.write(byte_string)
-            r = self.run_ecl_script(tmp.name, syntax_check)
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "ecl_string.ecl")
+            with open(p, "w+") as file:
+                file.write(string)
+
+            r = self.run_ecl_script(p, syntax_check)
         return r
