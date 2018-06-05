@@ -25,7 +25,7 @@ from time import sleep
 
 class Connection:
     def __init__(self, username, server="localhost", port=8010, repo=None,
-                 password=None, legacy=False):
+                 password=None, legacy=False, test_conn=True):
         """
         Connection to a HPCC instance.
 
@@ -52,8 +52,11 @@ class Connection:
             Password to provide to HPCC alongside the username.
             None by default.
         legacy: bool, optional
-            If the legacy flag should be enabled when executing ECL
+            Should legacy flag should be enabled when executing ECL
             commands. False by default.
+        test_conn: bool, optional
+            Test connection to the server on initialisation.
+            True by default.
 
         Attributes
         ----------
@@ -88,7 +91,8 @@ class Connection:
         self.password = password
         self.legacy = legacy
 
-        self.test_connection()
+        if test_conn:
+            self.test_connection()
 
     def test_connection(self):
         """
@@ -119,26 +123,26 @@ class Connection:
     def _run_command(cmd):
         result = subprocess.run(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            stdin=subprocess.PIPE, shell=True)
+            stdin=subprocess.PIPE, shell=True, check=True)
 
         stderr = result.stderr.decode('utf-8')
         stdout = result.stdout.decode("utf-8")
-
-        if result.returncode:
-            raise OSError(stderr)
 
         Result = namedtuple("Result", ["stdout", "stderr"])
         result_tuple = Result(stdout, stderr)
         return result_tuple
 
     def check_syntax(self, script):
+        # TODO should this be able to be used as a syntax checker? so it
+        # returns the things
         """
         Run an ECL syntax check on an ECL script.
 
         Uses eclcc to run a syntax check on `script`. If the syntax
-        check fails, an OSError will be raised. Note that this
-        requires that `eclcc.exe` is on the path. Attributes
-        `legacy` and `repo` are also used.
+        check fails, ie. an error is present, a CalledProcessError
+        will be raised.
+        Note that this requires that `eclcc.exe` is on the path.
+        Attributes `legacy` and `repo` are also used.
 
         Parameters
         ----------
@@ -151,7 +155,7 @@ class Connection:
 
         Raises
         ------
-        OSError:
+        subprocess.CalledProcessError:
             If the script fails the syntax check.
 
         """
@@ -189,7 +193,7 @@ class Connection:
 
         Raises
         ------
-        OSError:
+        subprocess.CalledProcessError:
             If script fails syntax check.
 
         See Also
@@ -319,8 +323,6 @@ class Connection:
         syntax_check
         run_ecl_script
 
-        See Also
-        --------
         """
         with NamedTemporaryFile() as tmp:
             byte_string = string.encode()

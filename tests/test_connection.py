@@ -2,6 +2,10 @@
 This module contains old_tests for hpycc.connection.
 
 """
+from collections import namedtuple
+import os
+import subprocess
+from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
@@ -146,15 +150,129 @@ class TestConnectionTestConnectionWithAuth(unittest.TestCase):
             conn.test_connection()
 
 
-class TestConnectionRunCommand:
-    pass
+class TestConnectionRunCommand(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.conn = hpycc.connection.Connection("user", test_conn=False)
+        cls.Result = namedtuple("Result", ["stdout", "stderr"])
+
+    @patch.object(subprocess, "run")
+    def test_run_command_calls_subprocess_run(self, mock):
+        result_tuple = self.Result(b"a", b"b")
+        mock.return_value = result_tuple
+        self.conn._run_command("ls")
+        mock.assert_called()
+
+    def test_run_command_raises_error_if_bad_return_code(self):
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.conn._run_command("fghdf")
+
+    def test_run_command_passes_if_good_return_code(self):
+        cmd_result = self.conn._run_command("cd .")
+        expected = self.Result("", "")
+        self.assertEqual(cmd_result, expected)
+
+    def test_run_command_passes_if_stderr_present(self):
+        cmd_result = self.conn._run_command('>&2 echo error')
+        expected = self.Result("", "error\r\n")
+        self.assertEqual(cmd_result, expected)
+
+    def test_run_command_returns_stdout(self):
+        cmd_result = self.conn._run_command('echo hello')
+        expected = "hello\r\n"
+        self.assertEqual(cmd_result.stdout, expected)
+
+    def test_run_command_returns_named_tuple(self):
+        result = self.conn._run_command('>&2 echo error')
+        self.assertEqual(result.__class__.__name__, "Result")
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(result.stderr, "error\r\n")
+
+    def test_run_command_returns_decoded_strings(self):
+        result = self.conn._run_command('>&2 echo error')
+        self.assertIsInstance(result.stderr, str)
+        self.assertIsInstance(result.stdout, str)
 
 
-class TestConnectionCheckSyntax:
-    pass
+class TestConnectionCheckSyntax(unittest.TestCase):
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_check_syntax_builds_correct_path_with_no_legacy_or_repo(
+            self, mock):
+        conn = hpycc.Connection("user", legacy=False, repo=None, test_conn=False)
+        conn.check_syntax("non.ecl")
+        mock.assert_called_with("eclcc -syntax non.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_check_syntax_builds_correct_path_with_legacy(self, mock):
+        conn = hpycc.Connection("user", legacy=True, repo=None, test_conn=False)
+        conn.check_syntax("non.ecl")
+        mock.assert_called_with("eclcc -syntax -legacy non.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_check_syntax_builds_correct_path_with_legacy_and_repo(self, mock):
+        conn = hpycc.Connection("user", legacy=True, repo="./dir", test_conn=False)
+        conn.check_syntax("non.ecl")
+        mock.assert_called_with("eclcc -syntax -legacy -I ./dir non.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_check_syntax_builds_correct_path_with_repo(self, mock):
+        conn = hpycc.Connection("user", legacy=False, repo="./dir", test_conn=False)
+        conn.check_syntax("non.ecl")
+        mock.assert_called_with("eclcc -syntax -I ./dir non.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_check_syntax_calls_run_command(self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        conn.check_syntax("non.ecl")
+        mock.assert_called()
+
+    def test_check_syntax_passes_with_good_script(self):
+        conn = hpycc.Connection("user", test_conn=False)
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "tmp.ecl")
+            with open(p, "w+") as file:
+                file.write("output(2);")
+            self.assertIsNone(conn.check_syntax(p))
+
+    def test_check_syntax_passes_with_warnings(self):
+        conn = hpycc.Connection("user", test_conn=False)
+        warning_string = "\n".join([
+            "a := DATASET([{1,2}], {INTEGER a; INTEGER b});",
+            "a;",
+            "b := DATASET([{1,2}], {INTEGER a; INTEGER b});",
+            "b;",
+            "groupREC := RECORD",
+            "STRING a := a.a;",
+            "STRING b := a.b;",
+            "INTEGER n := count(group);",
+            "END;",
+            "TABLE(a, groupREC, a)"
+        ])
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "tmp.ecl")
+            with open(p, "w+") as file:
+                file.write(warning_string)
+            self.assertIsNone(conn.check_syntax(p))
+
+    def test_check_syntax_fails_with_errors(self):
+        conn = hpycc.Connection("user", test_conn=False)
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "tmp.ecl")
+            with open(p, "w+") as file:
+                file.write("sdfdsf")
+            with self.assertRaises(subprocess.CalledProcessError):
+                conn.check_syntax(p)
 
 
 class TestConnectionRunEclScript:
+    # check builds code correctly
+    # check runs syntax check
+    # check syntax check passes
+    # check syntax check fails
+    # check syntax check can be disabled
+    # check calls run_command
+    # check it outputs the right things
+    # check it fails properly
     pass
 
 
