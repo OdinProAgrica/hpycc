@@ -17,7 +17,8 @@ def start_hpcc_container():
                                   name="hpycc_tests")
         return b
     except KILL_EXCEPTIONS as e:
-        b.stop()
+        client.containers.get("hpycc_tests").stop()
+        client.api.remove_container("hpycc_tests")
         raise e
 
 
@@ -29,6 +30,8 @@ def password_hpcc(container):
                                 "etc/HPCCSystems")
     except KILL_EXCEPTIONS as e:
         container.stop()
+        client = docker.from_env()
+        client.api.remove_container("hpycc_tests")
         raise e
 
 

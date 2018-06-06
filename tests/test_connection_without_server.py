@@ -445,3 +445,30 @@ class TestConnectionTestConnectionWithAuth(unittest.TestCase):
         with self.assertRaisesRegex(HTTPError, self.error_string):
             conn = hpycc.connection.Connection(username="abc", password="")
             conn.test_connection()
+
+
+class TestConnectionRunECLString(unittest.TestCase):
+    @patch.object(hpycc.Connection, "run_ecl_script")
+    def test_run_ecl_string_calls_run_ecl_script(self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        conn.run_ecl_string("aa", syntax_check=False)
+        mock.assert_called()
+
+    @patch.object(hpycc.Connection, "check_syntax")
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_string_checks_syntax_if_flag_is_true(self, _, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        conn.run_ecl_string("OUTPUT(2);", syntax_check=True)
+        mock.assert_called()
+
+    @patch.object(hpycc.Connection, "check_syntax")
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_string_checks_syntax_if_flag_is_true(self, _, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        conn.run_ecl_string("OUTPUT(2);", syntax_check=False)
+        mock.assert_not_called()
+
+    def test_run_ecl_string_raises_if_syntax_check_fails(self):
+        conn = hpycc.Connection("user", test_conn=False)
+        with self.assertRaises(subprocess.SubprocessError):
+            conn.run_ecl_string("OUTPUT(2);", syntax_check=True)

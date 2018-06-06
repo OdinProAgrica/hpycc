@@ -23,8 +23,10 @@ from time import sleep
 
 
 class Connection:
-    # todo should we validate username? and port and server
-    # todo make take multiple repos
+    # TODO make take multiple repos
+    # TODO validate server and port?
+    # TODO deal with request deprecation warning of none string usernames
+    # TODO add examples
     def __init__(self, username, server="localhost", port=8010, repo=None,
                  password="", legacy=False, test_conn=True):
         """
@@ -80,10 +82,7 @@ class Connection:
             commands.
 
         """
-        # TODO make take multiple repos
-        # TODO validate server and port?
-        # TODO deal with request deprecation warning of none string usernames
-        # TODO add examples
+
         if not isinstance(username, str) or not username:
             raise AttributeError("username must be a string, not {}".format(
                 username))
@@ -140,8 +139,6 @@ class Connection:
         return result_tuple
 
     def check_syntax(self, script):
-        # TODO should this be able to be used as a syntax checker? so it
-        # returns the things
         """
         Run an ECL syntax check on an ECL script.
 
@@ -192,7 +189,7 @@ class Connection:
 
         Returns
         -------
-        result: tuple
+        result: namedtuple
             NamedTuple in the form (stdout, stderr).
 
         Raises
@@ -300,7 +297,6 @@ class Connection:
             [{"col1": 1, "col2": 2}, {"col1": 1, "col2": 2}, ...].
 
         """
-        # todo add key to returns info
         url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
                "&Cluster=thor&Start={}&Count={}").format(
             self.server, self.port, logical_file, start_row, n_rows)
@@ -329,11 +325,12 @@ class Connection:
 
         Returns
         -------
-        result: tuple
+        result: namedtuple
             NamedTuple in the form (stdout, stderr).
 
         Raises
-        OSError:
+        ------
+        subprocess.CalledProcessError:
             If script fails syntax check.
 
         See Also

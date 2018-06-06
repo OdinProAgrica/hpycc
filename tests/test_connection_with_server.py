@@ -15,21 +15,18 @@ import hpycc.connection
 from tests.test_helpers import hpcc_functions
 
 
+# noinspection PyPep8Naming
 def setUpModule():
     a = hpcc_functions.start_hpcc_container()
     hpcc_functions.start_hpcc(a)
 
 
+# noinspection PyPep8Naming
 def tearDownModule():
     hpcc_functions.stop_hpcc_container()
 
 
 class TestConnectionTestConnectionWithNoAuth(unittest.TestCase):
-    def test_test_connection_passes_successfully_with_no_auth(self):
-        conn = hpycc.connection.Connection(username=None)
-        result = conn.test_connection()
-        self.assertTrue(result)
-
     def test_test_connection_passes_successfully_with_username(self):
         conn = hpycc.connection.Connection(username="testuser")
         result = conn.test_connection()
@@ -69,7 +66,7 @@ class TestConnectionRunECLScriptWithServer(unittest.TestCase):
     def test_run_script_returns_correct_tuple(self):
         conn = hpycc.Connection("user", test_conn=False)
         good_script = "output(2);"
-        expected_out ="\r\n".join([
+        expected_out = "\r\n".join([
             "\r\n<Result>", "<Dataset name='Result 1'>",
             " <Row><Result_1>2</Result_1></Row>",
             "</Dataset>", "</Result>\r\n"
@@ -92,7 +89,8 @@ class TestConnectionRunECLScriptWithServer(unittest.TestCase):
 class TestRunURLRequestWithServer(unittest.TestCase):
     def test_run_url_request_returns_response(self):
         conn = hpycc.Connection("user", test_conn=False)
-        result = conn.run_url_request("http://localhost:8010")
+        result = conn.run_url_request("http://localhost:8010", max_attempts=1,
+                                      max_sleep=0)
         self.assertIsInstance(result, requests.Response)
 
 
@@ -115,11 +113,17 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
         self.assertEqual(result, expected_result)
 
 
-class TestConnectionRunEclString(unittest.TestCase):
-    # does it call run_ecl_script?
-    # does it send the string through properly?
-    # does it call a syntax check?
-    # does it listen to syntax check?
-    # does it raise the right error if it fails syntax check?
-
-    pass
+class TestConnectionRunECLStringWithServer(unittest.TestCase):
+    def test_run_ecl_string_returns_result_of_run_ecl_script(self):
+        expected_stdout = "\r\n".join([
+            "\r\n<Result>",
+            "<Dataset name='Result 1'>",
+            " <Row><Result_1>2</Result_1></Row>",
+            "</Dataset>",
+            "</Result>\r\n"
+        ])
+        conn = hpycc.Connection("user", test_conn=False)
+        result = conn.run_ecl_string("OUTPUT(2);", syntax_check=True)
+        self.assertEqual(result.__class__.__name__, "Result")
+        self.assertEqual(expected_stdout, result.stdout)
+        self.assertEqual("", result.stderr)
