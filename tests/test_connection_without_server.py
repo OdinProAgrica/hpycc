@@ -54,7 +54,7 @@ class TestConnectionDefaultAttributes(unittest.TestCase):
 class TestConnectionCustomAttributes(unittest.TestCase):
     def setUp(self):
         self.conn = hpycc.connection.Connection(
-            "some_user", "some_server", 9000, "some_repo", "password", True,
+            "some_user", "some_server", 9000, "some_repo", "p", True,
             test_conn=False)
 
     def test_username(self):
@@ -70,7 +70,7 @@ class TestConnectionCustomAttributes(unittest.TestCase):
         self.assertEqual(self.conn.repo, "some_repo")
 
     def test_password(self):
-        self.assertEqual(self.conn.password, "password")
+        self.assertEqual(self.conn.password, "p")
 
     def test_legacy(self):
         self.assertEqual(self.conn.legacy, True)
