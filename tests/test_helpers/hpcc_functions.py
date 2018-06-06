@@ -2,16 +2,28 @@ import os
 import tarfile
 import time
 from io import BytesIO
+import warnings
 
 import docker
+from docker.errors import NotFound, APIError
 
 KILL_EXCEPTIONS = (ValueError, FileNotFoundError)
 
 
 def start_hpcc_container():
     client = docker.from_env()
-    client.api.remove_container("hpycc_tests")
-    client.api.pull("hpccsystems/platform-ce")
+    try:
+        client.containers.get("hpycc_tests").stop()
+    except NotFound:
+        pass
+    try:
+        client.api.remove_container("hpycc_tests")
+    except NotFound:
+        pass
+    try:
+        client.api.pull("hpccsystems/platform-ce")
+    except APIError:
+        warnings.warn("couldn't download the latest HPCC image. Are you online?")
     try:
         b = client.containers.run("hpccsystems/platform-ce", "/bin/bash",
                                   detach=True, auto_remove=False, tty=True,
