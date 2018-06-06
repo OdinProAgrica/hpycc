@@ -10,6 +10,8 @@ KILL_EXCEPTIONS = (ValueError, FileNotFoundError)
 
 def start_hpcc_container():
     client = docker.from_env()
+    client.api.remove_container("hpycc_tests")
+    client.api.pull("hpccsystems/platform-ce")
     try:
         b = client.containers.run("hpccsystems/platform-ce", "/bin/bash",
                                   detach=True, auto_remove=False, tty=True,
