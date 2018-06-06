@@ -51,6 +51,18 @@ class TestConnectionDefaultAttributes(unittest.TestCase):
             hpycc.Connection("a", password=123, test_conn=False)
 
 
+class TestConnectionTestConn(unittest.TestCase):
+    @patch.object(hpycc.Connection, "test_connection")
+    def test_test_conn_default(self, mock):
+        hpycc.Connection("user")
+        mock.assert_called()
+
+    @patch.object(hpycc.Connection, "test_connection")
+    def test_test_conn_false(self, mock):
+        hpycc.Connection("user", test_conn=False)
+        self.assertFalse(mock.called)
+
+
 class TestConnectionCustomAttributes(unittest.TestCase):
     def setUp(self):
         self.conn = hpycc.connection.Connection(
