@@ -26,7 +26,8 @@ setup(
     zip_safe=False,
     install_requires=[
         'pandas',
-        'requests', 'docker'
+        'requests>=2.18.4',
+        'docker'
     ],
     project_urls={
         'Bug Reports': 'https://github.com/OdinProAgrica/hpycc/issues',
