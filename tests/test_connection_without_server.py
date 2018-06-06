@@ -1,0 +1,474 @@
+from collections import namedtuple
+from json.decoder import JSONDecodeError
+import os
+import random
+import subprocess
+from tempfile import TemporaryDirectory
+import unittest
+from unittest.mock import patch
+
+import requests
+from requests import HTTPError
+
+import hpycc
+import hpycc.connection
+from tests.test_helpers import hpcc_functions
+
+
+class TestConnectionDefaultAttributes(unittest.TestCase):
+    def setUp(self):
+        self.conn = hpycc.connection.Connection("username", test_conn=False)
+
+    def test_server(self):
+        self.assertEqual(self.conn.server, "localhost")
+
+    def test_port(self):
+        self.assertEqual(self.conn.port, 8010)
+
+    def test_repo(self):
+        self.assertEqual(self.conn.repo, None)
+
+    def test_password(self):
+        self.assertEqual(self.conn.password, "")
+
+    def test_legacy(self):
+        self.assertEqual(self.conn.legacy, False)
+
+    def test_username_raises_error_if_blank(self):
+        with self.assertRaises(AttributeError):
+            hpycc.Connection("", test_conn=False)
+
+
+class TestConnectionCustomAttributes(unittest.TestCase):
+    def setUp(self):
+        self.conn = hpycc.connection.Connection(
+            "some_user", "some_server", 9000, "some_repo", "password", True,
+            test_conn=False)
+
+    def test_username(self):
+        self.assertEqual(self.conn.username, "some_user")
+
+    def test_server(self):
+        self.assertEqual(self.conn.server, "some_server")
+
+    def test_port(self):
+        self.assertEqual(self.conn.port, 9000)
+
+    def test_repo(self):
+        self.assertEqual(self.conn.repo, "some_repo")
+
+    def test_password(self):
+        self.assertEqual(self.conn.password, "password")
+
+    def test_legacy(self):
+        self.assertEqual(self.conn.legacy, True)
+
+
+class TestConnectionInitTestConnection(unittest.TestCase):
+    @patch.object(hpycc.connection.Connection, "test_connection")
+    def test_calls_test_connection_on_init(self, mock):
+        hpycc.connection.Connection("usrname")
+        mock.assert_called()
+
+
+class TestConnectionRunCommand(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.conn = hpycc.connection.Connection("user", test_conn=False)
+        cls.Result = namedtuple("Result", ["stdout", "stderr"])
+
+    @patch.object(subprocess, "run")
+    def test_run_command_calls_subprocess_run(self, mock):
+        mock.check_returncode.return_value = True
+        self.conn._run_command("ls")
+        mock.assert_called()
+
+    def test_run_command_raises_error_if_bad_return_code(self):
+        with self.assertRaises(subprocess.SubprocessError):
+            self.conn._run_command("fghdf")
+
+    def test_run_command_passes_if_good_return_code(self):
+        cmd_result = self.conn._run_command("cd .")
+        expected = self.Result("", "")
+        self.assertEqual(cmd_result, expected)
+
+    def test_run_command_passes_if_stderr_present(self):
+        cmd_result = self.conn._run_command('>&2 echo error')
+        expected = self.Result("", "error\r\n")
+        self.assertEqual(cmd_result, expected)
+
+    def test_run_command_returns_stdout(self):
+        cmd_result = self.conn._run_command('echo hello')
+        expected = "hello\r\n"
+        self.assertEqual(cmd_result.stdout, expected)
+
+    def test_run_command_returns_named_tuple(self):
+        result = self.conn._run_command('>&2 echo error')
+        self.assertEqual(result.__class__.__name__, "Result")
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(result.stderr, "error\r\n")
+
+    def test_run_command_returns_decoded_strings(self):
+        result = self.conn._run_command('>&2 echo error')
+        self.assertIsInstance(result.stderr, str)
+        self.assertIsInstance(result.stdout, str)
+
+
+class TestConnectionCheckSyntax(unittest.TestCase):
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_check_syntax_builds_correct_path_with_no_legacy_or_repo(
+            self, mock):
+        conn = hpycc.Connection("user", legacy=False, repo=None,
+                                test_conn=False)
+        conn.check_syntax("non.ecl")
+        mock.assert_called_with("eclcc -syntax non.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_check_syntax_builds_correct_path_with_legacy(self, mock):
+        conn = hpycc.Connection("user", legacy=True, repo=None,
+                                test_conn=False)
+        conn.check_syntax("non.ecl")
+        mock.assert_called_with("eclcc -syntax -legacy non.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_check_syntax_builds_correct_path_with_legacy_and_repo(self, mock):
+        conn = hpycc.Connection("user", legacy=True, repo="./dir",
+                                test_conn=False)
+        conn.check_syntax("non.ecl")
+        mock.assert_called_with("eclcc -syntax -legacy -I ./dir non.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_check_syntax_builds_correct_path_with_repo(self, mock):
+        conn = hpycc.Connection("user", legacy=False, repo="./dir",
+                                test_conn=False)
+        conn.check_syntax("non.ecl")
+        mock.assert_called_with("eclcc -syntax -I ./dir non.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_check_syntax_calls_run_command(self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        conn.check_syntax("non.ecl")
+        mock.assert_called()
+
+    def test_check_syntax_passes_with_good_script(self):
+        conn = hpycc.Connection("user", test_conn=False)
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "tmp.ecl")
+            with open(p, "w+") as file:
+                file.write("output(2);")
+            self.assertIsNone(conn.check_syntax(p))
+
+    def test_check_syntax_passes_with_warnings(self):
+        conn = hpycc.Connection("user", test_conn=False)
+        warning_string = "\n".join([
+            "a := DATASET([{1,2}], {INTEGER a; INTEGER b});",
+            "a;",
+            "b := DATASET([{1,2}], {INTEGER a; INTEGER b});",
+            "b;",
+            "groupREC := RECORD",
+            "STRING a := a.a;",
+            "STRING b := a.b;",
+            "INTEGER n := count(group);",
+            "END;",
+            "TABLE(a, groupREC, a)"
+        ])
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "tmp.ecl")
+            with open(p, "w+") as file:
+                file.write(warning_string)
+            self.assertIsNone(conn.check_syntax(p))
+
+    def test_check_syntax_fails_with_errors(self):
+        conn = hpycc.Connection("user", test_conn=False)
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "tmp.ecl")
+            with open(p, "w+") as file:
+                file.write("sdfdsf")
+            with self.assertRaises(subprocess.SubprocessError):
+                conn.check_syntax(p)
+
+
+class TestConnectionRunECLScript(unittest.TestCase):
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_uses_server_port_and_username(self, mock):
+        conn = hpycc.Connection("user", test_conn=False, server="abc",
+                                port=123)
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        mock.assert_called_with(
+            "ecl run --server abc --port 123 --username user --password "
+            "'' thor test.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_uses_password(self, mock):
+        conn = hpycc.Connection("user", password="abc", test_conn=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        mock.assert_called_with(
+            "ecl run --server localhost --port 8010 --username user "
+            "--password 'abc' thor test.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_works_with_special_password_chars(
+            self, mock):
+        conn = hpycc.Connection("user", password="a\nb", test_conn=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        mock.assert_called_with(
+            "ecl run --server localhost --port 8010 --username user "
+            "--password 'a\nb' thor test.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_uses_password_if_none(self, mock):
+        conn = hpycc.Connection("user", password="", test_conn=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        mock.assert_called_with(
+            "ecl run --server localhost --port 8010 --username user "
+            "--password '' thor test.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_uses_password_if_all_spaces(self, mock):
+        conn = hpycc.Connection("user", password="  ", test_conn=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        mock.assert_called_with(
+            "ecl run --server localhost --port 8010 --username user "
+            "--password '  ' thor test.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_uses_legacy(self, mock):
+        conn = hpycc.Connection("user", legacy=True, test_conn=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        mock.assert_called_with(
+            "ecl run --server localhost --port 8010 --username user "
+            "--password '' -legacy thor test.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_uses_legacy_if_none(self, mock):
+        conn = hpycc.Connection("user", legacy=None, test_conn=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        mock.assert_called_with(
+            "ecl run --server localhost --port 8010 --username user "
+            "--password '' thor test.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_uses_repo(self, mock):
+        conn = hpycc.Connection("user", test_conn=False, repo="C:")
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        mock.assert_called_with(
+            "ecl run --server localhost --port 8010 --username user "
+            "--password '' thor test.ecl -I C:")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_uses_repo_if_none(self, mock):
+        conn = hpycc.Connection("user", test_conn=False, repo=None)
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        mock.assert_called_with(
+            "ecl run --server localhost --port 8010 --username user "
+            "--password '' thor test.ecl")
+
+    @patch.object(hpycc.Connection, "_run_command")
+    @patch.object(hpycc.Connection, "check_syntax")
+    def test_run_script_checks_syntax_if_true(self, mock, _):
+        conn = hpycc.Connection("user", test_conn=False)
+        conn.run_ecl_script("test.ecl", syntax_check=True)
+        mock.assert_called()
+
+    @patch.object(hpycc.Connection, "_run_command")
+    @patch.object(hpycc.Connection, "check_syntax")
+    def test_run_script_does_not_check_syntax_if_false(self, mock, _):
+        conn = hpycc.Connection("user", test_conn=False,)
+        conn.run_ecl_script("test.ecl", syntax_check=False)
+        self.assertFalse(mock.called)
+
+    def test_run_script_fails_syntax_check_with_bad_script(self):
+        conn = hpycc.Connection("user", test_conn=False, repo=None)
+        bad_script = "sdf"
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(bad_script)
+            with self.assertRaises(subprocess.SubprocessError):
+                conn.run_ecl_script(p, syntax_check=True)
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_script_passes_syntax_check_with_good_script(self, mock):
+        conn = hpycc.Connection("user", test_conn=False, repo=None)
+        good_script = "output(2);"
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(good_script)
+            conn.run_ecl_script(p, syntax_check=True)
+        mock.assert_called()
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_script_calls_run_command(self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        good_script = "output(2);"
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(good_script)
+            conn.run_ecl_script(p, syntax_check=False)
+        mock.assert_called()
+
+    def test_run_script_fails_if_server_unavailable(self):
+        conn = hpycc.Connection("user", test_conn=False, repo=None)
+        good_script = "output(2);"
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(good_script)
+            with self.assertRaises(subprocess.SubprocessError):
+                conn.run_ecl_script(p, syntax_check=False)
+
+
+class TestConnectionGetLogicalFileChunk(unittest.TestCase):
+    @patch.object(hpycc.Connection, "run_url_request")
+    def test_get_logical_file_chunk_uses_correct_url(self, mock):
+        mock.json.return_value = {"WUResultResponse": 123}
+        conn = hpycc.Connection("user", server="aa", port=123, test_conn=False)
+        conn.get_logical_file_chunk("file", 1, 2, 1, 0)
+        mock.assert_called()
+
+    @patch.object(hpycc.Connection, "run_url_request")
+    def test_get_logical_file_chunk_fails_with_no_json(self, mock):
+        mock.return_value = requests.Response()
+        conn = hpycc.Connection("user", server="aa", port=123, test_conn=False)
+        with self.assertRaises(JSONDecodeError):
+            conn.get_logical_file_chunk("file", 1, 2, 1, 0)
+
+
+class TestConnectionRunURLRequest(unittest.TestCase):
+    @patch.object(requests, "get")
+    def test_run_url_request_uses_all_attempts(self, mock):
+        final_response = requests.Response()
+        final_response.status_code = 200
+        side_effects = (ValueError, ValueError, ValueError, ValueError,
+                        final_response)
+        mock.side_effect = side_effects
+        conn = hpycc.Connection("user", test_conn=False)
+        conn.run_url_request("dfsd.dfd", max_attempts=5, max_sleep=0)
+        self.assertEqual(mock.call_count, 5)
+
+    @patch.object(requests, "get")
+    def test_run_url_request_counts_404_as_error(self, mock):
+        bad_response = requests.Response()
+        bad_response.status_code = 404
+        mock.return_value = bad_response
+        conn = hpycc.Connection("user", test_conn=False)
+        with self.assertRaises(requests.exceptions.RetryError):
+            conn.run_url_request("dfsd.dfd", max_attempts=2, max_sleep=0)
+
+    @patch.object(requests, "get")
+    def test_run_url_request_counts_500_as_error(self, mock):
+        bad_response = requests.Response()
+        bad_response.status_code = 500
+        mock.return_value = bad_response
+        conn = hpycc.Connection("user", test_conn=False)
+        with self.assertRaises(requests.exceptions.RetryError):
+            conn.run_url_request("dfsd.dfd", max_attempts=2, max_sleep=0)
+
+    @patch.object(requests, "get")
+    def test_run_url_request_uses_auth(self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        conn.run_url_request("dfsd.dfd", max_attempts=5, max_sleep=0)
+        mock.assert_called_with('dfsd.dfd', auth=('user', ""))
+
+    @patch.object(random, "randint")
+    def test_run_url_request_uses_custom_max_sleep(self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        with self.assertRaises(requests.exceptions.RetryError):
+            conn.run_url_request("dfsd.dfd", max_attempts=1, max_sleep=0)
+        mock.assert_called_with(0, 0)
+
+    @patch.object(requests, "get")
+    def test_run_url_request_uses_max_attempts_default_3(self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        mock.side_effect = ValueError
+        with self.assertRaises(requests.exceptions.RetryError):
+            conn.run_url_request("dfsd.dfd", max_sleep=0, max_attempts=3)
+        self.assertEqual(mock.call_count, 3)
+
+    @patch.object(requests, "get")
+    def test_run_url_request_uses_max_attempts_custom(self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        mock.side_effect = ValueError
+        with self.assertRaises(requests.exceptions.RetryError):
+            conn.run_url_request("dfsd.dfd", max_attempts=4, max_sleep=0)
+        self.assertEqual(mock.call_count, 4)
+
+    @patch.object(requests, "get")
+    def test_run_url_request_raises_retry_error_when_exceeded(self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        mock.side_effect = ValueError
+        with self.assertRaises(requests.exceptions.RetryError):
+            conn.run_url_request("dfsd.dfd", max_sleep=0, max_attempts=1)
+
+    @patch.object(requests, "get")
+    def test_run_url_request_returns_response_after_single_error(self, mock):
+        r = requests.Response()
+        r.status_code = 200
+        mock.side_effect = (ValueError, r)
+        conn = hpycc.Connection("user", test_conn=False)
+        result = conn.run_url_request("dfsd.dfd", max_sleep=0, max_attempts=3)
+        self.assertIsInstance(result, requests.Response)
+
+
+class TestConnectionTestConnectionWithAuth(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        a = hpcc_functions.start_hpcc_container()
+        hpcc_functions.password_hpcc(a)
+        hpcc_functions.start_hpcc(a)
+
+        cls.error_string = ("401 Client Error: Unauthorized for url: "
+                            "http://localhost:8010/")
+
+    @classmethod
+    def tearDownClass(cls):
+        hpcc_functions.stop_hpcc_container()
+
+    def test_test_connection_passes_with_correct_auth(self):
+        conn = hpycc.connection.Connection(username="test1", password="1234")
+        result = conn.test_connection()
+        self.assertTrue(result)
+
+    def test_test_connection_fails_auth_with_incorrect_username(self):
+        with self.assertRaisesRegex(HTTPError, self.error_string):
+            conn = hpycc.connection.Connection(username="abc", password="1234")
+            conn.test_connection()
+
+    def test_test_connection_fails_auth_with_incorrect_password(self):
+        with self.assertRaisesRegex(HTTPError, self.error_string):
+            conn = hpycc.connection.Connection(username="test1", password="12")
+            conn.test_connection()
+
+    def test_test_connection_fails_auth_with_missing_password(self):
+        with self.assertRaisesRegex(HTTPError, self.error_string):
+            conn = hpycc.connection.Connection(username="abc", password="")
+            conn.test_connection()
+
+
+class TestConnectionRunECLString(unittest.TestCase):
+    @patch.object(hpycc.Connection, "run_ecl_script")
+    def test_run_ecl_string_calls_run_ecl_script(self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        conn.run_ecl_string("aa", syntax_check=False)
+        mock.assert_called()
+
+    @patch.object(hpycc.Connection, "check_syntax")
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_string_checks_syntax_if_flag_is_true(self, _, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        conn.run_ecl_string("OUTPUT(2);", syntax_check=True)
+        mock.assert_called()
+
+    @patch.object(hpycc.Connection, "check_syntax")
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_string_checks_syntax_if_flag_is_true(self, _, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        conn.run_ecl_string("OUTPUT(2);", syntax_check=False)
+        mock.assert_not_called()
+
+    def test_run_ecl_string_raises_if_syntax_check_fails(self):
+        conn = hpycc.Connection("user", test_conn=False)
+        with self.assertRaises(subprocess.SubprocessError):
+            conn.run_ecl_string("OUTPUT(2);", syntax_check=True)
