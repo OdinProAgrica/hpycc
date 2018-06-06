@@ -29,7 +29,7 @@ class TestConnectionDefaultAttributes(unittest.TestCase):
         self.assertEqual(self.conn.repo, None)
 
     def test_password(self):
-        self.assertEqual(self.conn.password, "")
+        self.assertEqual(self.conn.password, "password")
 
     def test_legacy(self):
         self.assertEqual(self.conn.legacy, False)
@@ -37,6 +37,18 @@ class TestConnectionDefaultAttributes(unittest.TestCase):
     def test_username_raises_error_if_blank(self):
         with self.assertRaises(AttributeError):
             hpycc.Connection("", test_conn=False)
+
+    def test_username_raises_error_if_not_string(self):
+        with self.assertRaises(AttributeError):
+            hpycc.Connection(123, test_conn=False)
+
+    def test_password_raises_error_if_blank(self):
+        with self.assertRaises(AttributeError):
+            hpycc.Connection("a", password="", test_conn=False)
+
+    def test_password_raises_error_if_not_string(self):
+        with self.assertRaises(AttributeError):
+            hpycc.Connection("a", password=123, test_conn=False)
 
 
 class TestConnectionCustomAttributes(unittest.TestCase):
@@ -196,7 +208,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
         conn.run_ecl_script("test.ecl", syntax_check=False)
         mock.assert_called_with(
             "ecl run --server abc --port 123 --username user --password "
-            "'' thor test.ecl")
+            "'password' thor test.ecl")
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_script_command_uses_password(self, mock):
@@ -216,14 +228,6 @@ class TestConnectionRunECLScript(unittest.TestCase):
             "--password 'a\nb' thor test.ecl")
 
     @patch.object(hpycc.Connection, "_run_command")
-    def test_run_ecl_script_command_uses_password_if_none(self, mock):
-        conn = hpycc.Connection("user", password="", test_conn=False)
-        conn.run_ecl_script("test.ecl", syntax_check=False)
-        mock.assert_called_with(
-            "ecl run --server localhost --port 8010 --username user "
-            "--password '' thor test.ecl")
-
-    @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_script_command_uses_password_if_all_spaces(self, mock):
         conn = hpycc.Connection("user", password="  ", test_conn=False)
         conn.run_ecl_script("test.ecl", syntax_check=False)
@@ -237,7 +241,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
         conn.run_ecl_script("test.ecl", syntax_check=False)
         mock.assert_called_with(
             "ecl run --server localhost --port 8010 --username user "
-            "--password '' -legacy thor test.ecl")
+            "--password 'password' -legacy thor test.ecl")
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_script_command_uses_legacy_if_none(self, mock):
@@ -245,7 +249,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
         conn.run_ecl_script("test.ecl", syntax_check=False)
         mock.assert_called_with(
             "ecl run --server localhost --port 8010 --username user "
-            "--password '' thor test.ecl")
+            "--password 'password' thor test.ecl")
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_script_command_uses_repo(self, mock):
@@ -253,7 +257,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
         conn.run_ecl_script("test.ecl", syntax_check=False)
         mock.assert_called_with(
             "ecl run --server localhost --port 8010 --username user "
-            "--password '' thor test.ecl -I C:")
+            "--password 'password' thor test.ecl -I C:")
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_script_command_uses_repo_if_none(self, mock):
@@ -261,7 +265,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
         conn.run_ecl_script("test.ecl", syntax_check=False)
         mock.assert_called_with(
             "ecl run --server localhost --port 8010 --username user "
-            "--password '' thor test.ecl")
+            "--password 'password' thor test.ecl")
 
     @patch.object(hpycc.Connection, "_run_command")
     @patch.object(hpycc.Connection, "check_syntax")
@@ -370,7 +374,7 @@ class TestConnectionRunURLRequest(unittest.TestCase):
     def test_run_url_request_uses_auth(self, mock):
         conn = hpycc.Connection("user", test_conn=False)
         conn.run_url_request("dfsd.dfd", max_attempts=5, max_sleep=0)
-        mock.assert_called_with('dfsd.dfd', auth=('user', ""))
+        mock.assert_called_with('dfsd.dfd', auth=('user', "password"))
 
     @patch.object(random, "randint")
     def test_run_url_request_uses_custom_max_sleep(self, mock):
@@ -439,11 +443,6 @@ class TestConnectionTestConnectionWithAuth(unittest.TestCase):
     def test_test_connection_fails_auth_with_incorrect_password(self):
         with self.assertRaisesRegex(HTTPError, self.error_string):
             conn = hpycc.connection.Connection(username="test1", password="12")
-            conn.test_connection()
-
-    def test_test_connection_fails_auth_with_missing_password(self):
-        with self.assertRaisesRegex(HTTPError, self.error_string):
-            conn = hpycc.connection.Connection(username="abc", password="")
             conn.test_connection()
 
 

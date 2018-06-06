@@ -25,10 +25,9 @@ from time import sleep
 class Connection:
     # TODO make take multiple repos
     # TODO validate server and port?
-    # TODO deal with request deprecation warning of none string usernames
     # TODO add examples
     def __init__(self, username, server="localhost", port=8010, repo=None,
-                 password="", legacy=False, test_conn=True):
+                 password="password", legacy=False, test_conn=True):
         """
         Connection to a HPCC instance.
 
@@ -53,7 +52,7 @@ class Connection:
             default.
         password: str
             Password to provide to HPCC alongside the username.
-            "" by default.
+            "password" by default. Note: this cannot be blank.
         legacy: bool, optional
             Should legacy flag should be enabled when executing ECL
             commands. False by default.
@@ -82,10 +81,13 @@ class Connection:
             commands.
 
         """
-
         if not isinstance(username, str) or not username:
             raise AttributeError("username must be a string, not {}".format(
                 username))
+        if not isinstance(password, str) or password == "":
+            raise AttributeError("password must be a string, not {}".format(
+                username))
+
         self.server = server
         self.username = username
         self.port = port
