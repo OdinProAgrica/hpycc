@@ -17,16 +17,7 @@ def tearDownModule():
     hpcc_functions.stop_hpcc_container()
 
 
-class TestConnectionRunECLScriptWithServer(unittest.TestCase):
-    def test_run_script_runs_script(self):
-        conn = hpycc.Connection("user", test_conn=False)
-        good_script = "output(2);"
-        with TemporaryDirectory() as d:
-            p = os.path.join(d, "test.ecl")
-            with open(p, "w+") as file:
-                file.write(good_script)
-            self.assertTrue(conn.run_ecl_script(p, syntax_check=False))
-
+class TestRunWithServer(unittest.TestCase):
     def test_run_script_saves_logical_file(self):
         conn = hpycc.Connection("user", test_conn=False)
         good_script = "\n".join([

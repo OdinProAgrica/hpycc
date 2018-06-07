@@ -166,7 +166,7 @@ class Connection:
 
         """
         legacy = "-legacy " if self.legacy else ""
-        repo = "-I {} ".format(self.repo) if self.repo else ""
+        repo = "-I '{}' ".format(self.repo) if self.repo else ""
         base_cmd = "eclcc -syntax {}{}{}".format(legacy, repo, script)
 
         self._run_command(base_cmd)
@@ -207,7 +207,7 @@ class Connection:
         """
         pw = "'{}' ".format(self.password)
         legacy = "-legacy " if self.legacy else ""
-        repo = " -I {}".format(self.repo) if self.repo else ""
+        repo = " -I '{}'".format(self.repo) if self.repo else ""
 
         base_cmd = ("ecl run --server {} --port {} --username {} "
                     "--password {}{}thor {}{}").format(

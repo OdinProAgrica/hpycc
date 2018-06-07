@@ -107,7 +107,7 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
             df.to_csv(p, index=False)
             hpycc.spray_file(conn, p, "data", chunk_size=3)
 
-        result = conn.get_logical_file_chunk("thor::data", 1, 3, 3, 0)
+        result = conn.get_logical_file_chunk("thor::data", 1, 2, 3, 0)
         self.assertIsInstance(result, list)
         self.assertIsInstance(result[0], dict)
         self.assertEqual(result, expected_result)
