@@ -1,31 +1,50 @@
 """
-The module contains functions to run a script with no data returned.
-This can be used to run a script, saving a logical file. This can
-then be accessing with get_file(). This method takes advantage of
-multi-threading, something which script outputs cannot do.
-"""
+Function to run an ECL script
 
-# TODO old_tests
-# TODO numpy docstrings
+This module provides a function, `run_script`, to run an ECL script
+using an existing `Connection`. This can be used to run a script,
+saving a logical file which can then be accessing
+with get_file(). This method takes advantage using `hpycc.get`. This
+approach allows for multi-threading, something which script outputs
+cannot do.
+
+Functions
+---------
+- `run_script` -- Run an ECL script.
+
+"""
+__all__ = ["run_script"]
 
 
 def run_script(connection, script, syntax_check=True):
     """
-    Run an ECL script but do not return the response.
+    Run an ECL script.
+
+    This function runs an ECL script using a `Connection` object. It
+    does not return the result.
 
     Parameters
     ----------
-    :param connection: `Connection`
+    connection: `Connection`
         HPCC Connection instance, see also `Connection`.
-    :param script: str
+    script: str
          Path of script to execute.
-    :param syntax_check: bool, optional
-        If the script be syntax checked before execution. True by
+    syntax_check: bool, optional
+        Should the script be syntax checked before execution? True by
         default.
 
     Returns
     -------
-    :return: None
-    """
+    None
 
+    Raises
+    ------
+    subprocess.CalledProcessError:
+        If script fails syntax check.
+
+    See Also
+    --------
+    Connection.run_ecl_string
+
+    """
     connection.run_ecl_script(script, syntax_check)

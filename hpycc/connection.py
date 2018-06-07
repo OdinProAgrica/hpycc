@@ -280,7 +280,7 @@ class Connection:
         logical_file: str
             Name of logical file.
         start_row: int
-            First row to return where 1 is the first row of the
+            First row to return where 0 is the first row of the
             dataset.
         n_rows: int
             Number of rows to return.
