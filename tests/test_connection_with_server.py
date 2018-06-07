@@ -97,17 +97,17 @@ class TestRunURLRequestWithServer(unittest.TestCase):
 class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
     def test_get_logical_file_chunk_returns_correct_json(self):
         expected_result = [
-            {'__fileposition__': '10', 'a': '2', 'b': 'b'},
-            {'__fileposition__': '20', 'a': '3', 'b': 'c'}
+            {'__fileposition__': '0', 'a': '1', 'b': 'a'},
+            {'__fileposition__': '10', 'a': '2', 'b': 'b'}
         ]
         conn = hpycc.Connection("user")
         df = pd.DataFrame({"a": [1, 2, 3], "b": ["a", "b", "c"]})
         with TemporaryDirectory() as d:
             p = os.path.join(d, "data.csv")
             df.to_csv(p, index=False)
-            hpycc.spray_file(conn, p, "data", chunk_size=3)
+            hpycc.spray_file(conn, p, "test_get_logical_file_chunk_returns_correct_json", chunk_size=2)
 
-        result = conn.get_logical_file_chunk("thor::data", 1, 2, 3, 0)
+        result = conn.get_logical_file_chunk("thor::test_get_logical_file_chunk_returns_correct_json", 0, 2, 3, 2)
         self.assertIsInstance(result, list)
         self.assertIsInstance(result[0], dict)
         self.assertEqual(result, expected_result)
