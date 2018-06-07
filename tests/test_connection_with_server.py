@@ -112,6 +112,22 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
         self.assertIsInstance(result[0], dict)
         self.assertEqual(result, expected_result)
 
+    def test_get_logical_file_chunk_is_zero_indexed(self):
+        expected_result = [
+            {'__fileposition__': '0', 'a': '1', 'b': 'a'}
+        ]
+        conn = hpycc.Connection("user")
+        df = pd.DataFrame({"a": [1, 2, 3], "b": ["a", "b", "c"]})
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "data.csv")
+            df.to_csv(p, index=False)
+            hpycc.spray_file(conn, p, "data", chunk_size=3)
+
+        result = conn.get_logical_file_chunk("thor::data", 0, 1, 3, 0)
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], dict)
+        self.assertEqual(result, expected_result)
+
 
 class TestConnectionRunECLStringWithServer(unittest.TestCase):
     def test_run_ecl_string_returns_result_of_run_ecl_script(self):
