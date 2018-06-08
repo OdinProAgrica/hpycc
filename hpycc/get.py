@@ -26,24 +26,46 @@ from hpycc.utils.parsers import parse_xml, parse_json_output
 
 def get_output(connection, script, syntax_check=True):
     """
-    Return the first output of an ECL script as a DataFrame. See
-    save_output() for writing straight to file and get_outputs() for
-    downloading multiple outputs.
+    Return the first output of an ECL script as a pandas.DataFrame.
 
     Parameters
     ----------
-    :param connection: `Connection`
+    connection: `Connection`
         HPCC Connection instance, see also `Connection`.
-    :param script: str
+    script: str
          Path of script to execute.
-    :param syntax_check: bool, optional
-        Should the script be syntax checked before execution. True by
+    syntax_check: bool, optional
+        Should the script be syntax checked before execution? True by
         default.
 
     Returns
     -------
-    :return: result: DataFrame
-        The first output of the script.
+    parsed: pandas.DataFrame
+        pandas.DataFrame of the first output of `script`.
+
+    Raises
+    ------
+    subprocess.CalledProcessError:
+        If script fails syntax check.
+
+    Examples
+    --------
+    >>> import hpycc
+    >>> conn = hpycc.Connection("user")
+    >>> with open("example.ecl", "r+") as file:
+    >>>     file.write("OUTPUT(2);")
+    >>> print(hpycc.get_output(conn, "example.ecl"))
+        0
+    0   2
+
+    >>> import hpycc
+    >>> conn = hpycc.Connection("user")
+    >>> with open("example.ecl", "r+") as file:
+    >>>     file.write("OUTPUT(2);OUTPUT(3);")
+    >>> print(hpycc.get_output(conn, "example.ecl"))
+        0
+    0   2
+
     """
 
     result = connection.run_ecl_script(script, syntax_check)
