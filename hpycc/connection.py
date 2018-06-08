@@ -23,11 +23,6 @@ from time import sleep
 
 
 class Connection:
-    # TODO make take multiple repos
-    # TODO validate server and port?
-    # TODO add examples
-    # TODO move all run flags to =
-    # TODO move run args to a list
     def __init__(self, username, server="localhost", port=8010, repo=None,
                  password="password", legacy=False, test_conn=True):
         """
@@ -306,7 +301,6 @@ class Connection:
             self.server, self.port, logical_file, start_row, n_rows)
         r = self.run_url_request(url, max_attempts, max_sleep)
         rj = r.json()
-        # TODO test this
         try:
             result_response = rj["WUResultResponse"]["Result"]["Row"]
         except KeyError as e:

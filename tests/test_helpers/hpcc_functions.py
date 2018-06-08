@@ -11,7 +11,6 @@ KILL_EXCEPTIONS = (ValueError, FileNotFoundError)
 
 
 def start_hpcc_container():
-    # TODO tidy/fix
     client = docker.from_env()
     try:
         client.containers.get("hpycc_tests").stop()

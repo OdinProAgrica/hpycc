@@ -109,9 +109,9 @@ def test_save_file():
     result_df_savefile = md.upload_data(logical_file_savefile, 15000, hpcc_connection)
     path = 'testOuputSave.csv'
 
-    hpycc.save.save_file(logical_file_savefile, path, server, port, username=username,
-                         password=password, csv_file=False, compression=None,
-                         silent=silent, log_to_file=log_to_file, debg=debg)
+    hpycc.save.save_logical_file(logical_file_savefile, path, server, port, username=username,
+                                 password=password, csv_file=False, compression=None,
+                                 silent=silent, log_to_file=log_to_file, debg=debg)
 
     result = pd.read_csv(path)
     os.remove(path)

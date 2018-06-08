@@ -1,7 +1,3 @@
-# TODO old_tests
-# TODO numpy docstrings
-
-
 def delete_logical_file(connection, logical_file):
     """
     Delete a logical file.

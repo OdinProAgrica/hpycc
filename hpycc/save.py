@@ -6,9 +6,6 @@ import hpycc.get
 import hpycc.utils.parsers
 from hpycc import get_output, get_logical_file
 
-# TODO old_tests
-# TODO numpy docstrings
-
 
 def save_output(connection, script, path_or_buf=None, syntax_check=True,
                 **kwargs):
@@ -102,8 +99,9 @@ def save_outputs(connection, script, directory=".", filenames=None,
         result[1].to_csv(path, **kwargs)
 
 
-def save_file(connection, logical_file, path_or_buf, csv=False, max_workers=15,
-              chunk_size=10000, max_attempts=3, **kwargs):
+def save_logical_file(connection, logical_file, path_or_buf, csv=False,
+                      max_workers=15, chunk_size=10000, max_attempts=3,
+                      **kwargs):
     """
     Save a logical file to disk, see get_file() for returning a
     DataFrame.

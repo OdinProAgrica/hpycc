@@ -4,8 +4,6 @@ from xml.etree import ElementTree
 
 import pandas as pd
 
-# TODO numpy docstrings
-
 
 def parse_xml(xml):
     """
@@ -61,8 +59,7 @@ def parse_json_output(results, column_names, csv):
         df = pd.DataFrame(map(list, zip(*lines)), columns=column_names)
 
     df = _make_col_numeric(df)
-    # TODO the below is broken. Fix it at some point
-    # df = _make_col_bool(df)
+    df = _make_col_bool(df)
 
     return df
 
@@ -114,7 +111,6 @@ def _make_col_bool(df):
         boolean.
     """
     for col in df.columns:
-        # TODO deal with nans?
         if set(df[col].str.lower().unique).issubset({"true", "false"}):
             df.loc[df[col].notnull(), col] = df[col].str.lower() == "true"
 

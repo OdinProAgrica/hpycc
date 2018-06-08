@@ -8,9 +8,6 @@ import pandas as pd
 from hpycc.delete import delete_logical_file
 from hpycc.utils.filechunker import make_chunks
 
-# TODO make sure this shouts at the user if they use bad column names
-# TODO old_tests
-# TODO numpy docstrings
 
 def _spray_stringified_data(connection, data, record_set, logical_file,
                             overwrite):
@@ -68,15 +65,14 @@ def _get_type(typ):
     else:
         # return 'STRING'
         pass
-    #  TODO: do we need to convert dates more cleanly?
-    # TODO: at present we just return string as we have an issue with nans in
-    # ECL
+
     return 'STRING'
 
 
 def _stringify_rows(df, start_row, num_rows):
     """
-    Return rows of a DataFrame as a HPCC ready string.
+    Return rows of a DataFrame as a HPCC ready string. Note: this ignores the
+    index
 
     Parameters
     ----------
@@ -92,7 +88,6 @@ def _stringify_rows(df, start_row, num_rows):
     :return: str
         ECL ready string of the slice.
     """
-    # TODO note this ignores the index
     sliced_df = df.loc[start_row:start_row + num_rows, df.columns]
 
     for col in sliced_df.columns:
@@ -215,7 +210,6 @@ def concatenate_logical_files(connection, to_concat, logical_file, record_set,
     -------
     :return: None
     """
-    # TODO add an expire
     read_files = ["DATASET('{}', {{{}}}, THOR)".format(
         nam, record_set) for nam in to_concat]
     read_files = '+\n'.join(read_files)
