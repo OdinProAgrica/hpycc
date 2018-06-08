@@ -1,7 +1,19 @@
 """
-This module contains functions to get either the output(s) of an ECL script,
-or a logical file.
+Functions to get data out of a HPCC instance.
+
+This module contains functions to get either the output(s) of an
+ECL script, or the contents of a logical file. The first input to all
+functions is an instance of `Connection`.
+
+Functions
+---------
+- `get_output` -- Return the first output of an ECL script.
+- `get_outputs` -- Return all outputs of an ECL script.
+- `get_logical_file` -- Return the contents of a logical file.
+
 """
+__all__ = ["get_output", "get_outputs", "get_logical_file"]
+
 import concurrent.futures
 import re
 
