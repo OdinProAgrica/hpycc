@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='hpycc',
-    version='0.4.0b'
+    version='0.1.0'
             '',
     description='Download THOR files, run ECL scripts and download their results.',
     url='https://github.com/OdinProAgrica/hpycc',

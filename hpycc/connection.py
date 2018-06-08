@@ -84,9 +84,9 @@ class Connection:
         if not isinstance(username, str) or not username:
             raise AttributeError("username must be a string, not {}".format(
                 username))
-        if not isinstance(password, str) or password == "":
+        if not isinstance(password, str) or not password.strip():
             raise AttributeError("password must be a string, not {}".format(
-                username))
+                password))
 
         self.server = server
         self.username = username
@@ -205,12 +205,12 @@ class Connection:
         run_ecl_string
 
         """
-        pw = "'{}' ".format(self.password)
+        pw = "{} ".format(self.password)
         legacy = "-legacy " if self.legacy else ""
         repo = " -I '{}'".format(self.repo) if self.repo else ""
 
         base_cmd = ("ecl run --server {} --port {} --username {} "
-                    "--password {}{}thor {}{}").format(
+                    "--password={}{}thor {}{}").format(
             self.server, self.port, self.username, pw, legacy, script, repo)
 
         if syntax_check:

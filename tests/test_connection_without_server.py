@@ -50,6 +50,10 @@ class TestConnectionDefaultAttributes(unittest.TestCase):
         with self.assertRaises(AttributeError):
             hpycc.Connection("a", password=123, test_conn=False)
 
+    def test_password_raises_error_if_spaces(self):
+        with self.assertRaises(AttributeError):
+            hpycc.Connection("a", password="  ", test_conn=False)
+
 
 class TestConnectionTestConn(unittest.TestCase):
     @patch.object(hpycc.Connection, "test_connection")
@@ -219,8 +223,8 @@ class TestConnectionRunECLScript(unittest.TestCase):
                                 port=123)
         conn.run_ecl_script("test.ecl", syntax_check=False)
         mock.assert_called_with(
-            "ecl run --server abc --port 123 --username user --password "
-            "'password' thor test.ecl")
+            "ecl run --server abc --port 123 --username user "
+            "--password=password thor test.ecl")
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_script_command_uses_password(self, mock):
@@ -228,7 +232,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
         conn.run_ecl_script("test.ecl", syntax_check=False)
         mock.assert_called_with(
             "ecl run --server localhost --port 8010 --username user "
-            "--password 'abc' thor test.ecl")
+            "--password=abc thor test.ecl")
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_script_command_works_with_special_password_chars(
@@ -237,15 +241,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
         conn.run_ecl_script("test.ecl", syntax_check=False)
         mock.assert_called_with(
             "ecl run --server localhost --port 8010 --username user "
-            "--password 'a\nb' thor test.ecl")
-
-    @patch.object(hpycc.Connection, "_run_command")
-    def test_run_ecl_script_command_uses_password_if_all_spaces(self, mock):
-        conn = hpycc.Connection("user", password="  ", test_conn=False)
-        conn.run_ecl_script("test.ecl", syntax_check=False)
-        mock.assert_called_with(
-            "ecl run --server localhost --port 8010 --username user "
-            "--password '  ' thor test.ecl")
+            "--password=a\nb thor test.ecl")
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_script_command_uses_legacy(self, mock):
@@ -253,7 +249,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
         conn.run_ecl_script("test.ecl", syntax_check=False)
         mock.assert_called_with(
             "ecl run --server localhost --port 8010 --username user "
-            "--password 'password' -legacy thor test.ecl")
+            "--password=password -legacy thor test.ecl")
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_script_command_uses_legacy_if_none(self, mock):
@@ -261,7 +257,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
         conn.run_ecl_script("test.ecl", syntax_check=False)
         mock.assert_called_with(
             "ecl run --server localhost --port 8010 --username user "
-            "--password 'password' thor test.ecl")
+            "--password=password thor test.ecl")
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_script_command_uses_repo(self, mock):
@@ -269,7 +265,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
         conn.run_ecl_script("test.ecl", syntax_check=False)
         mock.assert_called_with(
             "ecl run --server localhost --port 8010 --username user "
-            "--password 'password' thor test.ecl -I 'C:'")
+            "--password=password thor test.ecl -I 'C:'")
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_script_command_uses_repo_if_none(self, mock):
@@ -277,7 +273,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
         conn.run_ecl_script("test.ecl", syntax_check=False)
         mock.assert_called_with(
             "ecl run --server localhost --port 8010 --username user "
-            "--password 'password' thor test.ecl")
+            "--password=password thor test.ecl")
 
     @patch.object(hpycc.Connection, "_run_command")
     @patch.object(hpycc.Connection, "check_syntax")
