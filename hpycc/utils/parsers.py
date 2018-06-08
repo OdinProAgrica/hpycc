@@ -61,7 +61,8 @@ def parse_json_output(results, column_names, csv):
         df = pd.DataFrame(map(list, zip(*lines)), columns=column_names)
 
     df = _make_col_numeric(df)
-    df = _make_col_bool(df)
+    # TODO the below is broken. Fix it at some point
+    # df = _make_col_bool(df)
 
     return df
 

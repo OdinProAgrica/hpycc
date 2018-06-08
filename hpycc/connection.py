@@ -306,7 +306,11 @@ class Connection:
             self.server, self.port, logical_file, start_row, n_rows)
         r = self.run_url_request(url, max_attempts, max_sleep)
         rj = r.json()
-        result_response = rj["WUResultResponse"]["Result"]["Row"]
+        # TODO test this
+        try:
+            result_response = rj["WUResultResponse"]["Result"]["Row"]
+        except KeyError as e:
+            raise KeyError("json is : {}".format(rj))
         return result_response
 
     def run_ecl_string(self, string, syntax_check):

@@ -74,7 +74,7 @@ def get_outputs(connection, script, syntax_check=True):
     return as_dict
 
 
-def _get_columns_of_logical_file(connection, logical_file, csv):
+def _get_columns_of_logical_file(connection, logical_file, csv, max_attempts, max_sleep):
     """
     Return the column names of a logical file.
 
@@ -92,8 +92,8 @@ def _get_columns_of_logical_file(connection, logical_file, csv):
     :return: column_names: list
         List of column names in logical file.
     """
-    response = connection.get_logical_file_chunk(logical_file, 0, 2)
-    results = response['Result']['Row']
+    response = connection.get_logical_file_chunk(logical_file, 0, 2, max_attempts, max_sleep)
+    results = response
 
     if csv:
         column_names = results[0]['line'].split(',')
@@ -105,7 +105,7 @@ def _get_columns_of_logical_file(connection, logical_file, csv):
     return column_names
 
 
-def _get_logical_file_row_count(connection, logical_file):
+def _get_logical_file_row_count(connection, logical_file, max_attempts, max_sleep):
     """
     Return the number of rows in a logical file.
 
@@ -121,14 +121,23 @@ def _get_logical_file_row_count(connection, logical_file):
     :return: file_size, int
         Number of rows in logical file.
     """
-    response = connection.get_logical_file_chunk(logical_file, 0, 2)
-    file_size = response['Total']
+    #response = connection.get_logical_file_chunk(logical_file, 0, 2, max_attempts, max_sleep)
+    url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
+           "&Cluster=thor&Start={}&Count={}").format(
+        connection.server, connection.port, logical_file, 0, 2)
+
+    r = connection.run_url_request(url, max_attempts, max_sleep)
+    rj = r.json()
+    try:
+        file_size = rj["WUResultResponse"]['Total']
+    except KeyError:
+        raise KeyError("json: {}".format(rj))
 
     return file_size
 
 
 def get_logical_file(connection, logical_file, csv=False, max_workers=15,
-                     chunk_size=10000, max_attempts=3):
+                     chunk_size=10000, max_attempts=3, max_sleep=10):
     """
     Return a DataFrame of a logical file. To write to disk
     see save_file(). Note: Ordering of the resulting DataFrame is
@@ -157,8 +166,8 @@ def get_logical_file(connection, logical_file, csv=False, max_workers=15,
     :return: df
         DataFrame of the logical file.
     """
-    column_names = _get_columns_of_logical_file(connection, logical_file, csv)
-    file_size = _get_logical_file_row_count(connection, logical_file)
+    column_names = _get_columns_of_logical_file(connection, logical_file, csv, max_attempts, max_sleep)
+    file_size = _get_logical_file_row_count(connection, logical_file, max_attempts, max_sleep)
 
     chunks = filechunker.make_chunks(file_size, csv, chunk_size)
 
@@ -166,13 +175,13 @@ def get_logical_file(connection, logical_file, csv=False, max_workers=15,
             executor:
         futures = [
             executor.submit(connection.get_logical_file_chunk, logical_file,
-                            start_row, n_rows, max_attempts)
+                            start_row, n_rows, max_attempts, max_sleep)
             for start_row, n_rows in chunks
         ]
 
         finished, _ = concurrent.futures.wait(futures)
 
-    df = pd.concat([parse_json_output(f.result()["Result"]["Row"],
+    df = pd.concat([parse_json_output(f.result(),
                                       column_names, csv)
                     for f in finished], ignore_index=True)
 
