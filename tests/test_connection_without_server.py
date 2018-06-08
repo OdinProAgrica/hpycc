@@ -163,14 +163,14 @@ class TestConnectionCheckSyntax(unittest.TestCase):
         conn = hpycc.Connection("user", legacy=True, repo="./dir",
                                 test_conn=False)
         conn.check_syntax("non.ecl")
-        mock.assert_called_with("eclcc -syntax -legacy -I './dir' non.ecl")
+        mock.assert_called_with("eclcc -syntax -legacy -I=./dir non.ecl")
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_check_syntax_builds_correct_path_with_repo(self, mock):
         conn = hpycc.Connection("user", legacy=False, repo="./dir",
                                 test_conn=False)
         conn.check_syntax("non.ecl")
-        mock.assert_called_with("eclcc -syntax -I './dir' non.ecl")
+        mock.assert_called_with("eclcc -syntax -I=./dir non.ecl")
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_check_syntax_calls_run_command(self, mock):
@@ -265,7 +265,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
         conn.run_ecl_script("test.ecl", syntax_check=False)
         mock.assert_called_with(
             "ecl run --server localhost --port 8010 --username user "
-            "--password=password thor test.ecl -I 'C:'")
+            "--password=password thor test.ecl -I=C:")
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_script_command_uses_repo_if_none(self, mock):

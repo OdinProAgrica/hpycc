@@ -26,6 +26,8 @@ class Connection:
     # TODO make take multiple repos
     # TODO validate server and port?
     # TODO add examples
+    # TODO move all run flags to =
+    # TODO move run args to a list
     def __init__(self, username, server="localhost", port=8010, repo=None,
                  password="password", legacy=False, test_conn=True):
         """
@@ -166,7 +168,7 @@ class Connection:
 
         """
         legacy = "-legacy " if self.legacy else ""
-        repo = "-I '{}' ".format(self.repo) if self.repo else ""
+        repo = "-I={} ".format(self.repo) if self.repo else ""
         base_cmd = "eclcc -syntax {}{}{}".format(legacy, repo, script)
 
         self._run_command(base_cmd)
@@ -207,7 +209,7 @@ class Connection:
         """
         pw = "{} ".format(self.password)
         legacy = "-legacy " if self.legacy else ""
-        repo = " -I '{}'".format(self.repo) if self.repo else ""
+        repo = " -I={}".format(self.repo) if self.repo else ""
 
         base_cmd = ("ecl run --server {} --port {} --username {} "
                     "--password={}{}thor {}{}").format(
