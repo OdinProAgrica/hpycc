@@ -25,7 +25,7 @@ def run_script(connection, script, syntax_check=True):
 
     Parameters
     ----------
-    connection: `Connection`
+    connection: hpycc.Connection
         HPCC Connection instance, see also `Connection`.
     script: str
          Path of script to execute.

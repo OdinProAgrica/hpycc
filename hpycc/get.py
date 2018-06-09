@@ -34,7 +34,7 @@ def get_output(connection, script, syntax_check=True):
 
     Parameters
     ----------
-    connection: `Connection`
+    connection: hpycc.Connection
         HPCC Connection instance, see also `Connection`.
     script: str
          Path of script to execute.
@@ -110,7 +110,7 @@ def get_outputs(connection, script, syntax_check=True):
 
     Parameters
     ----------
-    connection: `Connection`
+    connection: hpycc.Connection
         HPCC Connection instance, see also `Connection`.
     script: str
          Path of script to execute.
@@ -280,7 +280,7 @@ def get_logical_file(connection, logical_file, csv=False, max_workers=15,
 
     Parameters
     ----------
-    connection: `Connection`
+    connection: hpycc.Connection
         HPCC Connection instance, see also `Connection`.
     logical_file: str
         Name of logical file to be downloaded.
