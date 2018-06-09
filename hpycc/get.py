@@ -316,8 +316,8 @@ def get_logical_file(connection, logical_file, csv=False, max_workers=15,
     >>> import hpycc
     >>> import pandas
     >>> conn = hpycc.Connection("user")
-    >>> pandas.DataFrame({"col1": [1, 2, 3]})
-    ...    .to_csv("example.csv", index=False)
+    >>> df = pandas.DataFrame({"col1": [1, 2, 3]})
+    >>> df.to_csv("example.csv", index=False)
     >>> hpycc.spray_file(conn, "example.csv", "example")
     >>> hpycc.get_logical_file(conn, "thor::example", False)
         col1
