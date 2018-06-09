@@ -48,23 +48,40 @@ def get_output(connection, script, syntax_check=True):
     subprocess.CalledProcessError:
         If script fails syntax check.
 
+    See Also
+    --------
+    get_outputs
+    save_output
+    Connection.syntax_check
+
     Examples
     --------
     >>> import hpycc
     >>> conn = hpycc.Connection("user")
     >>> with open("example.ecl", "r+") as file:
-    >>>     file.write("OUTPUT(2);")
-    >>> print(hpycc.get_output(conn, "example.ecl"))
-        0
-    0   2
+    ...     file.write("OUTPUT(2);")
+    >>> hpycc.get_output(conn, "example.ecl")
+        Result_1
+    0          2
 
     >>> import hpycc
     >>> conn = hpycc.Connection("user")
     >>> with open("example.ecl", "r+") as file:
     >>>     file.write("OUTPUT(2);OUTPUT(3);")
-    >>> print(hpycc.get_output(conn, "example.ecl"))
-        0
-    0   2
+    >>> hpycc.get_output(conn, "example.ecl")
+        Result_1
+    0          2
+
+    >>> import hpycc
+    >>> conn = hpycc.Connection("user")
+    >>> with open("example.ecl", "r+") as file:
+    ...     file.write(
+    ...     "a:= DATASET([{'1', 'a'}],"
+    ...     "{STRING col1; STRING col2});",
+    ...     "OUTPUT(a);")
+    >>> hpycc.get_output(conn, "example.ecl")
+       col1 col2
+    0     1    a
 
     """
 
@@ -81,22 +98,94 @@ def get_output(connection, script, syntax_check=True):
 
 def get_outputs(connection, script, syntax_check=True):
     """
-    Return all outputs of an ECL script as a dict of
-    DataFrames. See get_output() for downloading a single
-    output and save_output() for writing straight to file.
+    Return all outputs of an ECL script.
 
     Parameters
     ----------
-    :param connection: `Connection`
+    connection: `Connection`
         HPCC Connection instance, see also `Connection`.
-    :param script: str
+    script: str
          Path of script to execute.
-    :param syntax_check: bool, optional
-        If the script be syntax checked before execution. True by
+    syntax_check: bool, optional
+        Should the script be syntax checked before execution? True by
         default.
 
-    :return: as_dict: dictionary
-        Outputs produced by the script in the form {output_name: df}.
+    Returns
+    -------
+    as_dict: dict of pandas.DataFrames
+        Outputs of `script` in the form
+        {output_name: pandas.DataFrame}
+
+    Raises
+    ------
+    subprocess.CalledProcessError:
+        If script fails syntax check.
+
+    See Also
+    --------
+    get_output
+    save_outputs
+    Connection.syntax_check
+
+    Examples
+    --------
+    >>> import hpycc
+    >>> conn = hpycc.Connection("user")
+    >>> with open("example.ecl", "r+") as file:
+    ...     file.write("OUTPUT(2);")
+    >>> hpycc.get_outputs(conn, "example.ecl")
+    {Result 1:
+        Result_1
+    0          2
+    }
+
+    >>> import hpycc
+    >>> conn = hpycc.Connection("user")
+    >>> with open("example.ecl", "r+") as file:
+    ...     file.write(
+    ...     "a:= DATASET([{'1', 'a'}],"
+    ...     "{STRING col1; STRING col2});",
+    ...     "OUTPUT(a);")
+    >>> hpycc.get_outputs(conn, "example.ecl")
+    {Result 1:
+       col1 col2
+    0     1    a
+    }
+
+    >>> import hpycc
+    >>> conn = hpycc.Connection("user")
+    >>> with open("example.ecl", "r+") as file:
+    ...     file.write(
+    ...     "a:= DATASET([{'1', 'a'}],"
+    ...     "{STRING col1; STRING col2});",
+    ...     "OUTPUT(a);"
+    ...     "OUTPUT(a);")
+    >>> hpycc.get_outputs(conn, "example.ecl")
+    {Result 1:
+       col1 col2
+    0     1    a,
+    Result 2:
+       col1 col2
+    0     1    a
+    }
+
+        >>> import hpycc
+    >>> conn = hpycc.Connection("user")
+    >>> with open("example.ecl", "r+") as file:
+    ...     file.write(
+    ...     "a:= DATASET([{'1', 'a'}],"
+    ...     "{STRING col1; STRING col2});",
+    ...     "OUTPUT(a);"
+    ...     "OUTPUT(a, NAMED('ds_2'));")
+    >>> hpycc.get_outputs(conn, "example.ecl")
+    {Result 1:
+       col1 col2
+    0     1    a,
+    ds_2:
+       col1 col2
+    0     1    a
+    }
+
     """
     result = connection.run_ecl_script(script, syntax_check)
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
