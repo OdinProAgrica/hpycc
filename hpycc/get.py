@@ -14,7 +14,7 @@ Functions
 """
 __all__ = ["get_output", "get_outputs", "get_logical_file"]
 
-import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor, wait
 import re
 
 import pandas as pd
@@ -27,6 +27,10 @@ from hpycc.utils.parsers import parse_xml, parse_json_output
 def get_output(connection, script, syntax_check=True):
     """
     Return the first output of an ECL script as a pandas.DataFrame.
+
+    Note that whilst attempts are made to preserve the datatypes of
+    the result, anything with an ambiguous type will revert to a
+    string.
 
     Parameters
     ----------
@@ -99,6 +103,10 @@ def get_output(connection, script, syntax_check=True):
 def get_outputs(connection, script, syntax_check=True):
     """
     Return all outputs of an ECL script.
+
+    Note that whilst attempts are made to preserve the datatypes of
+    the result, anything with an ambiguous type will revert to a
+    string.
 
     Parameters
     ----------
@@ -195,7 +203,8 @@ def get_outputs(connection, script, syntax_check=True):
     return as_dict
 
 
-def _get_columns_of_logical_file(connection, logical_file, csv, max_attempts, max_sleep):
+def _get_columns_of_logical_file(connection, logical_file, csv, max_attempts,
+                                 max_sleep):
     """
     Return the column names of a logical file.
 
@@ -213,7 +222,8 @@ def _get_columns_of_logical_file(connection, logical_file, csv, max_attempts, ma
     :return: column_names: list
         List of column names in logical file.
     """
-    response = connection.get_logical_file_chunk(logical_file, 0, 2, max_attempts, max_sleep)
+    response = connection.get_logical_file_chunk(
+        logical_file, 0, 2, max_attempts, max_sleep)
     results = response
 
     if csv:
@@ -226,7 +236,8 @@ def _get_columns_of_logical_file(connection, logical_file, csv, max_attempts, ma
     return column_names
 
 
-def _get_logical_file_row_count(connection, logical_file, max_attempts, max_sleep):
+def _get_logical_file_row_count(connection, logical_file, max_attempts,
+                                max_sleep):
     """
     Return the number of rows in a logical file.
 
@@ -242,7 +253,6 @@ def _get_logical_file_row_count(connection, logical_file, max_attempts, max_slee
     :return: file_size, int
         Number of rows in logical file.
     """
-    #response = connection.get_logical_file_chunk(logical_file, 0, 2, max_attempts, max_sleep)
     url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
            "&Cluster=thor&Start={}&Count={}").format(
         connection.server, connection.port, logical_file, 0, 2)
@@ -260,47 +270,77 @@ def _get_logical_file_row_count(connection, logical_file, max_attempts, max_slee
 def get_logical_file(connection, logical_file, csv=False, max_workers=15,
                      chunk_size=10000, max_attempts=3, max_sleep=10):
     """
-    Return a DataFrame of a logical file. To write to disk
-    see save_file(). Note: Ordering of the resulting DataFrame is
+    Return a logical file as a pandas.DataFrame.
+
+    Note: Ordering of the resulting DataFrame is
     not deterministic and may not be the same as the logical file.
+    Whilst attempts are made to preserve the datatypes of
+    the result, anything with an ambiguous type will revert to a
+    string.
 
     Parameters
     ----------
-    :param connection: `Connection`
+    connection: `Connection`
         HPCC Connection instance, see also `Connection`.
-    :param logical_file: str
-        Logical file to be downloaded.
-    :param csv: bool, optional
-        Is the logical file a CSV? False by default
-    :param max_workers: int, optional
-        Number of concurrent threads to use when downloading.
-        Warning: too many will likely cause either your machine or
+    logical_file: str
+        Name of logical file to be downloaded.
+    csv: bool, optional
+        Is the logical file a CSV? False by default.
+    max_workers: int, optional
+        Number of concurrent threads to use when downloading file.
+        Warning: too many may cause either your machine or
         your cluster to crash! 15 by default.
-    :param chunk_size: int, optional.
+    chunk_size: int, optional.
         Size of chunks to use when downloading file. 10000 by
         default.
-    :param max_attempts: int, optional
-        Max number of attempts to download a chunk. 3 by default.
+    max_attempts: int, optional
+        Maximum number of times a chunk should attempt to be
+        downloaded in the case of an exception being raised.
+        3 by default.
+    max_sleep: int, optional
+            Maximum time, in seconds, to sleep between attempts.
+            The true sleep time is a random int between 0 and
+            `max_sleep`.
 
     Returns
     -------
-    :return: df
-        DataFrame of the logical file.
+    df: pandas.DataFrame
+        Logical file as a pandas.DataFrame.
+
+    See Also
+    --------
+    save_logical_file
+
+    Examples
+    --------
+    >>> import hpycc
+    >>> import pandas
+    >>> conn = hpycc.Connection("user")
+    >>> pandas.DataFrame({"col1": [1, 2, 3]})
+    ...    .to_csv("example.csv", index=False)
+    >>> hpycc.spray_file(conn, "example.csv", "example")
+    >>> hpycc.get_logical_file(conn, "thor::example", False)
+        col1
+    0      1
+    1      2
+    2      3
+
     """
-    column_names = _get_columns_of_logical_file(connection, logical_file, csv, max_attempts, max_sleep)
-    file_size = _get_logical_file_row_count(connection, logical_file, max_attempts, max_sleep)
+    column_names = _get_columns_of_logical_file(
+        connection, logical_file, csv, max_attempts, max_sleep)
+    file_size = _get_logical_file_row_count(
+        connection, logical_file, max_attempts, max_sleep)
 
     chunks = filechunker.make_chunks(file_size, csv, chunk_size)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as \
-            executor:
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [
             executor.submit(connection.get_logical_file_chunk, logical_file,
                             start_row, n_rows, max_attempts, max_sleep)
             for start_row, n_rows in chunks
         ]
 
-        finished, _ = concurrent.futures.wait(futures)
+        finished, _ = wait(futures)
 
     df = pd.concat([parse_json_output(f.result(),
                                       column_names, csv)
