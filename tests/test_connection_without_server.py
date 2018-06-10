@@ -40,12 +40,14 @@ class TestConnectionDefaultAttributes(unittest.TestCase):
 
     def test_username_raises_error_if_not_string(self):
         with self.assertRaises(AttributeError):
+            # noinspection PyTypeChecker
             hpycc.Connection(123, test_conn=False)
 
     def test_password_raises_error_if_blank(self):
         with self.assertRaises(AttributeError):
             hpycc.Connection("a", password="", test_conn=False)
 
+    # noinspection PyTypeChecker
     def test_password_raises_error_if_not_string(self):
         with self.assertRaises(AttributeError):
             hpycc.Connection("a", password=123, test_conn=False)

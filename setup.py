@@ -27,7 +27,8 @@ setup(
     install_requires=[
         'pandas',
         'requests>=2.18.4',
-        'docker'
+        'docker',
+        'numpy'
     ],
     project_urls={
         'Bug Reports': 'https://github.com/OdinProAgrica/hpycc/issues',

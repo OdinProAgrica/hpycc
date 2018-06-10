@@ -303,7 +303,7 @@ class Connection:
         rj = r.json()
         try:
             result_response = rj["WUResultResponse"]["Result"]["Row"]
-        except KeyError as e:
+        except KeyError:
             raise KeyError("json is : {}".format(rj))
         return result_response
 

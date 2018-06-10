@@ -16,6 +16,7 @@ __all__ = ["get_output", "get_outputs", "get_logical_file"]
 
 from concurrent.futures import ThreadPoolExecutor, wait
 import re
+import warnings
 
 import pandas as pd
 
@@ -30,7 +31,9 @@ def get_output(connection, script, syntax_check=True):
 
     Note that whilst attempts are made to preserve the datatypes of
     the result, anything with an ambiguous type will revert to a
-    string.
+    string. If the output of the ECL string is an empty dataset
+    (or if the script does not output anything), an empty
+    pandas.DataFrame is returned.
 
     Parameters
     ----------
@@ -87,17 +90,34 @@ def get_output(connection, script, syntax_check=True):
        col1 col2
     0     1    a
 
+    >>> import hpycc
+    >>> conn = hpycc.Connection("user")
+    >>> with open("example.ecl", "r+") as file:
+    ...     file.write(
+    ...     "a:= DATASET([{'a', 'a'}],"
+    ...     "{STRING col1;});",
+    ...     "OUTPUT(a(col1 != a));")
+    >>> hpycc.get_output(conn, "example.ecl")
+    Empty DataFrame
+    Columns: []
+    Index: []
+
     """
 
     result = connection.run_ecl_script(script, syntax_check)
+    result = result.stdout.replace("\r\n", "")
 
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
-    match = re.search(regex, result.stdout)
-    match_content = match.group()
-
-    parsed = parse_xml(match_content)
-
-    return parsed
+    match = re.search(regex, result)
+    try:
+        match_content = match.group()
+    except AttributeError:
+        warnings.warn("The output does not appear to contain a dataset. "
+                      "Returning an empty DataFrame.")
+        return pd.DataFrame()
+    else:
+        parsed = parse_xml(match_content)
+        return parsed
 
 
 def get_outputs(connection, script, syntax_check=True):

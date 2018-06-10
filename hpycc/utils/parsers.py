@@ -1,8 +1,8 @@
-import logging
 import re
 from xml.etree import ElementTree
 
 import pandas as pd
+import numpy as np
 
 
 def parse_xml(xml):
@@ -29,6 +29,8 @@ def parse_xml(xml):
         vls.append(newvls)
 
     df = pd.DataFrame(vls, columns=lvls)
+    df.replace("", np.nan, inplace=True)
+    df.fillna(np.nan, inplace=True)
 
     df = _make_col_numeric(df)
     df = _make_col_bool(df)
@@ -79,17 +81,11 @@ def _make_col_numeric(df):
         Data frame with all string numeric columns converted to
         numeric.
     """
-
-    logger = logging.getLogger('make_col_numeric')
-    logger.debug('Converting numeric cols')
-
     for col in df.columns:
         try:
             nums = pd.to_numeric(df[col])
             df[col] = nums
-            logger.debug('%s converted to numeric' % col)
         except ValueError:
-            logger.debug('%s cannot be converted to numeric' % col)
             continue
 
     return df
@@ -111,7 +107,15 @@ def _make_col_bool(df):
         boolean.
     """
     for col in df.columns:
-        if set(df[col].str.lower().unique).issubset({"true", "false"}):
-            df.loc[df[col].notnull(), col] = df[col].str.lower() == "true"
+        unique_vals = df[col].unique()
+        if set(unique_vals).issubset(["true", "false"]):
+            df[col] = (df[col] == "true").astype('bool')
+        elif set(unique_vals).issubset(["true", "false", np.nan]):
+            df[col] = df[col].map({
+                "true": True,
+                "false": False,
+                "": np.nan,
+                None: np.nan
+            })
 
     return df

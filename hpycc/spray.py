@@ -94,7 +94,8 @@ def _stringify_rows(df, start_row, num_rows):
         dtype = sliced_df.dtypes[col]
         ecl_type = _get_type(dtype)
         if ecl_type == "STRING":
-            sliced_df[col] = sliced_df[col].fillna("").astype(str).str.replace("'", "\\'")
+            sliced_df[col] = sliced_df[col].fillna(
+                "").astype(str).str.replace("'", "\\'")
             sliced_df[col] = "'" + sliced_df[col] + "'"
         else:
             sliced_df[col] = sliced_df[col].fillna(0)

@@ -105,9 +105,11 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
         with TemporaryDirectory() as d:
             p = os.path.join(d, "data.csv")
             df.to_csv(p, index=False)
-            hpycc.spray_file(conn, p, "test_get_logical_file_chunk_returns_correct_json", chunk_size=2)
+            lf_name = "test_get_logical_file_chunk_returns_correct_json"
+            hpycc.spray_file(conn, p, lf_name, chunk_size=2)
 
-        result = conn.get_logical_file_chunk("thor::test_get_logical_file_chunk_returns_correct_json", 0, 2, 3, 2)
+        result = conn.get_logical_file_chunk(
+            "thor::{}".format(lf_name), 0, 2, 3, 2)
         self.assertIsInstance(result, list)
         self.assertIsInstance(result[0], dict)
         self.assertEqual(result, expected_result)
