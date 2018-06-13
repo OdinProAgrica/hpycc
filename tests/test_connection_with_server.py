@@ -97,8 +97,8 @@ class TestRunURLRequestWithServer(unittest.TestCase):
 class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
     def test_get_logical_file_chunk_returns_correct_json(self):
         expected_result = [
-            {'__fileposition__': '0', 'a': '1', 'b': 'a'},
-            {'__fileposition__': '10', 'a': '2', 'b': 'b'}
+            {'a': '1', 'b': 'a'},
+            {'a': '2', 'b': 'b'},
         ]
         conn = hpycc.Connection("user")
         df = pd.DataFrame({"a": [1, 2, 3], "b": ["a", "b", "c"]})
@@ -106,13 +106,13 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
             p = os.path.join(d, "data.csv")
             df.to_csv(p, index=False)
             lf_name = "test_get_logical_file_chunk_returns_correct_json"
-            hpycc.spray_file(conn, p, lf_name, chunk_size=2)
+            hpycc.spray_file(conn, p, lf_name, chunk_size=3)
 
         result = conn.get_logical_file_chunk(
             "thor::{}".format(lf_name), 0, 2, 3, 2)
-        self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], dict)
-        self.assertEqual(result, expected_result)
+        for i in result:
+            i.pop("__fileposition__")
+        self.assertEqual(expected_result, result)
 
     def test_get_logical_file_chunk_is_zero_indexed(self):
         expected_result = [
