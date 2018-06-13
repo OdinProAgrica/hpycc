@@ -162,7 +162,7 @@ def get_outputs(connection, script, syntax_check=True):
     >>> with open("example.ecl", "r+") as file:
     ...     file.write("OUTPUT(2);")
     >>> hpycc.get_outputs(conn, "example.ecl")
-    {Result 1:
+    {Result_1:
         Result_1
     0          2
     }
@@ -175,7 +175,7 @@ def get_outputs(connection, script, syntax_check=True):
     ...     "{STRING col1; STRING col2});",
     ...     "OUTPUT(a);")
     >>> hpycc.get_outputs(conn, "example.ecl")
-    {Result 1:
+    {Result_1:
        col1 col2
     0     1    a
     }
@@ -189,15 +189,15 @@ def get_outputs(connection, script, syntax_check=True):
     ...     "OUTPUT(a);"
     ...     "OUTPUT(a);")
     >>> hpycc.get_outputs(conn, "example.ecl")
-    {Result 1:
+    {Result_1:
        col1 col2
     0     1    a,
-    Result 2:
+    Result_2:
        col1 col2
     0     1    a
     }
 
-        >>> import hpycc
+    >>> import hpycc
     >>> conn = hpycc.Connection("user")
     >>> with open("example.ecl", "r+") as file:
     ...     file.write(
@@ -206,7 +206,7 @@ def get_outputs(connection, script, syntax_check=True):
     ...     "OUTPUT(a);"
     ...     "OUTPUT(a, NAMED('ds_2'));")
     >>> hpycc.get_outputs(conn, "example.ecl")
-    {Result 1:
+    {Result_1:
        col1 col2
     0     1    a,
     ds_2:
@@ -216,9 +216,15 @@ def get_outputs(connection, script, syntax_check=True):
 
     """
     result = connection.run_ecl_script(script, syntax_check)
-    regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
-    results = re.findall(regex, result.stdout)
-    as_dict = {name: parse_xml(xml) for name, xml in results}
+    regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.*?)</Dataset>"
+
+    result = result.stdout.replace("\r\n", "")
+    results = re.findall(regex, result)
+    if any([i[1] == "" for i in results]):
+        warnings.warn(
+            "One or more of the outputs do not appear to contain a dataset. "
+            "They have been replaced with an empty DataFrame")
+    as_dict = {name.replace(" ", "_"): parse_xml(xml) for name, xml in results}
 
     return as_dict
 
