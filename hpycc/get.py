@@ -10,22 +10,24 @@ Functions
 - `get_output` -- Return the first output of an ECL script.
 - `get_outputs` -- Return all outputs of an ECL script.
 - `get_logical_file` -- Return the contents of a logical file.
+- 'get_wuid_json' -- Return the WUID from JSON script requests
+- 'get_wuid_xml' -- Return the WUID from XML script requests
 
 """
-__all__ = ["get_output", "get_outputs", "get_logical_file"]
+__all__ = ["get_output", "get_outputs", "get_logical_file",
+           'get_wuid_json', 'get_wuid_xml']
 
 from concurrent.futures import ThreadPoolExecutor, wait
 import re
 import warnings
-
 import pandas as pd
 
 from hpycc.utils import filechunker
-
 from hpycc.utils.parsers import parse_xml, parse_json_output
+from hpycc.delete import delete_workunit
 
 
-def get_output(connection, script, syntax_check=True):
+def get_output(connection, script, syntax_check=True, deleteworkunit=True):
     """
     Return the first output of an ECL script as a pandas.DataFrame.
 
@@ -44,7 +46,8 @@ def get_output(connection, script, syntax_check=True):
     syntax_check: bool, optional
         Should the script be syntax checked before execution? True by
         default.
-
+    deleteworkunit: Sets the option to delete the workunit after running. This
+        is currently set to be True by default.
     Returns
     -------
     parsed: pandas.DataFrame
@@ -107,6 +110,8 @@ def get_output(connection, script, syntax_check=True):
     result = connection.run_ecl_script(script, syntax_check)
     result = result.stdout.replace("\r\n", "")
 
+    wuid = get_wuid_xml(result)
+
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
     match = re.search(regex, result)
     try:
@@ -118,9 +123,14 @@ def get_output(connection, script, syntax_check=True):
     else:
         parsed = parse_xml(match_content)
         return parsed
+    finally:
+        if deleteworkunit:
+            delete_workunit(connection, wuid)
+        else:
+            pass
 
 
-def get_outputs(connection, script, syntax_check=True):
+def get_outputs(connection, script, syntax_check=True, deleteworkunit=True):
     """
     Return all outputs of an ECL script.
 
@@ -137,6 +147,8 @@ def get_outputs(connection, script, syntax_check=True):
     syntax_check: bool, optional
         Should the script be syntax checked before execution? True by
         default.
+    deleteworkunit: bool,
+        Should the workunit created be deleted afterwards. Set to True.
 
     Returns
     -------
@@ -219,12 +231,20 @@ def get_outputs(connection, script, syntax_check=True):
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.*?)</Dataset>"
 
     result = result.stdout.replace("\r\n", "")
+
+    wuid = get_wuid_xml(result)
+
     results = re.findall(regex, result)
     if any([i[1] == "" for i in results]):
         warnings.warn(
             "One or more of the outputs do not appear to contain a dataset. "
             "They have been replaced with an empty DataFrame")
     as_dict = {name.replace(" ", "_"): parse_xml(xml) for name, xml in results}
+
+    if deleteworkunit:
+        delete_workunit(connection, wuid)
+    else:
+        pass
 
     return as_dict
 
@@ -266,14 +286,12 @@ def _get_logical_file_row_count(connection, logical_file, max_attempts,
                                 max_sleep):
     """
     Return the number of rows in a logical file.
-
     Parameters
     ----------
     :param connection: `Connection`
         HPCC Connection instance, see also `Connection`.
     :param logical_file: str
          Logical file to be examined.
-
     Returns
     -------
     :return: file_size, int
@@ -282,14 +300,12 @@ def _get_logical_file_row_count(connection, logical_file, max_attempts,
     url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
            "&Cluster=thor&Start={}&Count={}").format(
         connection.server, connection.port, logical_file, 0, 2)
-
     r = connection.run_url_request(url, max_attempts, max_sleep)
     rj = r.json()
     try:
         file_size = rj["WUResultResponse"]['Total']
     except KeyError:
         raise KeyError("json: {}".format(rj))
-
     return file_size
 
 
@@ -373,3 +389,43 @@ def get_logical_file(connection, logical_file, csv=False, max_workers=15,
                     for f in finished], ignore_index=True)
 
     return df
+
+
+def get_wuid_json(rj):
+    """
+    Function retrieves a WUID for a script that has run. This retrieves it
+    only in the cases where the script request is in JSON format.
+    Parameters
+    ----------
+    :param rj - 'JSON'
+        The JSON response for the script that has run.
+
+    Returns
+    -------
+    :return: wuid - string
+        The Workunit ID from the JSON.
+    """
+    wuid = rj["WUResultResponse"]['Wuid']
+    return wuid
+
+
+def get_wuid_xml(result):
+    """
+    Function retrieves a WUID for a script that has run. This retrieves it
+    only in the cases where the request response was in XML format.
+    Parameters
+    ----------
+    :param result: 'XML'
+        The XML response for the script that has run.
+
+    Returns
+    -------
+    :return: wuid - string
+        The Workunit ID from the XML.
+    """
+
+    regex2 = "wuid: (.+?)   state:"
+    search = re.search(regex2, result).group(0)
+    wuid1 = search.replace('wuid: ', '')
+    wuid = wuid1.replace('   state:', '')
+    return wuid

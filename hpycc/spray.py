@@ -7,10 +7,12 @@ import pandas as pd
 
 from hpycc.delete import delete_logical_file
 from hpycc.utils.filechunker import make_chunks
+from hpycc.delete import delete_workunit
+from hpycc.get import get_wuid_xml
 
 
 def _spray_stringified_data(connection, data, record_set, logical_file,
-                            overwrite):
+                            overwrite, deleteworkunit=True):
     """
     Spray stringified data to a HPCC logical file. To generate the
     stringified data and recordset, see `stringify_rows()` &
@@ -28,6 +30,8 @@ def _spray_stringified_data(connection, data, record_set, logical_file,
         Logical file name on THOR.
     :param overwrite: bool
         Should the file overwrite any pre-existing logical file.
+    :param deleteworkunit: bool
+        Should the workunit be deleted. Set to True
     """
     script_content = ("a := DATASET([{}], {{{}}});\nOUTPUT(a, ,'{}' , "
                       "EXPIRE(1)").format(
@@ -35,7 +39,14 @@ def _spray_stringified_data(connection, data, record_set, logical_file,
     if overwrite:
         script_content += ", OVERWRITE"
     script_content += ");"
-    connection.run_ecl_string(script_content, True)
+
+    if deleteworkunit:
+        test = connection.run_ecl_string(script_content, True)
+        test = test.stdout.replace("\r\n", "")
+        wuid2 = get_wuid_xml(test)
+        delete_workunit(connection, wuid2)
+    else:
+        connection.run_ecl_string(script_content, True)
 
 
 def _get_type(typ):
@@ -189,7 +200,7 @@ def _make_record_set(df):
 
 
 def concatenate_logical_files(connection, to_concat, logical_file, record_set,
-                              overwrite):
+                              overwrite, deleteworkunit=True):
     """
     Concatenate a list of logical files (with the same recordset)
     into a single logical file.
@@ -206,7 +217,8 @@ def concatenate_logical_files(connection, to_concat, logical_file, record_set,
         Common recordset of all logical files, see `make_record_set()`.
     :param overwrite: bool
         Should the file overwrite any pre-existing logical file.
-
+    :param deleteworkunit: bool
+        Should the wokrunit created be deleted. Set to True.
     Returns
     -------
     :return: None
@@ -221,4 +233,10 @@ def concatenate_logical_files(connection, to_concat, logical_file, record_set,
     script += ");"
     script = script.format(read_files, logical_file)
 
-    connection.run_ecl_string(script, True)
+    if deleteworkunit:
+        test = connection.run_ecl_string(script, True)
+        test = test.stdout.replace("\r\n", "")
+        wuid = get_wuid_xml(test)
+        delete_workunit(connection, wuid)
+    else:
+        connection.run_ecl_string(script, True)

@@ -84,3 +84,4 @@ def stop_hpcc_container():
     client = docker.from_env()
     client.containers.get("hpycc_tests").stop()
     client.api.remove_container("hpycc_tests")
+

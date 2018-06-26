@@ -206,7 +206,7 @@ class Connection:
         legacy = "-legacy " if self.legacy else ""
         repo = " -I={}".format(self.repo) if self.repo else ""
 
-        base_cmd = ("ecl run --server {} --port {} --username {} "
+        base_cmd = ("ecl run -v --server {} --port {} --username {} "
                     "--password={}{}thor {}{}").format(
             self.server, self.port, self.username, pw, legacy, script, repo)
 
@@ -303,6 +303,7 @@ class Connection:
         rj = r.json()
         try:
             result_response = rj["WUResultResponse"]["Result"]["Row"]
+
         except KeyError:
             raise KeyError("json is : {}".format(rj))
         return result_response

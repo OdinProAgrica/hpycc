@@ -1,4 +1,6 @@
-def delete_logical_file(connection, logical_file):
+import hpycc
+
+def delete_logical_file(connection, logical_file, deleteworkunit=True):
     """
     Delete a logical file.
 
@@ -8,6 +10,8 @@ def delete_logical_file(connection, logical_file):
         HPCC Connection instance, see also `Connection`.
     :param logical_file: str
         Logical file to be downloaded.
+    :param deleteworkunit: bool
+        Whether the workunit created should be deleted. Set to True.
 
     Returns
     -------
@@ -16,5 +20,51 @@ def delete_logical_file(connection, logical_file):
     script = "IMPORT std; STD.File.DeleteLogicalFile('{}');".format(
         logical_file)
 
-    connection.run_ecl_string(script, True)
+    #  connection.run_ecl_string(script, True)
+    if deleteworkunit:
+        test = connection.run_ecl_string(script, True)
+        test = test.stdout.replace("\r\n", "")
+        wuid = hpycc.get.get_wuid_xml(test)
+        delete_workunit(connection, wuid)
+    else:
+        connection.run_ecl_string(script, True)
 
+
+def delete_workunit(connection, wuid, max_attempts=1, max_sleep=1):
+    """
+    Delete a workunit
+
+    Parameters
+    ----------
+    :param connection: `Connection`
+        HPCC Connection instance, see also `Connection`.
+    :param wuid: string
+        The Workunit ID for the
+    :param max_attempts: int
+        Maximum number of times url should be queried in the
+        case of an exception being raised.
+    :param  max_sleep: int
+        Maximum time, in seconds, to sleep between attempts.
+        The true sleep time is a random int between 0 and
+        `max_sleep`.
+
+    Returns
+    -------
+    :return: result_response - whether the workunit Delete worked or not
+    """
+
+    url = (
+        "http://{}:{}/WsWorkunits/WUDelete.json?Wuids={}&"
+        "BlockTillFinishTimer=True").format(
+        connection.server, connection.port, wuid)
+
+    r = connection.run_url_request(url, max_attempts, max_sleep)
+    rj = r.json()
+
+    try:
+        result_response_2 = 'WorkUnit Deleted'
+
+    except KeyError:
+        raise KeyError('json is : {}'.format(rj))
+
+    return rj
