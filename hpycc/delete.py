@@ -36,14 +36,14 @@ def delete_workunit(connection, wuid, max_attempts=1, max_sleep=1):
 
     Parameters
     ----------
-    :param connection: `Connection`
+    connection: `Connection`
         HPCC Connection instance, see also `Connection`.
-    :param wuid: string
+    wuid: string
         The Workunit ID for the
-    :param max_attempts: int
+    max_attempts: int
         Maximum number of times url should be queried in the
         case of an exception being raised.
-    :param  max_sleep: int
+    max_sleep: int
         Maximum time, in seconds, to sleep between attempts.
         The true sleep time is a random int between 0 and
         `max_sleep`.
@@ -67,4 +67,4 @@ def delete_workunit(connection, wuid, max_attempts=1, max_sleep=1):
     except KeyError:
         raise KeyError('json is : {}'.format(rj))
 
-    return rj
+    ##return rj, result_response_2

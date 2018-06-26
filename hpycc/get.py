@@ -119,16 +119,14 @@ def get_output(connection, script, syntax_check=True, deleteworkunit=True):
     except AttributeError:
         warnings.warn("The output does not appear to contain a dataset. "
                       "Returning an empty DataFrame.")
-        return pd.DataFrame()
+        to_return = pd.DataFrame()
     else:
         parsed = parse_xml(match_content)
-        return parsed
+        to_return = parsed
     finally:
         if deleteworkunit:
             delete_workunit(connection, wuid)
-        else:
-            pass
-
+        return to_return
 
 def get_outputs(connection, script, syntax_check=True, deleteworkunit=True):
     """
@@ -227,26 +225,25 @@ def get_outputs(connection, script, syntax_check=True, deleteworkunit=True):
     }
 
     """
-    result = connection.run_ecl_script(script, syntax_check)
-    regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.*?)</Dataset>"
+    try:
+        result = connection.run_ecl_script(script, syntax_check)
+        regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.*?)</Dataset>"
 
-    result = result.stdout.replace("\r\n", "")
+        result = result.stdout.replace("\r\n", "")
 
-    wuid = get_wuid_xml(result)
+        wuid = get_wuid_xml(result)
 
-    results = re.findall(regex, result)
-    if any([i[1] == "" for i in results]):
-        warnings.warn(
-            "One or more of the outputs do not appear to contain a dataset. "
-            "They have been replaced with an empty DataFrame")
-    as_dict = {name.replace(" ", "_"): parse_xml(xml) for name, xml in results}
+        results = re.findall(regex, result)
+        if any([i[1] == "" for i in results]):
+            warnings.warn(
+                "One or more of the outputs do not appear to contain a dataset. "
+                "They have been replaced with an empty DataFrame")
+        as_dict = {name.replace(" ", "_"): parse_xml(xml) for name, xml in results}
 
-    if deleteworkunit:
-        delete_workunit(connection, wuid)
-    else:
-        pass
-
-    return as_dict
+    finally:
+        if deleteworkunit:
+            delete_workunit(connection, wuid)
+        return as_dict
 
 
 def _get_columns_of_logical_file(connection, logical_file, csv, max_attempts,
@@ -391,6 +388,23 @@ def get_logical_file(connection, logical_file, csv=False, max_workers=15,
     return df
 
 
+def get_wuid(result):
+
+    """
+
+
+    :return:
+    """
+    try:
+        wuid = result["WUResultResponse"]['Wuid']
+    except:
+        regex = "wuid: (.+?)   state:"
+        search = re.search(regex, result).group(0)
+        wuid1 = search.replace('wuid: ', '')
+        wuid = wuid1.replace('   state:', '')
+
+    return wuid
+
 def get_wuid_json(rj):
     """
     Function retrieves a WUID for a script that has run. This retrieves it
@@ -405,7 +419,7 @@ def get_wuid_json(rj):
     :return: wuid - string
         The Workunit ID from the JSON.
     """
-    wuid = rj["WUResultResponse"]['Wuid']
+
     return wuid
 
 
@@ -415,7 +429,7 @@ def get_wuid_xml(result):
     only in the cases where the request response was in XML format.
     Parameters
     ----------
-    :param result: 'XML'
+    result: 'XML'
         The XML response for the script that has run.
 
     Returns
@@ -424,8 +438,8 @@ def get_wuid_xml(result):
         The Workunit ID from the XML.
     """
 
-    regex2 = "wuid: (.+?)   state:"
-    search = re.search(regex2, result).group(0)
+    regex = "wuid: (.+?)   state:"
+    search = re.search(regex, result).group(0)
     wuid1 = search.replace('wuid: ', '')
     wuid = wuid1.replace('   state:', '')
     return wuid
