@@ -60,11 +60,10 @@ def delete_workunit(connection, wuid, max_attempts=1, max_sleep=1):
 
     r = connection.run_url_request(url, max_attempts, max_sleep)
     rj = r.json()
-
     try:
-        result_response_2 = 'WorkUnit Deleted'
+        result_response_2 = rj
 
     except KeyError:
         raise KeyError('json is : {}'.format(rj))
 
-    ##return rj, result_response_2
+    return rj

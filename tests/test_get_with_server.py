@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 
 import hpycc
+from hpycc.delete import delete_workunit
+from hpycc import delete
 from tests.test_helpers import hpcc_functions
 
 
@@ -30,21 +32,23 @@ def _spray_df(conn, df, name):
         hpycc.spray_file(conn, p, name)
 
 
-def _get_output_from_ecl_string(conn, string, syntax=True):
+def _get_output_from_ecl_string(conn, string, syntax=True,
+                                delete_workunit=True):
     with TemporaryDirectory() as d:
         p = os.path.join(d, "test.ecl")
         with open(p, "w+") as file:
             file.write(string)
-        res = hpycc.get_output(conn, p, syntax)
+        res = hpycc.get_output(conn, p, syntax,  delete_workunit)
         return res
 
 
-def _get_outputs_from_ecl_string(conn, string, syntax=True):
+def _get_outputs_from_ecl_string(conn, string, syntax=True,
+                                 delete_workunit=True):
     with TemporaryDirectory() as d:
         p = os.path.join(d, "test.ecl")
         with open(p, "w+") as file:
             file.write(string)
-        res = hpycc.get_outputs(conn, p, syntax)
+        res = hpycc.get_outputs(conn, p, syntax,  delete_workunit)
         return res
 
 
@@ -168,9 +172,20 @@ class TestGetOutputWithServer(unittest.TestCase):
     @patch.object(hpycc.Connection, "check_syntax")
     def test_get_output_doesnt_run_syntax_check_if_false(self, mock):
         script = "OUTPUT(2);"
-        _get_output_from_ecl_string(self.conn, script, False)
+        _get_output_from_ecl_string(self.conn, script, syntax=False)
         self.assertFalse(mock.called)
 
+    @patch.object(hpycc.get, "delete_workunit")
+    def test_get_output_runs_delete_workunit_if_true(self, mock):
+        script = "OUTPUT(2);"
+        _get_output_from_ecl_string(self.conn, script)
+        mock.assert_called()
+
+    @patch.object(hpycc.get, "delete_workunit")
+    def test_get_output_doesnt_run_delete_workunit_if_false(self, mock):
+        script = "OUTPUT(2);"
+        _get_output_from_ecl_string(self.conn, script, delete_workunit=False)
+        self.assertFalse(mock.called)
 
 class TestGetOutputsWithServer(unittest.TestCase):
     @classmethod
@@ -263,7 +278,7 @@ class TestGetOutputsWithServer(unittest.TestCase):
         expected = pd.DataFrame({"a": [1, 2.1]})
         pd.testing.assert_frame_equal(expected, res["Result_1"])
 
-    def test_get_output_parses_empty_dataset(self):
+    def test_get_outputs_parses_empty_dataset(self):
         script = ("a := DATASET([{'a'}, {'a'}], {STRING a;});a(a != 'a');"
                   "OUTPUT(2);")
 
@@ -277,25 +292,37 @@ class TestGetOutputsWithServer(unittest.TestCase):
         self.assertEqual(list(res.keys()), ["Result_1", "Result_2"])
         pd.testing.assert_frame_equal(res["Result_1"], pd.DataFrame())
 
-    def test_get_output_parses_mixed_columns_as_strings(self):
+    def test_get_outputs_parses_mixed_columns_as_strings(self):
         script = "OUTPUT(DATASET([{'1'}, {'a'}], {STRING a;}));"
         res = _get_outputs_from_ecl_string(self.conn, script)
         expected = pd.DataFrame({"a": ['1', 'a']})
         pd.testing.assert_frame_equal(expected, res["Result_1"])
 
-    def test_get_output_raises_with_bad_script(self):
+    def test_get_outputs_raises_with_bad_script(self):
         script = "asa"
         with self.assertRaises(subprocess.SubprocessError):
             _get_outputs_from_ecl_string(self.conn, script)
 
     @patch.object(hpycc.Connection, "check_syntax")
-    def test_get_output_runs_syntax_check_if_true(self, mock):
+    def test_get_outputs_runs_syntax_check_if_true(self, mock):
         script = "OUTPUT(2);"
         _get_outputs_from_ecl_string(self.conn, script)
         mock.assert_called()
 
     @patch.object(hpycc.Connection, "check_syntax")
-    def test_get_output_doesnt_run_syntax_check_if_false(self, mock):
+    def test_get_outputs_doesnt_run_syntax_check_if_false(self, mock):
         script = "OUTPUT(2);"
         _get_outputs_from_ecl_string(self.conn, script, False)
+        self.assertFalse(mock.called)
+
+    @patch.object(hpycc.get, "delete_workunit")
+    def test_get_outputs_runs_delete_workunit_if_true(self, mock):
+        script = "OUTPUT(2);"
+        _get_outputs_from_ecl_string(self.conn, script)
+        mock.assert_called()
+
+    @patch.object(hpycc.get, "delete_workunit")
+    def test_get_outputs_doesnt_run_delete_workunit_if_false(self, mock):
+        script = "OUTPUT(2);"
+        _get_outputs_from_ecl_string(self.conn, script, delete_workunit=False)
         self.assertFalse(mock.called)

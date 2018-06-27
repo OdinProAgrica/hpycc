@@ -118,7 +118,7 @@ def _stringify_rows(df, start_row, num_rows):
 
 
 def spray_file(connection, source_file, logical_file, overwrite=False,
-               chunk_size=10000, max_workers=3):
+               chunk_size=10000, max_workers=3, deleteworkunit=True):
     """
     Spray a file to a HPCC logical file.
 
@@ -174,10 +174,10 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
         _, __ = concurrent.futures.wait(futures)
 
     concatenate_logical_files(connection, target_names, logical_file,
-                              record_set, overwrite)
+                              record_set, overwrite, deleteworkunit)
 
     for tmp in target_names:
-        delete_logical_file(connection, tmp)
+        delete_logical_file(connection, tmp, deleteworkunit)
 
 
 def _make_record_set(df):

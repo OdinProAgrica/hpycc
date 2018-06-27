@@ -19,12 +19,15 @@ __all__ = ["get_output", "get_outputs", "get_logical_file",
 
 from concurrent.futures import ThreadPoolExecutor, wait
 import re
+import subprocess
 import warnings
+
 import pandas as pd
 
 from hpycc.utils import filechunker
 from hpycc.utils.parsers import parse_xml, parse_json_output
 from hpycc.delete import delete_workunit
+import hpycc
 
 
 def get_output(connection, script, syntax_check=True, deleteworkunit=True):
@@ -48,10 +51,10 @@ def get_output(connection, script, syntax_check=True, deleteworkunit=True):
         default.
     deleteworkunit: Sets the option to delete the workunit after running. This
         is currently set to be True by default.
+
     Returns
     -------
-    parsed: pandas.DataFrame
-        pandas.DataFrame of the first output of `script`.
+    pandas.DataFrame of the first output of `script`.
 
     Raises
     ------
@@ -120,13 +123,16 @@ def get_output(connection, script, syntax_check=True, deleteworkunit=True):
         warnings.warn("The output does not appear to contain a dataset. "
                       "Returning an empty DataFrame.")
         to_return = pd.DataFrame()
+        return to_return
     else:
         parsed = parse_xml(match_content)
         to_return = parsed
+        return to_return
+
     finally:
         if deleteworkunit:
             delete_workunit(connection, wuid)
-        return to_return
+
 
 def get_outputs(connection, script, syntax_check=True, deleteworkunit=True):
     """
@@ -227,23 +233,31 @@ def get_outputs(connection, script, syntax_check=True, deleteworkunit=True):
     """
     try:
         result = connection.run_ecl_script(script, syntax_check)
+    except subprocess.SubprocessError as e:
+        wuid = get_wuid_error(e.args[0].decode())
+        # error_string = e.msg
+        # regex_new = 'Pipe: process complete\r\nW20180627-140844 failed\r\n'
+        # new_wuid = re.search(regex_new, error_string)
+
+        # parse e to get uid
+        raise e
+    else:
         regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.*?)</Dataset>"
 
         result = result.stdout.replace("\r\n", "")
-
+        results = re.findall(regex, result)
         wuid = get_wuid_xml(result)
 
-        results = re.findall(regex, result)
         if any([i[1] == "" for i in results]):
             warnings.warn(
                 "One or more of the outputs do not appear to contain a dataset. "
                 "They have been replaced with an empty DataFrame")
         as_dict = {name.replace(" ", "_"): parse_xml(xml) for name, xml in results}
+        return as_dict
 
     finally:
         if deleteworkunit:
             delete_workunit(connection, wuid)
-        return as_dict
 
 
 def _get_columns_of_logical_file(connection, logical_file, csv, max_attempts,
@@ -388,6 +402,14 @@ def get_logical_file(connection, logical_file, csv=False, max_workers=15,
     return df
 
 
+def get_wuid_error(result):
+    #  error_message = result.msg
+    wuid_regex = result.split("\r\n")[-1]
+    # regex = "Pipe: process complete\r\n(.+?) failed\r\n"
+    regex = "W[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9](\S*)"
+    wuid = re.search(regex, wuid_regex) #.group(0)
+    return wuid
+
 def get_wuid(result):
 
     """
@@ -398,11 +420,24 @@ def get_wuid(result):
     try:
         wuid = result["WUResultResponse"]['Wuid']
     except:
-        regex = "wuid: (.+?)   state:"
-        search = re.search(regex, result).group(0)
-        wuid1 = search.replace('wuid: ', '')
-        wuid = wuid1.replace('   state:', '')
-
+        pass
+    try:
+        i = [i.strip() for i in result.split("\r\n") if "wuid:" in i][0]
+        wuid = i.split()[1]
+    except:
+        pass
+        # regex = "wuid: (.+?)   state:"
+        # search = re.search(regex, result).group(0)
+        # wuid1 = search.replace('wuid: ', '')
+        # wuid = wuid1.replace('   state:', '')
+            #  error_message = result.msg
+    try:
+        wuid_regex = result.split("\r\n")[-1]
+        # regex = "Pipe: process complete\r\n(.+?) failed\r\n"
+        regex = "W[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9](\S*)"
+        wuid = re.search(regex, wuid_regex)  # .group(0)
+    except Exception as e:
+        raise e
     return wuid
 
 def get_wuid_json(rj):
@@ -419,7 +454,7 @@ def get_wuid_json(rj):
     :return: wuid - string
         The Workunit ID from the JSON.
     """
-
+    wuid = rj["WUResultResponse"]['Wuid']
     return wuid
 
 
@@ -437,8 +472,9 @@ def get_wuid_xml(result):
     :return: wuid - string
         The Workunit ID from the XML.
     """
-
     regex = "wuid: (.+?)   state:"
+    # regex = "wuid: (?P<)   state:"
+
     search = re.search(regex, result).group(0)
     wuid1 = search.replace('wuid: ', '')
     wuid = wuid1.replace('   state:', '')
