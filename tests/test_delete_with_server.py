@@ -46,25 +46,23 @@ class TestDeleteWorkunitwithServer(unittest.TestCase):
     def setUp(self):
         self.conn = hpycc.Connection("user")
 
-#TODO Create a check delete. 1. Creature WUID. 2. Delete with correct response. 3. Trt delete again with correct response.
-#TODO try to somehow seew what would would happen if you input a string? maybe set the
 
     def test_delete_workunit_actually_deletes_workunit(self):
-        script = "OUTPUT(2);"
-        res = _get_output_from_ecl_string(self.conn, script)
-        res = res.stdout.replace("\r\n", "")
-        wuid = hpycc.get.get_wuid_xml(res)
-
+        string = "OUTPUT(2);"
+        result = self.conn.run_ecl_string(string, syntax_check=True)
+        result = result.stdout.replace("\r\n", "")
+        wuid = hpycc.get.get_wuid_xml(result)
         res = hpycc.delete_workunit(self.conn, wuid)
-
-        expected = """{'WUDeleteResponse': {}}"""
-        pd.testing.assert_frame_equal(expected, res)
+        expected = {'WUDeleteResponse': {}}
+        self.assertEqual(expected, res)
 
 
     def test_delete_workunit_fails_on_nonexistent_workunit(self):
 
-        wuid = 'IReallyHopeThisIsntARealWorkunitID'
+        wuid = 'IReallyHopeThisIsNotARealWorkunitID'
         res = hpycc.delete_workunit(self.conn, wuid)
-        res2 = list(res['WUDeleteResponse'].values()).str
-        expected = """[{'WUActionResult': [{'Action': 'Delete',    'Result': '',    'Wuid': 'IReallyHopeThisIsntARealWorkunitID'}]}]"""
-        pd.testing.assert_frame_equal(expected, res2)
+        expected = {'WUDeleteResponse': {'ActionResults': {'WUActionResult':
+                 [{'Action': 'Delete', 'Result': 'Failed: Invalid Workunit ID:'
+                             ' IReallyHopeThisIsNotARealWorkunitID',
+                   'Wuid': 'IReallyHopeThisIsNotARealWorkunitID'}]}}}
+        self.assertEqual(expected, res)
