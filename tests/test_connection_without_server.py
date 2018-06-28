@@ -225,7 +225,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
                                 port=123)
         conn.run_ecl_script("test.ecl", syntax_check=False)
         mock.assert_called_with(
-            "ecl run --server abc --port 123 --username user "
+            "ecl run -v --server abc --port 123 --username user "
             "--password=password thor test.ecl")
 
     @patch.object(hpycc.Connection, "_run_command")
@@ -233,7 +233,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
         conn = hpycc.Connection("user", password="abc", test_conn=False)
         conn.run_ecl_script("test.ecl", syntax_check=False)
         mock.assert_called_with(
-            "ecl run --server localhost --port 8010 --username user "
+            "ecl run -v --server localhost --port 8010 --username user "
             "--password=abc thor test.ecl")
 
     @patch.object(hpycc.Connection, "_run_command")
@@ -242,7 +242,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
         conn = hpycc.Connection("user", password="a\nb", test_conn=False)
         conn.run_ecl_script("test.ecl", syntax_check=False)
         mock.assert_called_with(
-            "ecl run --server localhost --port 8010 --username user "
+            "ecl run -v --server localhost --port 8010 --username user "
             "--password=a\nb thor test.ecl")
 
     @patch.object(hpycc.Connection, "_run_command")

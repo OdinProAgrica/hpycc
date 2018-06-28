@@ -65,6 +65,6 @@ class TestDeleteWorkunitwithServer(unittest.TestCase):
 
         wuid = 'IReallyHopeThisIsntARealWorkunitID'
         res = hpycc.delete_workunit(self.conn, wuid)
-        #res2 = list(res['WUDeleteResponse'].values()).str
+        res2 = list(res['WUDeleteResponse'].values()).str
         expected = """[{'WUActionResult': [{'Action': 'Delete',    'Result': '',    'Wuid': 'IReallyHopeThisIsntARealWorkunitID'}]}]"""
         pd.testing.assert_frame_equal(expected, res2)

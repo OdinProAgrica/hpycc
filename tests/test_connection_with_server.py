@@ -6,7 +6,7 @@ import os
 import subprocess
 from tempfile import TemporaryDirectory
 import unittest
-
+import re
 import pandas as pd
 import requests
 from requests.exceptions import ConnectionError
@@ -66,19 +66,36 @@ class TestConnectionRunECLScriptWithServer(unittest.TestCase):
     def test_run_script_returns_correct_tuple(self):
         conn = hpycc.Connection("user", test_conn=False)
         good_script = "output(2);"
-        expected_out = "\r\n".join([
-            "\r\n<Result>", "<Dataset name='Result 1'>",
+        expected_out_stdout = "\r\n".join(["Using eclcc path ", "",
+                                           "Deploying ECL Archive ", "",
+                                           "Deployed",
+                                           "   wuid: W20180627-154140",
+                                           "   state: compiled", "",
+                             "Running deployed workunit W20180627-154140",
+            "<Result>", "<Dataset name='Result 1'>",
             " <Row><Result_1>2</Result_1></Row>",
             "</Dataset>", "</Result>\r\n"
-        ])
+                                           ])
+        expected_out_stderr = "\r\n".join(["EXEC: Creating PIPE process : ",
+                "EXEC: Pipe: Waiting for process to complete 748",
+                "EXEC: Pipe: process complete\r\n"
+                                           ])
         with TemporaryDirectory() as d:
             p = os.path.join(d, "test.ecl")
             with open(p, "w+") as file:
                 file.write(good_script)
             result = conn.run_ecl_script(p, syntax_check=False)
         self.assertEqual(result.__class__.__name__, "Result")
-        self.assertEqual(result.stdout, expected_out)
-        self.assertEqual(result.stderr, "")
+        stdout_output = re.sub("path (.+?)eclcc", 'path ',
+                               result.stdout)
+        stdout_output1 = re.sub("Archive (.+?)test.ecl", 'Archive ',
+                                stdout_output)
+        stdout_output2 = re.sub("W[0-9{8}](\S*)", 'W20180627-154140',
+                                stdout_output1)
+        self.assertEqual(stdout_output2, expected_out_stdout)
+        stderr_output = re.sub(" [0-9][0-9][0-9]", ' 748', result.stderr)
+        stderr_output1 = re.sub("process : (.+?)test.ecl\"", 'process : ', stderr_output)
+        self.assertEqual(stderr_output1, expected_out_stderr)
 
     def test_run_script_fails_if_file_not_found(self):
         conn = hpycc.Connection("user", test_conn=False)
@@ -133,15 +150,30 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
 
 class TestConnectionRunECLStringWithServer(unittest.TestCase):
     def test_run_ecl_string_returns_result_of_run_ecl_script(self):
-        expected_stdout = "\r\n".join([
-            "\r\n<Result>",
-            "<Dataset name='Result 1'>",
+        expected_out_stdout = "\r\n".join(["Using eclcc path ", "",
+                                           "Deploying ECL Archive ", "",
+                                           "Deployed",
+                                           "   wuid: W20180627-154140",
+                                           "   state: compiled", "",
+                             "Running deployed workunit W20180627-154140",
+            "<Result>", "<Dataset name='Result 1'>",
             " <Row><Result_1>2</Result_1></Row>",
-            "</Dataset>",
-            "</Result>\r\n"
-        ])
+            "</Dataset>", "</Result>\r\n"
+                                           ])
+        expected_out_stderr = "\r\n".join(["EXEC: Creating PIPE process : ",
+                "EXEC: Pipe: Waiting for process to complete 748",
+                "EXEC: Pipe: process complete\r\n"
+                                           ])
         conn = hpycc.Connection("user", test_conn=False)
         result = conn.run_ecl_string("OUTPUT(2);", syntax_check=True)
         self.assertEqual(result.__class__.__name__, "Result")
-        self.assertEqual(expected_stdout, result.stdout)
-        self.assertEqual("", result.stderr)
+        stdout_output = re.sub("path (.+?)eclcc", 'path ',
+                               result.stdout)
+        stdout_output1 = re.sub("Archive (.+?)_string.ecl", 'Archive ',
+                                stdout_output)
+        stdout_output2 = re.sub("W[0-9{8}](\S*)", 'W20180627-154140',
+                                stdout_output1)
+        self.assertEqual(stdout_output2, expected_out_stdout)
+        stderr_output = re.sub(" [0-9][0-9][0-9]", ' 748', result.stderr)
+        stderr_output1 = re.sub("process : (.+?).ecl\"", 'process : ', stderr_output)
+        self.assertEqual(stderr_output1, expected_out_stderr)
