@@ -20,7 +20,7 @@ import warnings
 
 import pandas as pd
 
-from hpycc.utils import filechunker
+from hpycc.utils.filechunker import make_chunks
 
 from hpycc.utils.parsers import parse_xml, parse_json_output
 
@@ -357,7 +357,7 @@ def get_logical_file(connection, logical_file, csv=False, max_workers=15,
     file_size = _get_logical_file_row_count(
         connection, logical_file, max_attempts, max_sleep)
 
-    chunks = filechunker.make_chunks(file_size, csv, chunk_size)
+    chunks = make_chunks(file_size, csv, chunk_size)
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [
