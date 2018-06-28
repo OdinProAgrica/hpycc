@@ -326,3 +326,29 @@ class TestGetOutputsWithServer(unittest.TestCase):
         script = "OUTPUT(2);"
         _get_outputs_from_ecl_string(self.conn, script, delete_workunit=False)
         self.assertFalse(mock.called)
+
+class TestGetWUIDwithServer(unittest.TestCase):
+
+    def test_get_wuid_xml_returns_inteded(self):
+        string = "wuid:  W12345678-123456   state:"
+        expected = 'W12345678-123456'
+        res = hpycc.get.get_wuid_xml(string)
+        self.assertEqual(expected, res)
+
+    def test_get_wuid_error_returns_intended(self):
+        string = '\r\n this is the wuid W12345678-123456 and should return it \r\n'
+        expected = 'W12345678-123456'
+        res = hpycc.get.get_wuid_error(string)
+        pd.testing.assert_frame_equal(expected, res)
+
+    def test_get_wuid_xml_return_rare_wuid_case(self):
+        string = "wuid:  W12345678-123456(2)   state:"
+        expected = 'W12345678-123456(2)'
+        res = hpycc.get.get_wuid_xml(string)
+        self.assertEqual(expected, res)
+
+    def test_get_wuid_error_returns_rare_wuid_case(self):
+        string = '\r\n this is the wuid W12345678-123456(2) and should return it \r\n'
+        expected = 'W12345678-123456(2)'
+        res = hpycc.get.get_wuid_error(string)
+        pd.testing.assert_frame_equal(expected, res)
