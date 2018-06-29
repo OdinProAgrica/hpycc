@@ -198,15 +198,15 @@ def concatenate_logical_files(connection, to_concat, logical_file, record_set,
 
     Parameters
     ----------
-    :param connection: `Connection`
+    connection: `Connection`
         HPCC Connection instance, see also `Connection`.
-    :param to_concat: list, iterable.
+    to_concat: list, iterable.
         Iterable of pre-existing logical file names to concatenate.
-    :param logical_file: str
+    logical_file: str
         Logical file name to concatenate into.
-    :param record_set: str
+    record_set: str
         Common recordset of all logical files, see `make_record_set()`.
-    :param overwrite: bool
+    overwrite: bool
         Should the file overwrite any pre-existing logical file.
     delete_workunit: bool
         Delete workunit once completed. True by default.
