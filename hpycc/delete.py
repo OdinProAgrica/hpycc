@@ -1,15 +1,15 @@
-def delete_logical_file(connection, logical_file, deleteworkunit=True):
+def delete_logical_file(connection, logical_file, delete_workunit=True):
     """
     Delete a logical file.
 
     Parameters
     ----------
-    :param connection: `Connection`
+    connection: `Connection`
         HPCC Connection instance, see also `Connection`.
-    :param logical_file: str
+    logical_file: str
         Logical file to be downloaded.
-    :param deleteworkunit: bool
-        Whether the workunit created should be deleted. Set to True.
+    delete_workunit: bool, optional
+        Delete workunit once completed. True by default.
 
     Returns
     -------
@@ -18,7 +18,7 @@ def delete_logical_file(connection, logical_file, deleteworkunit=True):
     script = "IMPORT std; STD.File.DeleteLogicalFile('{}');".format(
         logical_file)
 
-    connection.run_ecl_string(script, True, deleteworkunit=deleteworkunit)
+    connection.run_ecl_string(script, True, delete_workunit=delete_workunit)
 
 
 def delete_workunit(connection, wuid, max_attempts=1, max_sleep=1):

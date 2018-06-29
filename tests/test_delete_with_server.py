@@ -50,7 +50,7 @@ class TestDeleteWorkunitwithServer(unittest.TestCase):
 
     def test_delete_workunit_actually_deletes_workunit(self):
         string = "OUTPUT(2);"
-        result = self.conn.run_ecl_string(string, syntax_check=True, deleteworkunit=False)
+        result = self.conn.run_ecl_string(string, syntax_check=True, delete_workunit=False)
         result = result.stdout.replace("\r\n", "")
         wuid = hpycc.utils.parsers.parse_wuid_from_xml(result)
         res = hpycc.delete_workunit(self.conn, wuid)

@@ -30,7 +30,7 @@ class TestRunWithServer(unittest.TestCase):
             p = os.path.join(d, "test.ecl")
             with open(p, "w+") as file:
                 file.write(good_script)
-            self.assertTrue(conn.run_ecl_script(p, syntax_check=True, delete_workunit=False))
+            self.assertTrue(conn.run_ecl_script(p, syntax_check=True))
         res = conn.get_logical_file_chunk(
             "thor::testrunscriptsaveslogicalfile", 0, 1, 3, 1)
         expected_result = [{"a": "1", "b": "a", "__fileposition__": "0"}]

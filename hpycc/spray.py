@@ -10,7 +10,7 @@ from hpycc.utils.filechunker import make_chunks
 
 
 def _spray_stringified_data(connection, data, record_set, logical_file,
-                            overwrite, deleteworkunit=True):
+                            overwrite, delete_workunit):
     """
     Spray stringified data to a HPCC logical file. To generate the
     stringified data and recordset, see `stringify_rows()` &
@@ -28,8 +28,8 @@ def _spray_stringified_data(connection, data, record_set, logical_file,
         Logical file name on THOR.
     :param overwrite: bool
         Should the file overwrite any pre-existing logical file.
-    :param deleteworkunit: bool
-        Should the workunit be deleted. Set to True
+    delete_workunit: bool
+        Delete the workunit once completed
     """
     script_content = ("a := DATASET([{}], {{{}}});\nOUTPUT(a, ,'{}' , "
                       "EXPIRE(1)").format(
@@ -37,7 +37,7 @@ def _spray_stringified_data(connection, data, record_set, logical_file,
     if overwrite:
         script_content += ", OVERWRITE"
     script_content += ");"
-    connection.run_ecl_string(script_content, True, deleteworkunit)
+    connection.run_ecl_string(script_content, True, delete_workunit)
 
 
 def _get_type(typ):
@@ -109,7 +109,7 @@ def _stringify_rows(df, start_row, num_rows):
 
 
 def spray_file(connection, source_file, logical_file, overwrite=False,
-               chunk_size=10000, max_workers=3, deleteworkunit=True):
+               chunk_size=10000, max_workers=3, delete_workunit=True):
     """
     Spray a file to a HPCC logical file.
 
@@ -165,10 +165,10 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
         _, __ = concurrent.futures.wait(futures)
 
     concatenate_logical_files(connection, target_names, logical_file,
-                              record_set, overwrite, deleteworkunit)
+                              record_set, overwrite, delete_workunit)
 
     for tmp in target_names:
-        delete_logical_file(connection, tmp, deleteworkunit)
+        delete_logical_file(connection, tmp, delete_workunit)
 
 
 def _make_record_set(df):
@@ -191,7 +191,7 @@ def _make_record_set(df):
 
 
 def concatenate_logical_files(connection, to_concat, logical_file, record_set,
-                              overwrite, deleteworkunit=True):
+                              overwrite, delete_workunit=True):
     """
     Concatenate a list of logical files (with the same recordset)
     into a single logical file.
@@ -208,8 +208,8 @@ def concatenate_logical_files(connection, to_concat, logical_file, record_set,
         Common recordset of all logical files, see `make_record_set()`.
     :param overwrite: bool
         Should the file overwrite any pre-existing logical file.
-    :param deleteworkunit: bool
-        Should the wokrunit created be deleted. Set to True.
+    delete_workunit: bool
+        Delete workunit once completed. True by default.
     Returns
     -------
     :return: None
@@ -224,4 +224,4 @@ def concatenate_logical_files(connection, to_concat, logical_file, record_set,
     script += ");"
     script = script.format(read_files, logical_file)
 
-    connection.run_ecl_string(script, True, deleteworkunit)
+    connection.run_ecl_string(script, True, delete_workunit)

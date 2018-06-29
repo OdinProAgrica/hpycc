@@ -126,7 +126,7 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
             p = os.path.join(d, "data.csv")
             df.to_csv(p, index=False)
             lf_name = "test_get_logical_file_chunk_returns_correct_json"
-            hpycc.spray_file(conn, p, lf_name, chunk_size=3, deleteworkunit=False)
+            hpycc.spray_file(conn, p, lf_name, chunk_size=3, delete_workunit=False)
 
         result = conn.get_logical_file_chunk(
             "thor::{}".format(lf_name), 0, 2, 3, 2)
@@ -143,7 +143,7 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
         with TemporaryDirectory() as d:
             p = os.path.join(d, "data.csv")
             df.to_csv(p, index=False)
-            hpycc.spray_file(conn, p, "data", chunk_size=3, deleteworkunit=False)
+            hpycc.spray_file(conn, p, "data", chunk_size=3, delete_workunit=False)
 
         result = conn.get_logical_file_chunk("thor::data", 0, 1, 3, 0)
         self.assertIsInstance(result, list)
@@ -169,7 +169,7 @@ class TestConnectionRunECLStringWithServer(unittest.TestCase):
                                            ])
         conn = hpycc.Connection("user", test_conn=False)
         result = conn.run_ecl_string("OUTPUT(2);", syntax_check=True,
-                                     deleteworkunit=False)
+                                     delete_workunit=False)
         self.assertEqual(result.__class__.__name__, "Result")
         stdout_output = re.sub("path (.+?)eclcc", 'path ',
                                result.stdout)

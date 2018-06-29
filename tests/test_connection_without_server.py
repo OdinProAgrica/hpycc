@@ -470,7 +470,7 @@ class TestConnectionRunECLString(unittest.TestCase):
     @patch.object(hpycc.Connection, "run_ecl_script")
     def test_run_ecl_string_calls_run_ecl_script(self, mock):
         conn = hpycc.Connection("user", test_conn=False)
-        conn.run_ecl_string("aa", syntax_check=False, deleteworkunit=False)
+        conn.run_ecl_string("aa", syntax_check=False, delete_workunit=False)
         mock.assert_called()
 
     @patch.object(hpycc.Connection, "check_syntax")
@@ -478,7 +478,7 @@ class TestConnectionRunECLString(unittest.TestCase):
     def test_run_ecl_string_checks_syntax_if_flag_is_true(self, _, mock):
         conn = hpycc.Connection("user", test_conn=False)
         conn.run_ecl_string("OUTPUT(2);", syntax_check=True,
-                            deleteworkunit=False)
+                            delete_workunit=False)
         mock.assert_called()
 
     @patch.object(hpycc.Connection, "check_syntax")
@@ -486,11 +486,11 @@ class TestConnectionRunECLString(unittest.TestCase):
     def test_run_ecl_string_checks_syntax_if_flag_is_true(self, _, mock):
         conn = hpycc.Connection("user", test_conn=False)
         conn.run_ecl_string("OUTPUT(2);", syntax_check=False,
-                            deleteworkunit=False)
+                            delete_workunit=False)
         mock.assert_not_called()
 
     def test_run_ecl_string_raises_if_syntax_check_fails(self):
         conn = hpycc.Connection("user", test_conn=False)
         with self.assertRaises(subprocess.SubprocessError):
             conn.run_ecl_string("OUTPUT(2);", syntax_check=True,
-                                deleteworkunit=False)
+                                delete_workunit=False)

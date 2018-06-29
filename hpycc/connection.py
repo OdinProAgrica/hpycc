@@ -190,7 +190,7 @@ class Connection:
             If a syntax check should be ran before the script is
             executed.
         delete_workunit: bool
-            Delete the workunit once completed.
+            Delete workunit once completed.
 
         Returns
         -------
@@ -323,7 +323,7 @@ class Connection:
             raise KeyError("json is : {}".format(rj))
         return result_response
 
-    def run_ecl_string(self, string, syntax_check, deleteworkunit):
+    def run_ecl_string(self, string, syntax_check, delete_workunit):
         """
         Run an ECL string and return the stdout and stderr.
 
@@ -340,7 +340,7 @@ class Connection:
         syntax_check: bool
             If a syntax check should be ran before the script is
             executed.
-        deleteworkunit: bool
+        delete_workunit: bool
             Delete workunit once completed.
 
         Returns
@@ -364,5 +364,5 @@ class Connection:
             with open(p, "w+") as file:
                 file.write(string)
 
-            r = self.run_ecl_script(p, syntax_check, deleteworkunit)
+            r = self.run_ecl_script(p, syntax_check, delete_workunit)
         return r
