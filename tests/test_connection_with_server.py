@@ -7,6 +7,7 @@ import subprocess
 from tempfile import TemporaryDirectory
 import unittest
 import re
+
 import pandas as pd
 import requests
 from requests.exceptions import ConnectionError

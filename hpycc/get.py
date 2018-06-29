@@ -10,8 +10,6 @@ Functions
 - `get_output` -- Return the first output of an ECL script.
 - `get_outputs` -- Return all outputs of an ECL script.
 - `get_logical_file` -- Return the contents of a logical file.
-- 'get_wuid_json' -- Return the WUID from JSON script requests
-- 'get_wuid_xml' -- Return the WUID from XML script requests
 
 """
 __all__ = ["get_output", "get_outputs", "get_logical_file"]
@@ -24,7 +22,6 @@ import pandas as pd
 
 from hpycc.utils import filechunker
 from hpycc.utils.parsers import parse_xml, parse_json_output
-import hpycc
 
 
 def get_output(connection, script, syntax_check=True, deleteworkunit=True):
@@ -117,12 +114,10 @@ def get_output(connection, script, syntax_check=True, deleteworkunit=True):
     except AttributeError:
         warnings.warn("The output does not appear to contain a dataset. "
                       "Returning an empty DataFrame.")
-        to_return = pd.DataFrame()
-        return to_return
+        return pd.DataFrame()
     else:
         parsed = parse_xml(match_content)
-        to_return = parsed
-        return to_return
+        return parsed
 
 
 def get_outputs(connection, script, syntax_check=True, deleteworkunit=True):
@@ -227,12 +222,12 @@ def get_outputs(connection, script, syntax_check=True, deleteworkunit=True):
 
     result = result.stdout.replace("\r\n", "")
     results = re.findall(regex, result)
-
     if any([i[1] == "" for i in results]):
         warnings.warn(
             "One or more of the outputs do not appear to contain a dataset. "
             "They have been replaced with an empty DataFrame")
     as_dict = {name.replace(" ", "_"): parse_xml(xml) for name, xml in results}
+
     return as_dict
 
 
@@ -273,12 +268,14 @@ def _get_logical_file_row_count(connection, logical_file, max_attempts,
                                 max_sleep):
     """
     Return the number of rows in a logical file.
+
     Parameters
     ----------
     :param connection: `Connection`
         HPCC Connection instance, see also `Connection`.
     :param logical_file: str
          Logical file to be examined.
+
     Returns
     -------
     :return: file_size, int
@@ -287,12 +284,14 @@ def _get_logical_file_row_count(connection, logical_file, max_attempts,
     url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
            "&Cluster=thor&Start={}&Count={}").format(
         connection.server, connection.port, logical_file, 0, 2)
+
     r = connection.run_url_request(url, max_attempts, max_sleep)
     rj = r.json()
     try:
         file_size = rj["WUResultResponse"]['Total']
     except KeyError:
         raise KeyError("json: {}".format(rj))
+
     return file_size
 
 
