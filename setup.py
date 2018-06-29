@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 with open("README.rst", "r") as fh:
     long_description = fh.read()
@@ -24,7 +24,7 @@ setup(
     ],
     keywords='HPCC ECL data access distributed ROXIE THOR',
     license='GNU GPLv3',
-    packages=['hpycc'],
+    packages=find_packages(),
     zip_safe=False,
     install_requires=[
         'pandas',
