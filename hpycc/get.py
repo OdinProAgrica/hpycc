@@ -24,7 +24,7 @@ from hpycc.utils import filechunker
 from hpycc.utils.parsers import parse_xml, parse_json_output
 
 
-def get_output(connection, script, syntax_check=True, deleteworkunit=True):
+def get_output(connection, script, syntax_check=True, delete_workunit=True):
     """
     Return the first output of an ECL script as a pandas.DataFrame.
 
@@ -43,7 +43,7 @@ def get_output(connection, script, syntax_check=True, deleteworkunit=True):
     syntax_check: bool, optional
         Should the script be syntax checked before execution? True by
         default.
-    deleteworkunit: Sets the option to delete the workunit after running. This
+    delete_workunit: Sets the option to delete the workunit after running. This
         is currently set to be True by default.
 
     Returns
@@ -104,7 +104,7 @@ def get_output(connection, script, syntax_check=True, deleteworkunit=True):
 
     """
 
-    result = connection.run_ecl_script(script, syntax_check, deleteworkunit)
+    result = connection.run_ecl_script(script, syntax_check, delete_workunit)
     result = result.stdout.replace("\r\n", "")
 
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
@@ -120,7 +120,7 @@ def get_output(connection, script, syntax_check=True, deleteworkunit=True):
         return parsed
 
 
-def get_outputs(connection, script, syntax_check=True, deleteworkunit=True):
+def get_outputs(connection, script, syntax_check=True, delete_workunit=True):
     """
     Return all outputs of an ECL script.
 
@@ -137,7 +137,7 @@ def get_outputs(connection, script, syntax_check=True, deleteworkunit=True):
     syntax_check: bool, optional
         Should the script be syntax checked before execution? True by
         default.
-    deleteworkunit: bool,
+    delete_workunit: bool,
         Should the workunit created be deleted afterwards. Set to True.
 
     Returns
@@ -217,7 +217,7 @@ def get_outputs(connection, script, syntax_check=True, deleteworkunit=True):
     }
 
     """
-    result = connection.run_ecl_script(script, syntax_check, deleteworkunit)
+    result = connection.run_ecl_script(script, syntax_check, delete_workunit)
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.*?)</Dataset>"
 
     result = result.stdout.replace("\r\n", "")
