@@ -173,13 +173,13 @@ class TestGetOutputWithServer(unittest.TestCase):
         _get_output_from_ecl_string(self.conn, script, syntax=False)
         self.assertFalse(mock.called)
 
-    @patch.object(hpycc.connection, "delete_workunit")
+    @patch.object(hpycc.connection.delete, "delete_workunit")
     def test_get_output_runs_delete_workunit_if_true(self, mock):
         script = "OUTPUT(2);"
         _get_output_from_ecl_string(self.conn, script, delete_workunit=True)
         mock.assert_called()
 
-    @patch.object(hpycc.connection, "delete_workunit")
+    @patch.object(hpycc.connection.delete, "delete_workunit")
     def test_get_output_doesnt_run_delete_workunit_if_false(self, mock):
         script = "OUTPUT(2);"
         _get_output_from_ecl_string(self.conn, script, delete_workunit=False)
@@ -314,13 +314,13 @@ class TestGetOutputsWithServer(unittest.TestCase):
         _get_outputs_from_ecl_string(self.conn, script, False)
         self.assertFalse(mock.called)
 
-    @patch.object(hpycc.connection, "delete_workunit")
+    @patch.object(hpycc.connection.delete, "delete_workunit")
     def test_get_outputs_runs_delete_workunit_if_true(self, mock):
         script = "OUTPUT(2);"
         _get_outputs_from_ecl_string(self.conn, script)
         mock.assert_called()
 
-    @patch.object(hpycc.connection, "delete_workunit")
+    @patch.object(hpycc.connection.delete, "delete_workunit")
     def test_get_outputs_doesnt_run_delete_workunit_if_false(self, mock):
         script = "OUTPUT(2);"
         _get_outputs_from_ecl_string(self.conn, script, delete_workunit=False)

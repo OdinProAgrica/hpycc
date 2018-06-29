@@ -160,7 +160,7 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
             executor:
         futures = [
             executor.submit(_spray_stringified_data, connection, row,
-                            record_set, name, overwrite)
+                            record_set, name, overwrite, delete_workunit)
             for row, name in zip(stringified_rows, target_names)]
         _, __ = concurrent.futures.wait(futures)
 
