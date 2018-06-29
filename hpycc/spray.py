@@ -2,13 +2,14 @@
 The module contains functions to send files to HPCC.
 """
 import concurrent.futures
+import subprocess
 
 import pandas as pd
 
 from hpycc.delete import delete_logical_file
 from hpycc.utils.filechunker import make_chunks
 from hpycc.delete import delete_workunit
-from hpycc.get import get_wuid_xml
+from hpycc.utils.parsers import parse_wuid_from_xml
 
 
 def _spray_stringified_data(connection, data, record_set, logical_file,
@@ -40,13 +41,7 @@ def _spray_stringified_data(connection, data, record_set, logical_file,
         script_content += ", OVERWRITE"
     script_content += ");"
 
-    if deleteworkunit:
-        test = connection.run_ecl_string(script_content, True)
-        test = test.stdout.replace("\r\n", "")
-        wuid2 = get_wuid_xml(test)
-        delete_workunit(connection, wuid2)
-    else:
-        connection.run_ecl_string(script_content, True)
+    connection.run_ecl_string(script_content, True, deleteworkunit)
 
 
 def _get_type(typ):
@@ -233,10 +228,4 @@ def concatenate_logical_files(connection, to_concat, logical_file, record_set,
     script += ");"
     script = script.format(read_files, logical_file)
 
-    if deleteworkunit:
-        test = connection.run_ecl_string(script, True)
-        test = test.stdout.replace("\r\n", "")
-        wuid = get_wuid_xml(test)
-        delete_workunit(connection, wuid)
-    else:
-        connection.run_ecl_string(script, True)
+    connection.run_ecl_string(script, True, deleteworkunit)

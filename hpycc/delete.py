@@ -1,5 +1,3 @@
-import hpycc
-
 def delete_logical_file(connection, logical_file, deleteworkunit=True):
     """
     Delete a logical file.
@@ -20,14 +18,7 @@ def delete_logical_file(connection, logical_file, deleteworkunit=True):
     script = "IMPORT std; STD.File.DeleteLogicalFile('{}');".format(
         logical_file)
 
-    #  connection.run_ecl_string(script, True)
-    if deleteworkunit:
-        test = connection.run_ecl_string(script, True)
-        test = test.stdout.replace("\r\n", "")
-        wuid = hpycc.get.get_wuid_xml(test)
-        delete_workunit(connection, wuid)
-    else:
-        connection.run_ecl_string(script, True)
+    connection.run_ecl_string(script, True, deleteworkunit=deleteworkunit)
 
 
 def delete_workunit(connection, wuid, max_attempts=1, max_sleep=1):

@@ -223,7 +223,8 @@ class TestConnectionRunECLScript(unittest.TestCase):
     def test_run_ecl_script_command_uses_server_port_and_username(self, mock):
         conn = hpycc.Connection("user", test_conn=False, server="abc",
                                 port=123)
-        conn.run_ecl_script("test.ecl", syntax_check=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False,
+                            delete_workunit=False)
         mock.assert_called_with(
             "ecl run -v --server abc --port 123 --username user "
             "--password=password thor test.ecl")
@@ -231,7 +232,8 @@ class TestConnectionRunECLScript(unittest.TestCase):
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_script_command_uses_password(self, mock):
         conn = hpycc.Connection("user", password="abc", test_conn=False)
-        conn.run_ecl_script("test.ecl", syntax_check=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False,
+                            delete_workunit=False)
         mock.assert_called_with(
             "ecl run -v --server localhost --port 8010 --username user "
             "--password=abc thor test.ecl")
@@ -240,7 +242,8 @@ class TestConnectionRunECLScript(unittest.TestCase):
     def test_run_ecl_script_command_works_with_special_password_chars(
             self, mock):
         conn = hpycc.Connection("user", password="a\nb", test_conn=False)
-        conn.run_ecl_script("test.ecl", syntax_check=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False,
+                            delete_workunit=False)
         mock.assert_called_with(
             "ecl run -v --server localhost --port 8010 --username user "
             "--password=a\nb thor test.ecl")
@@ -248,7 +251,8 @@ class TestConnectionRunECLScript(unittest.TestCase):
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_script_command_uses_legacy(self, mock):
         conn = hpycc.Connection("user", legacy=True, test_conn=False)
-        conn.run_ecl_script("test.ecl", syntax_check=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False,
+                            delete_workunit=False)
         mock.assert_called_with(
             "ecl run -v --server localhost --port 8010 --username user "
             "--password=password -legacy thor test.ecl")
@@ -256,7 +260,8 @@ class TestConnectionRunECLScript(unittest.TestCase):
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_script_command_uses_legacy_if_none(self, mock):
         conn = hpycc.Connection("user", legacy=None, test_conn=False)
-        conn.run_ecl_script("test.ecl", syntax_check=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False,
+                            delete_workunit=False)
         mock.assert_called_with(
             "ecl run -v --server localhost --port 8010 --username user "
             "--password=password thor test.ecl")
@@ -264,7 +269,8 @@ class TestConnectionRunECLScript(unittest.TestCase):
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_script_command_uses_repo(self, mock):
         conn = hpycc.Connection("user", test_conn=False, repo="C:")
-        conn.run_ecl_script("test.ecl", syntax_check=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False,
+                            delete_workunit=False)
         mock.assert_called_with(
             "ecl run -v --server localhost --port 8010 --username user "
             "--password=password thor test.ecl -I=C:")
@@ -272,7 +278,8 @@ class TestConnectionRunECLScript(unittest.TestCase):
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_script_command_uses_repo_if_none(self, mock):
         conn = hpycc.Connection("user", test_conn=False, repo=None)
-        conn.run_ecl_script("test.ecl", syntax_check=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False,
+                            delete_workunit=False)
         mock.assert_called_with(
             "ecl run -v --server localhost --port 8010 --username user "
             "--password=password thor test.ecl")
@@ -281,14 +288,16 @@ class TestConnectionRunECLScript(unittest.TestCase):
     @patch.object(hpycc.Connection, "check_syntax")
     def test_run_script_checks_syntax_if_true(self, mock, _):
         conn = hpycc.Connection("user", test_conn=False)
-        conn.run_ecl_script("test.ecl", syntax_check=True)
+        conn.run_ecl_script("test.ecl", syntax_check=True,
+                            delete_workunit=False)
         mock.assert_called()
 
     @patch.object(hpycc.Connection, "_run_command")
     @patch.object(hpycc.Connection, "check_syntax")
     def test_run_script_does_not_check_syntax_if_false(self, mock, _):
         conn = hpycc.Connection("user", test_conn=False,)
-        conn.run_ecl_script("test.ecl", syntax_check=False)
+        conn.run_ecl_script("test.ecl", syntax_check=False,
+                            delete_workunit=False)
         self.assertFalse(mock.called)
 
     def test_run_script_fails_syntax_check_with_bad_script(self):
@@ -299,7 +308,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
             with open(p, "w+") as file:
                 file.write(bad_script)
             with self.assertRaises(subprocess.SubprocessError):
-                conn.run_ecl_script(p, syntax_check=True)
+                conn.run_ecl_script(p, syntax_check=True, delete_workunit=False)
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_script_passes_syntax_check_with_good_script(self, mock):
@@ -309,7 +318,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
             p = os.path.join(d, "test.ecl")
             with open(p, "w+") as file:
                 file.write(good_script)
-            conn.run_ecl_script(p, syntax_check=True)
+            conn.run_ecl_script(p, syntax_check=True, delete_workunit=False)
         mock.assert_called()
 
     @patch.object(hpycc.Connection, "_run_command")
@@ -320,7 +329,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
             p = os.path.join(d, "test.ecl")
             with open(p, "w+") as file:
                 file.write(good_script)
-            conn.run_ecl_script(p, syntax_check=False)
+            conn.run_ecl_script(p, syntax_check=False, delete_workunit=False)
         mock.assert_called()
 
     def test_run_script_fails_if_server_unavailable(self):
@@ -331,7 +340,8 @@ class TestConnectionRunECLScript(unittest.TestCase):
             with open(p, "w+") as file:
                 file.write(good_script)
             with self.assertRaises(subprocess.SubprocessError):
-                conn.run_ecl_script(p, syntax_check=False)
+                conn.run_ecl_script(p, syntax_check=False,
+                                    delete_workunit=False)
 
 
 class TestConnectionGetLogicalFileChunk(unittest.TestCase):
@@ -460,24 +470,27 @@ class TestConnectionRunECLString(unittest.TestCase):
     @patch.object(hpycc.Connection, "run_ecl_script")
     def test_run_ecl_string_calls_run_ecl_script(self, mock):
         conn = hpycc.Connection("user", test_conn=False)
-        conn.run_ecl_string("aa", syntax_check=False)
+        conn.run_ecl_string("aa", syntax_check=False, deleteworkunit=False)
         mock.assert_called()
 
     @patch.object(hpycc.Connection, "check_syntax")
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_string_checks_syntax_if_flag_is_true(self, _, mock):
         conn = hpycc.Connection("user", test_conn=False)
-        conn.run_ecl_string("OUTPUT(2);", syntax_check=True)
+        conn.run_ecl_string("OUTPUT(2);", syntax_check=True,
+                            deleteworkunit=False)
         mock.assert_called()
 
     @patch.object(hpycc.Connection, "check_syntax")
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_ecl_string_checks_syntax_if_flag_is_true(self, _, mock):
         conn = hpycc.Connection("user", test_conn=False)
-        conn.run_ecl_string("OUTPUT(2);", syntax_check=False)
+        conn.run_ecl_string("OUTPUT(2);", syntax_check=False,
+                            deleteworkunit=False)
         mock.assert_not_called()
 
     def test_run_ecl_string_raises_if_syntax_check_fails(self):
         conn = hpycc.Connection("user", test_conn=False)
         with self.assertRaises(subprocess.SubprocessError):
-            conn.run_ecl_string("OUTPUT(2);", syntax_check=True)
+            conn.run_ecl_string("OUTPUT(2);", syntax_check=True,
+                                deleteworkunit=False)

@@ -18,14 +18,12 @@ __all__ = ["get_output", "get_outputs", "get_logical_file"]
 
 from concurrent.futures import ThreadPoolExecutor, wait
 import re
-import subprocess
 import warnings
 
 import pandas as pd
 
 from hpycc.utils import filechunker
 from hpycc.utils.parsers import parse_xml, parse_json_output
-from hpycc.delete import delete_workunit
 import hpycc
 
 
@@ -109,10 +107,8 @@ def get_output(connection, script, syntax_check=True, deleteworkunit=True):
 
     """
 
-    result = connection.run_ecl_script(script, syntax_check)
+    result = connection.run_ecl_script(script, syntax_check, deleteworkunit)
     result = result.stdout.replace("\r\n", "")
-
-    wuid = get_wuid_xml(result)
 
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
     match = re.search(regex, result)
@@ -127,10 +123,6 @@ def get_output(connection, script, syntax_check=True, deleteworkunit=True):
         parsed = parse_xml(match_content)
         to_return = parsed
         return to_return
-
-    finally:
-        if deleteworkunit:
-            delete_workunit(connection, wuid)
 
 
 def get_outputs(connection, script, syntax_check=True, deleteworkunit=True):
@@ -230,28 +222,18 @@ def get_outputs(connection, script, syntax_check=True, deleteworkunit=True):
     }
 
     """
-    try:
-        result = connection.run_ecl_script(script, syntax_check)
-    except subprocess.SubprocessError as e:
-        wuid = get_wuid_error(e.args[0].decode())
-        raise e
-    else:
-        regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.*?)</Dataset>"
+    result = connection.run_ecl_script(script, syntax_check, deleteworkunit)
+    regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.*?)</Dataset>"
 
-        result = result.stdout.replace("\r\n", "")
-        results = re.findall(regex, result)
-        wuid = get_wuid_xml(result)
+    result = result.stdout.replace("\r\n", "")
+    results = re.findall(regex, result)
 
-        if any([i[1] == "" for i in results]):
-            warnings.warn(
-                "One or more of the outputs do not appear to contain a dataset. "
-                "They have been replaced with an empty DataFrame")
-        as_dict = {name.replace(" ", "_"): parse_xml(xml) for name, xml in results}
-        return as_dict
-
-    finally:
-        if deleteworkunit:
-            delete_workunit(connection, wuid)
+    if any([i[1] == "" for i in results]):
+        warnings.warn(
+            "One or more of the outputs do not appear to contain a dataset. "
+            "They have been replaced with an empty DataFrame")
+    as_dict = {name.replace(" ", "_"): parse_xml(xml) for name, xml in results}
+    return as_dict
 
 
 def _get_columns_of_logical_file(connection, logical_file, csv, max_attempts,
@@ -394,34 +376,3 @@ def get_logical_file(connection, logical_file, csv=False, max_workers=15,
                     for f in finished], ignore_index=True)
 
     return df
-
-
-def get_wuid_error(result):
-    wuid_regex = result.split("\r\n")[-1]
-    regex = "W[0-9]{8}(\S*)"
-    wuid = re.search(regex, wuid_regex)
-    return wuid
-
-def get_wuid_xml(result):
-    """
-    Function retrieves a WUID for a script that has run. This retrieves it
-    only in the cases where the request response was in XML format.
-    Parameters
-    ----------
-    result: 'XML'
-        The XML response for the script that has run.
-
-    Returns
-    -------
-    :return: wuid - string
-        The Workunit ID from the XML.
-    """
-    regex = "wuid: (.+?)   state:"
-
-    search = re.search(regex, result).group(0)
-    wuid3 = search.replace('wuid: ', '')
-    wuid2 = wuid3.replace('   state:', '')
-    wuid1 = wuid2.replace(' ', '')
-    regex2 = "W[0-9]{8}(\S*)"
-    wuid = re.search(regex2, wuid1).group(0)
-    return wuid

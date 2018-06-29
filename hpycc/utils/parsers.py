@@ -119,3 +119,36 @@ def _make_col_bool(df):
             })
 
     return df
+
+
+def parse_wuid_from_failed_response(result):
+    wuid_regex = result.split("\r\n")[-1]
+    regex = "W[0-9]{8}(\S*)"
+    wuid = re.search(regex, wuid_regex)
+    return wuid
+
+
+def parse_wuid_from_xml(result):
+    """
+    Function retrieves a WUID for a script that has run. This retrieves it
+    only in the cases where the request response was in XML format.
+    Parameters
+    ----------
+    result: 'XML'
+        The XML response for the script that has run.
+
+    Returns
+    -------
+    :return: wuid - string
+        The Workunit ID from the XML.
+    """
+    regex = "wuid: (.+?)   state:"
+    result = result.replace("\r\n", "")
+
+    search = re.search(regex, result).group(0)
+    wuid3 = search.replace('wuid: ', '')
+    wuid2 = wuid3.replace('   state:', '')
+    wuid1 = wuid2.replace(' ', '')
+    regex2 = "W[0-9]{8}(\S*)"
+    wuid = re.search(regex2, wuid1).group(0)
+    return wuid

@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 import hpycc
+import hpycc.utils.parsers
 from tests.test_helpers import hpcc_functions
 
 
@@ -49,9 +50,9 @@ class TestDeleteWorkunitwithServer(unittest.TestCase):
 
     def test_delete_workunit_actually_deletes_workunit(self):
         string = "OUTPUT(2);"
-        result = self.conn.run_ecl_string(string, syntax_check=True)
+        result = self.conn.run_ecl_string(string, syntax_check=True, deleteworkunit=False)
         result = result.stdout.replace("\r\n", "")
-        wuid = hpycc.get.get_wuid_xml(result)
+        wuid = hpycc.utils.parsers.parse_wuid_from_xml(result)
         res = hpycc.delete_workunit(self.conn, wuid)
         expected = {'WUDeleteResponse': {}}
         self.assertEqual(expected, res)

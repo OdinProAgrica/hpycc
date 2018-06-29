@@ -36,7 +36,7 @@ def _get_output_from_ecl_string(conn, string, syntax=True,
         p = os.path.join(d, "test.ecl")
         with open(p, "w+") as file:
             file.write(string)
-        res = hpycc.get_output(conn, p, syntax,  delete_workunit)
+        res = hpycc.get_output(conn, p, syntax, delete_workunit)
         return res
 
 
@@ -46,7 +46,7 @@ def _get_outputs_from_ecl_string(conn, string, syntax=True,
         p = os.path.join(d, "test.ecl")
         with open(p, "w+") as file:
             file.write(string)
-        res = hpycc.get_outputs(conn, p, syntax,  delete_workunit)
+        res = hpycc.get_outputs(conn, p, syntax, delete_workunit)
         return res
 
 
@@ -173,17 +173,18 @@ class TestGetOutputWithServer(unittest.TestCase):
         _get_output_from_ecl_string(self.conn, script, syntax=False)
         self.assertFalse(mock.called)
 
-    @patch.object(hpycc.get, "delete_workunit")
+    @patch.object(hpycc.connection, "delete_workunit")
     def test_get_output_runs_delete_workunit_if_true(self, mock):
         script = "OUTPUT(2);"
-        _get_output_from_ecl_string(self.conn, script)
+        _get_output_from_ecl_string(self.conn, script, delete_workunit=True)
         mock.assert_called()
 
-    @patch.object(hpycc.get, "delete_workunit")
+    @patch.object(hpycc.connection, "delete_workunit")
     def test_get_output_doesnt_run_delete_workunit_if_false(self, mock):
         script = "OUTPUT(2);"
         _get_output_from_ecl_string(self.conn, script, delete_workunit=False)
         self.assertFalse(mock.called)
+
 
 class TestGetOutputsWithServer(unittest.TestCase):
     @classmethod
@@ -313,13 +314,13 @@ class TestGetOutputsWithServer(unittest.TestCase):
         _get_outputs_from_ecl_string(self.conn, script, False)
         self.assertFalse(mock.called)
 
-    @patch.object(hpycc.get, "delete_workunit")
+    @patch.object(hpycc.connection, "delete_workunit")
     def test_get_outputs_runs_delete_workunit_if_true(self, mock):
         script = "OUTPUT(2);"
         _get_outputs_from_ecl_string(self.conn, script)
         mock.assert_called()
 
-    @patch.object(hpycc.get, "delete_workunit")
+    @patch.object(hpycc.connection, "delete_workunit")
     def test_get_outputs_doesnt_run_delete_workunit_if_false(self, mock):
         script = "OUTPUT(2);"
         _get_outputs_from_ecl_string(self.conn, script, delete_workunit=False)
