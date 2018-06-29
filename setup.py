@@ -1,11 +1,13 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
+with open("README.rst", "r") as fh:
+    long_description = fh.read()
 
 setup(
     name='hpycc',
-    version='0.1.1'
-            '',
+    version='0.1.1',
     description='Download THOR files, run ECL scripts and download their results.',
+    long_description=long_description,
     url='https://github.com/OdinProAgrica/hpycc',
     author='Rob Mansfield',
     author_email='rob.mansfield@proagrica.com',
@@ -22,7 +24,7 @@ setup(
     ],
     keywords='HPCC ECL data access distributed ROXIE THOR',
     license='GNU GPLv3',
-    packages=find_packages(),
+    packages=['hpycc'],
     zip_safe=False,
     install_requires=[
         'pandas',
