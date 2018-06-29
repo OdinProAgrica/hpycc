@@ -138,7 +138,7 @@ def get_outputs(connection, script, syntax_check=True, delete_workunit=True):
         Should the script be syntax checked before execution? True by
         default.
     delete_workunit: bool,
-        Should the workunit created be deleted afterwards. Set to True.
+       Delete the workunit once completed. True by default.
 
     Returns
     -------
