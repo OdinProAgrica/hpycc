@@ -115,19 +115,19 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
 
     Parameters
     ----------
-    :param connection: `Connection`
+    :connection: `Connection`
         HPCC Connection instance, see also `Connection`.
-    :param source_file: str, pd.DataFrame
+    source_file: str, pd.DataFrame
          A pandas DataFrame or the path to a csv.
-    :param logical_file: str
+    logical_file: str
          Logical file name on THOR.
-    :param overwrite: bool, optional
+    overwrite: bool, optional
         Should the file overwrite any pre-existing logical file.
         False by default.
-    :param chunk_size: int, optional
+    chunk_size: int, optional
         Size of chunks to use when spraying file. 10000 by
         default.
-    :param max_workers: int, optional
+    max_workers: int, optional
         Number of concurrent threads to use when spraying.
         Warning: too many will likely cause either your machine or
         your cluster to crash! 3 by default.

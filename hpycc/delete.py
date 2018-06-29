@@ -1,3 +1,4 @@
+# noinspection PyShadowingNames
 def delete_logical_file(connection, logical_file, delete_workunit=True):
     """
     Delete a logical file.
