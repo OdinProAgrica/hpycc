@@ -38,7 +38,7 @@ def delete_workunit(connection, wuid, max_attempts=3, max_sleep=5):
     max_sleep: int, optional
         Maximum time, in seconds, to sleep between attempts.
         The true sleep time is a random int between 0 and
-        `max_sleep`. 5 buy default.
+        `max_sleep`. 5 by default.
 
     Returns
     -------
