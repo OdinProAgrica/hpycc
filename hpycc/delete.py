@@ -22,7 +22,7 @@ def delete_logical_file(connection, logical_file, delete_workunit=True):
     connection.run_ecl_string(script, True, delete_workunit=delete_workunit)
 
 
-def delete_workunit(connection, wuid, max_attempts=1, max_sleep=1):
+def delete_workunit(connection, wuid, max_attempts=3, max_sleep=5):
     """
     Delete a workunit
 
@@ -31,18 +31,25 @@ def delete_workunit(connection, wuid, max_attempts=1, max_sleep=1):
     connection: `Connection`
         HPCC Connection instance, see also `Connection`.
     wuid: string
-        The Workunit ID for the
-    max_attempts: int
+        Workunit ID
+    max_attempts: int, optional
         Maximum number of times url should be queried in the
-        case of an exception being raised.
-    max_sleep: int
+        case of an exception being raised. 3 by default.
+    max_sleep: int, optional
         Maximum time, in seconds, to sleep between attempts.
         The true sleep time is a random int between 0 and
-        `max_sleep`.
+        `max_sleep`. 5 buy default.
 
     Returns
     -------
-    :return: result_response - whether the workunit Delete worked or not
+    True:
+        If the workunit is deleted successfully.
+
+    Raises
+    ------
+    ValueError:
+        If the workunit could not be deleted.
+
     """
 
     url = (
@@ -52,10 +59,7 @@ def delete_workunit(connection, wuid, max_attempts=1, max_sleep=1):
 
     r = connection.run_url_request(url, max_attempts, max_sleep)
     rj = r.json()
-    try:
-        result_response_2 = rj
-
-    except KeyError:
-        raise KeyError('json is : {}'.format(rj))
-
-    return rj
+    if rj == {"WUDeleteResponse": {}}:
+        return True
+    else:
+        raise ValueError(rj)

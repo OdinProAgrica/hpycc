@@ -1,12 +1,4 @@
-import os
-import subprocess
-from tempfile import TemporaryDirectory
 import unittest
-from unittest.mock import patch
-import warnings
-import hpycc
-import numpy as np
-import pandas as pd
 
 import hpycc
 import hpycc.utils.parsers
@@ -23,47 +15,30 @@ def setUpModule():
 def tearDownModule():
     hpcc_functions.stop_hpcc_container()
 
-def _get_output_from_ecl_string(conn, string, syntax=True,
-                                delete_workunit=True):
-    with TemporaryDirectory() as d:
-        p = os.path.join(d, "test.ecl")
-        with open(p, "w+") as file:
-            file.write(string)
-        res = hpycc.get_output(conn, p, syntax,  delete_workunit)
-        return res
 
-
-def _get_outputs_from_ecl_string(conn, string, syntax=True,
-                                 delete_workunit=True):
-    with TemporaryDirectory() as d:
-        p = os.path.join(d, "test.ecl")
-        with open(p, "w+") as file:
-            file.write(string)
-        res = hpycc.get_outputs(conn, p, syntax,  delete_workunit)
-        return res
-
-
-class TestDeleteWorkunitwithServer(unittest.TestCase):
+class TestDeleteWorkunitWithServer(unittest.TestCase):
     def setUp(self):
         self.conn = hpycc.Connection("user")
 
-
     def test_delete_workunit_actually_deletes_workunit(self):
         string = "OUTPUT(2);"
-        result = self.conn.run_ecl_string(string, syntax_check=True, delete_workunit=False)
+        result = self.conn.run_ecl_string(string, syntax_check=True,
+                                          delete_workunit=False)
         result = result.stdout.replace("\r\n", "")
         wuid = hpycc.utils.parsers.parse_wuid_from_xml(result)
         res = hpycc.delete_workunit(self.conn, wuid)
-        expected = {'WUDeleteResponse': {}}
-        self.assertEqual(expected, res)
-
+        self.assertTrue(res)
+        a = self.conn._run_command("ecl getname --wuid {}".format(wuid))
+        self.assertEqual("", a.stdout)
+        self.assertEqual("", a.stderr)
 
     def test_delete_workunit_fails_on_nonexistent_workunit(self):
-
         wuid = 'IReallyHopeThisIsNotARealWorkunitID'
-        res = hpycc.delete_workunit(self.conn, wuid)
-        expected = {'WUDeleteResponse': {'ActionResults': {'WUActionResult':
-                 [{'Action': 'Delete', 'Result': 'Failed: Invalid Workunit ID:'
-                             ' IReallyHopeThisIsNotARealWorkunitID',
-                   'Wuid': 'IReallyHopeThisIsNotARealWorkunitID'}]}}}
-        self.assertEqual(expected, res)
+        expected = (
+            "{'WUDeleteResponse': {'ActionResults': {'WUActionResult': "
+            "[{'Wuid': 'IReallyHopeThisIsNotARealWorkunitID', 'Action': "
+            "'Delete', 'Result': 'Failed: Invalid Workunit ID: "
+            "IReallyHopeThisIsNotARealWorkunitID'}]}}}"
+        )
+        with self.assertRaises(ValueError, msg=expected):
+            hpycc.delete_workunit(self.conn, wuid)

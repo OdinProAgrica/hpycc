@@ -8,7 +8,7 @@ from hpycc import get_output, get_logical_file
 
 
 def save_output(connection, script, path_or_buf=None, syntax_check=True,
-                **kwargs):
+                delete_workunit=True, **kwargs):
     """
     Save the first output of an ECL script as a csv. See
     save_outputs() for saving multiple outputs to file and
@@ -26,6 +26,8 @@ def save_output(connection, script, path_or_buf=None, syntax_check=True,
     :param syntax_check: bool, optional
         Should script be syntax checked before execution. True by
         default.
+    delete_workunit: bool, optional
+        Delete workunit once completed. True by default.
     :param kwargs
         Additional parameters to be provided to
         pandas.DataFrame.to_csv().
@@ -36,12 +38,14 @@ def save_output(connection, script, path_or_buf=None, syntax_check=True,
         representation of the output csv.
     """
     result = get_output(connection=connection, script=script,
-                        syntax_check=syntax_check)
+                        syntax_check=syntax_check,
+                        delete_workunit=delete_workunit)
     return result.to_csv(path_or_buf=path_or_buf, **kwargs)
 
 
 def save_outputs(connection, script, directory=".", filenames=None,
-                 prefix=None, syntax_check=True, **kwargs):
+                 prefix=None, syntax_check=True, delete_workunit=True,
+                 **kwargs):
     """
     Save all outputs of an ECL script as csvs. See get_outputs()
     for returning DataFrames and save_output() for writing a single
@@ -49,7 +53,7 @@ def save_outputs(connection, script, directory=".", filenames=None,
 
     Parameters
     ----------
-    :param connection: `Connection`
+    connection: hpycc.Connection
         HPCC Connection instance, see also `Connection`.
     :param script: str
          Path of script to execute.
@@ -64,6 +68,8 @@ def save_outputs(connection, script, directory=".", filenames=None,
     :param syntax_check: bool, optional
         Should the script be syntax checked before execution. True by
         default.
+    delete_workunit: bool, optional
+        Delete workunit once completed. True by default.
     :param kwargs:
         Additional parameters to be provided to
         pandas.DataFrame.to_csv().
@@ -73,7 +79,7 @@ def save_outputs(connection, script, directory=".", filenames=None,
     -------
     :return: None
     """
-    result = connection.run_ecl_script(script, syntax_check)
+    result = connection.run_ecl_script(script, syntax_check, delete_workunit)
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
     results = re.findall(regex, result.stdout)
     parsed_data_frames = [(name, hpycc.utils.parsers.parse_xml(xml))
