@@ -122,10 +122,12 @@ def _make_col_bool(df):
 
 
 def parse_wuid_from_failed_response(result):
-    wuid_regex = result.split("\r\n")[-1]
     regex = "W[0-9]{8}(\S*)"
-    wuid = re.search(regex, wuid_regex)
-    return wuid
+    matches = re.search(regex, result)
+    if matches:
+        return matches.group(0)
+    else:
+        return None
 
 
 def parse_wuid_from_xml(result):
@@ -146,9 +148,14 @@ def parse_wuid_from_xml(result):
     result = result.replace("\r\n", "")
 
     search = re.search(regex, result).group(0)
+    if not search:
+        return None
     wuid3 = search.replace('wuid: ', '')
     wuid2 = wuid3.replace('   state:', '')
     wuid1 = wuid2.replace(' ', '')
     regex2 = "W[0-9]{8}(\S*)"
-    wuid = re.search(regex2, wuid1).group(0)
-    return wuid
+    wuid = re.search(regex2, wuid1)
+    if not wuid:
+        return None
+
+    return wuid.group(0)

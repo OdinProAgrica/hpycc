@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 setup(
@@ -22,7 +22,7 @@ setup(
     ],
     keywords='HPCC ECL data access distributed ROXIE THOR',
     license='GNU GPLv3',
-    packages=['hpycc'],
+    packages=find_packages(),
     zip_safe=False,
     install_requires=[
         'pandas',
