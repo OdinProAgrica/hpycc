@@ -21,6 +21,10 @@ import subprocess
 from tempfile import TemporaryDirectory
 from time import sleep
 
+from hpycc.utils.parsers import parse_wuid_from_failed_response, \
+    parse_wuid_from_xml
+from hpycc import delete
+
 
 class Connection:
     def __init__(self, username, server="localhost", port=8010, repo=None,
@@ -168,7 +172,7 @@ class Connection:
 
         self._run_command(base_cmd)
 
-    def run_ecl_script(self, script, syntax_check):
+    def run_ecl_script(self, script, syntax_check, delete_workunit):
         """
         Run an ECL script and return the stdout and stderr.
 
@@ -185,6 +189,8 @@ class Connection:
         syntax_check: bool
             If a syntax check should be ran before the script is
             executed.
+        delete_workunit: bool
+            Delete workunit once completed.
 
         Returns
         -------
@@ -206,15 +212,25 @@ class Connection:
         legacy = "-legacy " if self.legacy else ""
         repo = " -I={}".format(self.repo) if self.repo else ""
 
-        base_cmd = ("ecl run --server {} --port {} --username {} "
+        base_cmd = ("ecl run -v --server {} --port {} --username {} "
                     "--password={}{}thor {}{}").format(
             self.server, self.port, self.username, pw, legacy, script, repo)
 
         if syntax_check:
             self.check_syntax(script)
 
-        result = self._run_command(base_cmd)
-        return result
+        try:
+            result = self._run_command(base_cmd)
+        except subprocess.SubprocessError as e:
+            if delete_workunit:
+                wuid = parse_wuid_from_failed_response(e.args[0].decode())
+                delete.delete_workunit(self, wuid)
+            raise e
+        else:
+            if delete_workunit:
+                wuid = parse_wuid_from_xml(result.stdout)
+                delete.delete_workunit(self, wuid)
+            return result
 
     def run_url_request(self, url, max_attempts, max_sleep):
         """
@@ -307,7 +323,7 @@ class Connection:
             raise KeyError("json is : {}".format(rj))
         return result_response
 
-    def run_ecl_string(self, string, syntax_check):
+    def run_ecl_string(self, string, syntax_check, delete_workunit):
         """
         Run an ECL string and return the stdout and stderr.
 
@@ -324,6 +340,8 @@ class Connection:
         syntax_check: bool
             If a syntax check should be ran before the script is
             executed.
+        delete_workunit: bool
+            Delete workunit once completed.
 
         Returns
         -------
@@ -346,5 +364,5 @@ class Connection:
             with open(p, "w+") as file:
                 file.write(string)
 
-            r = self.run_ecl_script(p, syntax_check)
+            r = self.run_ecl_script(p, syntax_check, delete_workunit)
         return r

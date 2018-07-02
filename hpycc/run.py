@@ -16,7 +16,7 @@ Functions
 __all__ = ["run_script"]
 
 
-def run_script(connection, script, syntax_check=True):
+def run_script(connection, script, syntax_check=True, delete_workunit=True):
     """
     Run an ECL script.
 
@@ -32,19 +32,22 @@ def run_script(connection, script, syntax_check=True):
     syntax_check: bool, optional
         Should the script be syntax checked before execution? True by
         default.
+    delete_workunit: bool, optional
+        Delete workunit once completed. True by default.
 
     Returns
     -------
-    None
+    True
 
     Raises
     ------
     subprocess.CalledProcessError:
-        If script fails syntax check.
+        If script fails syntax check or during execution.
 
     See Also
     --------
     Connection.run_ecl_string
 
     """
-    connection.run_ecl_script(script, syntax_check)
+    connection.run_ecl_script(script, syntax_check, delete_workunit)
+    return True

@@ -6,6 +6,8 @@ import os
 import subprocess
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
+import re
 
 import pandas as pd
 import requests
@@ -61,29 +63,71 @@ class TestConnectionRunECLScriptWithServer(unittest.TestCase):
             p = os.path.join(d, "test.ecl")
             with open(p, "w+") as file:
                 file.write(good_script)
-            self.assertTrue(conn.run_ecl_script(p, syntax_check=False))
+            self.assertTrue(conn.run_ecl_script(p, syntax_check=False,
+                                                delete_workunit=False))
 
     def test_run_script_returns_correct_tuple(self):
         conn = hpycc.Connection("user", test_conn=False)
         good_script = "output(2);"
-        expected_out = "\r\n".join([
-            "\r\n<Result>", "<Dataset name='Result 1'>",
+        expected_out_stdout = "\r\n".join(["Using eclcc path ", "",
+                                           "Deploying ECL Archive ", "",
+                                           "Deployed",
+                                           "   wuid: W20180627-154140",
+                                           "   state: compiled", "",
+                             "Running deployed workunit W20180627-154140",
+            "<Result>", "<Dataset name='Result 1'>",
             " <Row><Result_1>2</Result_1></Row>",
             "</Dataset>", "</Result>\r\n"
-        ])
+                                           ])
+        expected_out_stderr = "\r\n".join(["EXEC: Creating PIPE process : ",
+                "EXEC: Pipe: Waiting for process to complete 748",
+                "EXEC: Pipe: process complete\r\n"
+                                           ])
         with TemporaryDirectory() as d:
             p = os.path.join(d, "test.ecl")
             with open(p, "w+") as file:
                 file.write(good_script)
-            result = conn.run_ecl_script(p, syntax_check=False)
+            result = conn.run_ecl_script(p, syntax_check=False,
+                                         delete_workunit=False)
         self.assertEqual(result.__class__.__name__, "Result")
-        self.assertEqual(result.stdout, expected_out)
-        self.assertEqual(result.stderr, "")
+        stdout_output = re.sub("path (.+?)eclcc", 'path ',
+                               result.stdout)
+        stdout_output1 = re.sub("Archive (.+?)test.ecl", 'Archive ',
+                                stdout_output)
+        stdout_output2 = re.sub("W[0-9{8}](\S*)", 'W20180627-154140',
+                                stdout_output1)
+        self.assertEqual(stdout_output2, expected_out_stdout)
+        stderr_output = re.sub(" [0-9][0-9][0-9]", ' 748', result.stderr)
+        stderr_output1 = re.sub("process : (.+?)test.ecl\"", 'process : ', stderr_output)
+        self.assertEqual(stderr_output1, expected_out_stderr)
 
     def test_run_script_fails_if_file_not_found(self):
         conn = hpycc.Connection("user", test_conn=False)
         with self.assertRaises(subprocess.SubprocessError):
-            conn.run_ecl_script("test.ecl", syntax_check=False)
+            conn.run_ecl_script("test.ecl", syntax_check=False, delete_workunit=False)
+
+    @patch.object(hpycc.connection.delete, "delete_workunit")
+    def test_run_ecl_string_runs_delete_workunit_if_true(self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        script = "OUTPUT(2);"
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(script)
+            conn.run_ecl_script(p, False, True)
+        mock.assert_called()
+
+    @patch.object(hpycc.connection.delete, "delete_workunit")
+    def test_get_run_ecl_string_doesnt_run_delete_workunit_if_false(
+            self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        script = "OUTPUT(2);"
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(script)
+            conn.run_ecl_script(p, False, False)
+        self.assertFalse(mock.called)
 
 
 class TestRunURLRequestWithServer(unittest.TestCase):
@@ -106,7 +150,7 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
             p = os.path.join(d, "data.csv")
             df.to_csv(p, index=False)
             lf_name = "test_get_logical_file_chunk_returns_correct_json"
-            hpycc.spray_file(conn, p, lf_name, chunk_size=3)
+            hpycc.spray_file(conn, p, lf_name, chunk_size=3, delete_workunit=False)
 
         result = conn.get_logical_file_chunk(
             "thor::{}".format(lf_name), 0, 2, 3, 2)
@@ -123,7 +167,7 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
         with TemporaryDirectory() as d:
             p = os.path.join(d, "data.csv")
             df.to_csv(p, index=False)
-            hpycc.spray_file(conn, p, "data", chunk_size=3)
+            hpycc.spray_file(conn, p, "data", chunk_size=3, delete_workunit=False)
 
         result = conn.get_logical_file_chunk("thor::data", 0, 1, 3, 0)
         self.assertIsInstance(result, list)
@@ -133,15 +177,46 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
 
 class TestConnectionRunECLStringWithServer(unittest.TestCase):
     def test_run_ecl_string_returns_result_of_run_ecl_script(self):
-        expected_stdout = "\r\n".join([
-            "\r\n<Result>",
-            "<Dataset name='Result 1'>",
+        expected_out_stdout = "\r\n".join(["Using eclcc path ", "",
+                                           "Deploying ECL Archive ", "",
+                                           "Deployed",
+                                           "   wuid: W20180627-154140",
+                                           "   state: compiled", "",
+                             "Running deployed workunit W20180627-154140",
+            "<Result>", "<Dataset name='Result 1'>",
             " <Row><Result_1>2</Result_1></Row>",
-            "</Dataset>",
-            "</Result>\r\n"
-        ])
+            "</Dataset>", "</Result>\r\n"
+                                           ])
+        expected_out_stderr = "\r\n".join(["EXEC: Creating PIPE process : ",
+                "EXEC: Pipe: Waiting for process to complete 748",
+                "EXEC: Pipe: process complete\r\n"
+                                           ])
         conn = hpycc.Connection("user", test_conn=False)
-        result = conn.run_ecl_string("OUTPUT(2);", syntax_check=True)
+        result = conn.run_ecl_string("OUTPUT(2);", syntax_check=True,
+                                     delete_workunit=False)
         self.assertEqual(result.__class__.__name__, "Result")
-        self.assertEqual(expected_stdout, result.stdout)
-        self.assertEqual("", result.stderr)
+        stdout_output = re.sub("path (.+?)eclcc", 'path ',
+                               result.stdout)
+        stdout_output1 = re.sub("Archive (.+?)_string.ecl", 'Archive ',
+                                stdout_output)
+        stdout_output2 = re.sub("W[0-9{8}](\S*)", 'W20180627-154140',
+                                stdout_output1)
+        self.assertEqual(stdout_output2, expected_out_stdout)
+        stderr_output = re.sub(" [0-9][0-9][0-9]", ' 748', result.stderr)
+        stderr_output1 = re.sub("process : (.+?).ecl\"", 'process : ', stderr_output)
+        self.assertEqual(stderr_output1, expected_out_stderr)
+
+    @patch.object(hpycc.connection.delete, "delete_workunit")
+    def test_run_ecl_string_runs_delete_workunit_if_true(self, mock):
+        script = "OUTPUT(2);"
+        conn = hpycc.Connection("user", test_conn=False)
+        conn.run_ecl_string(script, False, True)
+        mock.assert_called()
+
+    @patch.object(hpycc.connection.delete, "delete_workunit")
+    def test_get_run_ecl_string_doesnt_run_delete_workunit_if_false(
+            self, mock):
+        script = "OUTPUT(2);"
+        conn = hpycc.Connection("user", test_conn=False)
+        conn.run_ecl_string(script, False, False)
+        self.assertFalse(mock.called)

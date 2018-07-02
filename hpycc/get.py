@@ -20,12 +20,11 @@ import warnings
 
 import pandas as pd
 
-from hpycc.utils.filechunker import make_chunks
-
+from hpycc.utils import filechunker
 from hpycc.utils.parsers import parse_xml, parse_json_output
 
 
-def get_output(connection, script, syntax_check=True):
+def get_output(connection, script, syntax_check=True, delete_workunit=True):
     """
     Return the first output of an ECL script as a pandas.DataFrame.
 
@@ -44,11 +43,12 @@ def get_output(connection, script, syntax_check=True):
     syntax_check: bool, optional
         Should the script be syntax checked before execution? True by
         default.
+    delete_workunit: bool, optional
+        Delete workunit once completed. True by default.
 
     Returns
     -------
-    parsed: pandas.DataFrame
-        pandas.DataFrame of the first output of `script`.
+    pandas.DataFrame of the first output of `script`.
 
     Raises
     ------
@@ -104,7 +104,7 @@ def get_output(connection, script, syntax_check=True):
 
     """
 
-    result = connection.run_ecl_script(script, syntax_check)
+    result = connection.run_ecl_script(script, syntax_check, delete_workunit)
     result = result.stdout.replace("\r\n", "")
 
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
@@ -120,7 +120,7 @@ def get_output(connection, script, syntax_check=True):
         return parsed
 
 
-def get_outputs(connection, script, syntax_check=True):
+def get_outputs(connection, script, syntax_check=True, delete_workunit=True):
     """
     Return all outputs of an ECL script.
 
@@ -137,6 +137,8 @@ def get_outputs(connection, script, syntax_check=True):
     syntax_check: bool, optional
         Should the script be syntax checked before execution? True by
         default.
+    delete_workunit: bool,
+       Delete the workunit once completed. True by default.
 
     Returns
     -------
@@ -215,7 +217,7 @@ def get_outputs(connection, script, syntax_check=True):
     }
 
     """
-    result = connection.run_ecl_script(script, syntax_check)
+    result = connection.run_ecl_script(script, syntax_check, delete_workunit)
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.*?)</Dataset>"
 
     result = result.stdout.replace("\r\n", "")
@@ -357,7 +359,7 @@ def get_logical_file(connection, logical_file, csv=False, max_workers=15,
     file_size = _get_logical_file_row_count(
         connection, logical_file, max_attempts, max_sleep)
 
-    chunks = make_chunks(file_size, csv, chunk_size)
+    chunks = filechunker.make_chunks(file_size, csv, chunk_size)
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [

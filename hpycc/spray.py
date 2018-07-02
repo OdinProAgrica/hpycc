@@ -10,7 +10,7 @@ from hpycc.utils.filechunker import make_chunks
 
 
 def _spray_stringified_data(connection, data, record_set, logical_file,
-                            overwrite):
+                            overwrite, delete_workunit):
     """
     Spray stringified data to a HPCC logical file. To generate the
     stringified data and recordset, see `stringify_rows()` &
@@ -28,6 +28,8 @@ def _spray_stringified_data(connection, data, record_set, logical_file,
         Logical file name on THOR.
     :param overwrite: bool
         Should the file overwrite any pre-existing logical file.
+    delete_workunit: bool
+        Delete the workunit once completed
     """
     script_content = ("a := DATASET([{}], {{{}}});\nOUTPUT(a, ,'{}' , "
                       "EXPIRE(1)").format(
@@ -35,7 +37,7 @@ def _spray_stringified_data(connection, data, record_set, logical_file,
     if overwrite:
         script_content += ", OVERWRITE"
     script_content += ");"
-    connection.run_ecl_string(script_content, True)
+    connection.run_ecl_string(script_content, True, delete_workunit)
 
 
 def _get_type(typ):
@@ -107,25 +109,25 @@ def _stringify_rows(df, start_row, num_rows):
 
 
 def spray_file(connection, source_file, logical_file, overwrite=False,
-               chunk_size=10000, max_workers=3):
+               chunk_size=10000, max_workers=3, delete_workunit=True):
     """
     Spray a file to a HPCC logical file.
 
     Parameters
     ----------
-    :param connection: `Connection`
+    :connection: `Connection`
         HPCC Connection instance, see also `Connection`.
-    :param source_file: str, pd.DataFrame
+    source_file: str, pd.DataFrame
          A pandas DataFrame or the path to a csv.
-    :param logical_file: str
+    logical_file: str
          Logical file name on THOR.
-    :param overwrite: bool, optional
+    overwrite: bool, optional
         Should the file overwrite any pre-existing logical file.
         False by default.
-    :param chunk_size: int, optional
+    chunk_size: int, optional
         Size of chunks to use when spraying file. 10000 by
         default.
-    :param max_workers: int, optional
+    max_workers: int, optional
         Number of concurrent threads to use when spraying.
         Warning: too many will likely cause either your machine or
         your cluster to crash! 3 by default.
@@ -158,15 +160,15 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
             executor:
         futures = [
             executor.submit(_spray_stringified_data, connection, row,
-                            record_set, name, overwrite)
+                            record_set, name, overwrite, delete_workunit)
             for row, name in zip(stringified_rows, target_names)]
         _, __ = concurrent.futures.wait(futures)
 
     concatenate_logical_files(connection, target_names, logical_file,
-                              record_set, overwrite)
+                              record_set, overwrite, delete_workunit)
 
     for tmp in target_names:
-        delete_logical_file(connection, tmp)
+        delete_logical_file(connection, tmp, delete_workunit)
 
 
 def _make_record_set(df):
@@ -189,24 +191,25 @@ def _make_record_set(df):
 
 
 def concatenate_logical_files(connection, to_concat, logical_file, record_set,
-                              overwrite):
+                              overwrite, delete_workunit=True):
     """
     Concatenate a list of logical files (with the same recordset)
     into a single logical file.
 
     Parameters
     ----------
-    :param connection: `Connection`
+    connection: `Connection`
         HPCC Connection instance, see also `Connection`.
-    :param to_concat: list, iterable.
+    to_concat: list, iterable.
         Iterable of pre-existing logical file names to concatenate.
-    :param logical_file: str
+    logical_file: str
         Logical file name to concatenate into.
-    :param record_set: str
+    record_set: str
         Common recordset of all logical files, see `make_record_set()`.
-    :param overwrite: bool
+    overwrite: bool
         Should the file overwrite any pre-existing logical file.
-
+    delete_workunit: bool
+        Delete workunit once completed. True by default.
     Returns
     -------
     :return: None
@@ -221,4 +224,4 @@ def concatenate_logical_files(connection, to_concat, logical_file, record_set,
     script += ");"
     script = script.format(read_files, logical_file)
 
-    connection.run_ecl_string(script, True)
+    connection.run_ecl_string(script, True, delete_workunit)
