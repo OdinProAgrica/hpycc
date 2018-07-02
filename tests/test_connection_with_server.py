@@ -6,6 +6,7 @@ import os
 import subprocess
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 import re
 
 import pandas as pd
@@ -105,6 +106,29 @@ class TestConnectionRunECLScriptWithServer(unittest.TestCase):
         with self.assertRaises(subprocess.SubprocessError):
             conn.run_ecl_script("test.ecl", syntax_check=False, delete_workunit=False)
 
+    @patch.object(hpycc.connection.delete, "delete_workunit")
+    def test_run_ecl_string_runs_delete_workunit_if_true(self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        script = "OUTPUT(2);"
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(script)
+            conn.run_ecl_script(p, False, True)
+        mock.assert_called()
+
+    @patch.object(hpycc.connection.delete, "delete_workunit")
+    def test_get_run_ecl_string_doesnt_run_delete_workunit_if_false(
+            self, mock):
+        conn = hpycc.Connection("user", test_conn=False)
+        script = "OUTPUT(2);"
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(script)
+            conn.run_ecl_script(p, False, False)
+        self.assertFalse(mock.called)
+
 
 class TestRunURLRequestWithServer(unittest.TestCase):
     def test_run_url_request_returns_response(self):
@@ -181,3 +205,18 @@ class TestConnectionRunECLStringWithServer(unittest.TestCase):
         stderr_output = re.sub(" [0-9][0-9][0-9]", ' 748', result.stderr)
         stderr_output1 = re.sub("process : (.+?).ecl\"", 'process : ', stderr_output)
         self.assertEqual(stderr_output1, expected_out_stderr)
+
+    @patch.object(hpycc.connection.delete, "delete_workunit")
+    def test_run_ecl_string_runs_delete_workunit_if_true(self, mock):
+        script = "OUTPUT(2);"
+        conn = hpycc.Connection("user", test_conn=False)
+        conn.run_ecl_string(script, False, True)
+        mock.assert_called()
+
+    @patch.object(hpycc.connection.delete, "delete_workunit")
+    def test_get_run_ecl_string_doesnt_run_delete_workunit_if_false(
+            self, mock):
+        script = "OUTPUT(2);"
+        conn = hpycc.Connection("user", test_conn=False)
+        conn.run_ecl_string(script, False, False)
+        self.assertFalse(mock.called)
