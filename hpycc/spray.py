@@ -146,8 +146,7 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
 
     record_set = _make_record_set(df)
 
-    chunks = make_chunks(len(df), logical_csv=False,
-                         chunk_size=chunk_size)
+    chunks = make_chunks(len(df), chunk_size=chunk_size)
 
     stringified_rows = (_stringify_rows(df, start_row, num_rows)
                         for start_row, num_rows in chunks)

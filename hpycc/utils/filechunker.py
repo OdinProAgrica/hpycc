@@ -1,32 +1,35 @@
 """
-Module contains functions that are able to chunk a file request based on size.
+functions that chunk an iterable.
+
+Functions
+---------
+- `make_chunks` -- Return tuples of start index and chunk size.
+
 """
+__all__ = ["make_chunks"]
 
 
-def make_chunks(file_size, logical_csv, chunk_size=10000):
+def make_chunks(num, chunk_size=10000):
     """
-    Return tuples of start row and chunk size for threading logical
-    file actions.
+    Return tuples of start index and chunk size.
 
     Parameters
     ----------
-    :param file_size: int
-        Total number of rows in file.
-    :param logical_csv: bool
-        If the file is a logical file, is it a csv?
-    :param chunk_size: int, optional
-        Max chunk size, defaults to 10000.
+    num: int
+        Total number of items.
+    chunk_size: int, optional
+        Max chunk size, 10,000 by default.
 
     Returns
     -------
-    :return chs: list of tuples
-        List of chunks in the form [(start_row, num_rows)]
+    chs: list of tuples
+        List of chunks in the form [(start_index, num_items)]
+
     """
-    start = 1 if logical_csv else 0
-    chs = [(ch * chunk_size + start, chunk_size) for ch in
-           range(file_size // chunk_size)]
-    if (file_size + start) % chunk_size:
-        chs.append((file_size - (file_size % chunk_size) + start,
-                    file_size % chunk_size + start))
+    chs = [(ch * chunk_size, chunk_size) for ch in
+           range(num // chunk_size)]
+    left_over = num % chunk_size
+    if left_over:
+        chs.append((num - left_over, left_over))
 
     return chs
