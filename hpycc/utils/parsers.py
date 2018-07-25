@@ -1,3 +1,4 @@
+from collections import namedtuple
 import re
 from xml.etree import ElementTree
 
@@ -31,34 +32,6 @@ def parse_xml(xml):
     df = pd.DataFrame(vls, columns=lvls)
     df.replace("", np.nan, inplace=True)
     df.fillna(np.nan, inplace=True)
-
-    df = _make_col_numeric(df)
-    df = _make_col_bool(df)
-
-    return df
-
-
-def parse_json_output(results, column_names, csv):
-    """
-    Return a DataFrame from a HPCC workunit JSON.
-
-    Parameters
-    ----------
-    :param results: dict, json
-        JSON to be parsed.
-    :param column_names: list
-        Column names to parse.
-    :param csv: bool
-        Is this a csv file?
-
-    :return: df: .DataFrame
-        JSON converted to DataFrame.
-    """
-    if not csv:
-        df = pd.DataFrame(results)
-    else:
-        lines = [",".split(r["line"]) for r in results]
-        df = pd.DataFrame(map(list, zip(*lines)), columns=column_names)
 
     df = _make_col_numeric(df)
     df = _make_col_bool(df)
@@ -159,3 +132,32 @@ def parse_wuid_from_xml(result):
         return None
 
     return wuid.group(0)
+
+
+def parse_schema_from_xml(xml):
+    x = xml.replace("\n", "")
+    xml = ElementTree.fromstring(x)
+    schema = xml[0][0][0][0][0][0]
+
+    Schema = namedtuple("Schema", ["name", "is_set", "type"])
+
+    return (Schema(
+        child.attrib["name"],
+        "type" not in child.keys(),
+        get_python_type_from_ecl_type(child)
+    ) for child in schema)
+
+
+def get_python_type_from_ecl_type(child):
+    translated_type = {
+        "boolean": bool,
+        "decimal": float,
+        "double": float,
+        "integer": int,
+        "udecimal": float,
+        "nonnegativeinteger": int
+    }
+
+    c = max([z.attrib.get("type", "") for z in child.iter()]).lower()
+    typed = re.sub("[0-9_]|(xs:)", "", c)
+    return translated_type.get(typed, str)
