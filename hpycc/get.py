@@ -21,7 +21,7 @@ import warnings
 import pandas as pd
 
 from hpycc.utils import filechunker
-from hpycc.utils.parsers import parse_xml, parse_json_output
+from hpycc.utils.parsers import parse_xml, parse_schema_from_xml
 
 
 def get_output(connection, script, syntax_check=True, delete_workunit=True):
@@ -231,89 +231,31 @@ def get_outputs(connection, script, syntax_check=True, delete_workunit=True):
     return as_dict
 
 
-def _get_columns_of_logical_file(connection, logical_file, csv, max_attempts,
-                                 max_sleep):
+def get_logical_file(**kwargs):
     """
-    Return the column names of a logical file.
+    .. deprecated:: 0.1.3
+        `get_logical_file` has been deprecated. Use `get_thor_file`.
 
-    Parameters
-    ----------
-    :param connection
-        HPCC Connection instance, see also `Connection`.
-    :param logical_file: str
-        Logical file to be downloaded
-    :param csv: bool
-        Is the logical file a CSV?
-
-    Returns
-    -------
-    :return: column_names: list
-        List of column names in logical file.
     """
-    response = connection.get_logical_file_chunk(
-        logical_file, 0, 2, max_attempts, max_sleep)
-    results = response
-
-    if csv:
-        column_names = results[0]['line'].split(',')
-    else:
-        column_names = results[0].keys()
-
-    column_names = [col for col in column_names if col != '__fileposition__']
-
-    return column_names
+    _ = kwargs
+    raise ImportError("This function has been deprecated, use get_thor_file "
+                      "instead.")
 
 
-def _get_logical_file_row_count(connection, logical_file, max_attempts,
-                                max_sleep):
+def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
+                  max_attempts=3, max_sleep=10, dtype=None):
     """
-    Return the number of rows in a logical file.
-
-    Parameters
-    ----------
-    :param connection: `Connection`
-        HPCC Connection instance, see also `Connection`.
-    :param logical_file: str
-         Logical file to be examined.
-
-    Returns
-    -------
-    :return: file_size, int
-        Number of rows in logical file.
-    """
-    url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
-           "&Cluster=thor&Start={}&Count={}").format(
-        connection.server, connection.port, logical_file, 0, 2)
-
-    r = connection.run_url_request(url, max_attempts, max_sleep)
-    rj = r.json()
-    try:
-        file_size = rj["WUResultResponse"]['Total']
-    except KeyError:
-        raise KeyError("json: {}".format(rj))
-
-    return file_size
-
-
-def get_logical_file(connection, logical_file, csv=False, max_workers=15,
-                     chunk_size=10000, max_attempts=3, max_sleep=10):
-    """
-    Return a logical file as a pandas.DataFrame.
+    Return a logical thor file as a pandas.DataFrame.
 
     Note: Ordering of the resulting DataFrame is
     not deterministic and may not be the same as the logical file.
-    Whilst attempts are made to preserve the datatypes of
-    the result, anything with an ambiguous type will revert to a
-    string.
 
     Parameters
     ----------
     connection: hpycc.Connection
         HPCC Connection instance, see also `Connection`.
-    logical_file: str
-        Name of logical file to be downloaded.
-    csv: bool, optional
-        Is the logical file a CSV? False by default.
+    thor_file: str
+        Name of thor file to be downloaded.
     max_workers: int, optional
         Number of concurrent threads to use when downloading file.
         Warning: too many may cause either your machine or
@@ -329,6 +271,11 @@ def get_logical_file(connection, logical_file, csv=False, max_workers=15,
             Maximum time, in seconds, to sleep between attempts.
             The true sleep time is a random int between 0 and
             `max_sleep`.
+    dtype: type name or dict of col -> type, optional.
+        Data type for data or columns. E.g. {‘a’: np.float64, ‘b’:
+        np.int32}. If converters are specified, they will be applied
+        INSTEAD of dtype conversion. If a dict is given, any
+        unspecified columns will be returned as str. Nine by default.
 
     Returns
     -------
@@ -347,31 +294,63 @@ def get_logical_file(connection, logical_file, csv=False, max_workers=15,
     >>> df = pandas.DataFrame({"col1": [1, 2, 3]})
     >>> df.to_csv("example.csv", index=False)
     >>> hpycc.spray_file(conn, "example.csv", "example")
-    >>> hpycc.get_logical_file(conn, "thor::example", False)
+    >>> hpycc.get_logical_file(conn, "example")
         col1
-    0      1
-    1      2
-    2      3
+    0     '1'
+    1     '2'
+    2     '3'
+
+    >>> import hpycc
+    >>> import pandas
+    >>> conn = hpycc.Connection("user")
+    >>> df = pandas.DataFrame({"col1": [1, 2, 3]})
+    >>> df.to_csv("example.csv", index=False)
+    >>> hpycc.spray_file(conn, "example.csv", "example")
+    >>> hpycc.get_logical_file(conn, "example", dtype=int)
+        col1
+    0     1
+    1     2
+    2     3
 
     """
-    column_names = _get_columns_of_logical_file(
-        connection, logical_file, csv, max_attempts, max_sleep)
-    file_size = _get_logical_file_row_count(
-        connection, logical_file, max_attempts, max_sleep)
+    url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
+           "&Cluster=thor&Start={}&Count={}").format(
+        connection.server, connection.port, thor_file, 0, 1)
+    r = connection.run_url_request(url, max_attempts, max_sleep)
+    rj = r.json()
+    try:
+        wuresultresponse = rj["WUResultResponse"]
+    except KeyError:
+        raise KeyError("json: {}".format(rj))
+    schema_str = wuresultresponse["Result"]["XmlSchema"]["xml"]
 
-    chunks = filechunker.make_chunks(file_size, csv, chunk_size)
+    # get the schema as named tuples of (name, is_set, type)
+    schema = parse_schema_from_xml(schema_str)
+
+    num_rows = wuresultresponse["Total"]
+
+    chunks = filechunker.make_chunks(num_rows, chunk_size)
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [
-            executor.submit(connection.get_logical_file_chunk, logical_file,
+            executor.submit(connection.get_logical_file_chunk, thor_file,
                             start_row, n_rows, max_attempts, max_sleep)
             for start_row, n_rows in chunks
         ]
 
         finished, _ = wait(futures)
 
-    df = pd.concat([parse_json_output(f.result(),
-                                      column_names, csv)
-                    for f in finished], ignore_index=True)
+    results = (i.result() for i in finished)
+    flat_list = (item for sublist in results for item in sublist)
 
-    return df
+    df = pd.DataFrame(flat_list)
+    if dtype:
+        return df.astype(dtype)
+    else:
+        for col in schema:
+            if col.is_set:
+                df[col.name] = df[col.name].map(
+                    lambda x: [col.type(i) for i in x["Item"]])
+            else:
+                df[col.name] = df[col.name].astype(col.type)
+        return df
