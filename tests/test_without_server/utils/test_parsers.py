@@ -1,9 +1,11 @@
 import unittest
+from xml.etree import ElementTree
 
 from hpycc.utils.parsers import (
     parse_wuid_from_failed_response,
     parse_wuid_from_xml,
-    parse_schema_from_xml
+    parse_schema_from_xml,
+    get_python_type_from_ecl_type
 )
 
 
@@ -181,3 +183,80 @@ class TestParseSchemaFromXML(unittest.TestCase):
             self.assertEqual(e[0], r[0])
             self.assertEqual(e[1], r[1])
             self.assertEqual(e[2], r[2])
+
+
+class TestGetPythonTypeFromECLType(unittest.TestCase):
+    def test_get_python_type_from_ecl_type_parses_column_types(self):
+        types = [
+            ("xs:integer", int),
+            ("xs:nonNegativeInteger", int),
+            ("decimal10", float),
+            ("decimal5", float),
+            ("decimal5_3", float),
+            ("decimal8_2", float),
+            ("udecimal10", float),
+            ("udecimal5", float),
+            ("udecimal5_3", float),
+            ("udecimal8_2", float),
+            ("xs:double", float),
+            ("xs:string", str),
+            ("xs:boolean", bool),
+            ("xs:hexBinary", str),
+            ("data16", str),
+            ("data32", str),
+            ("string3", str),
+            ("string8", str),
+            ("madeup", str)
+        ]
+        for t in types:
+            st = '<xs:element name="int" type="{}"/>'.format(t[0])
+            start = ('<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" '
+                     'xmlns:hpcc="urn:hpccsystems:xsd:appinfo" '
+                     'elementFormDefault="qualified" '
+                     'attributeFormDefault="unqualified">')
+            end = "</xs:schema>"
+            sch = "\n".join([start, st, end])
+            child = ElementTree.fromstring(sch)[0]
+            r = get_python_type_from_ecl_type(child)
+            self.assertEqual(t[1], r)
+
+    def test_get_python_type_from_ecl_type_parses_set_types(self):
+        types = [
+            ("xs:integer", int),
+            ("xs:nonNegativeInteger", int),
+            ("decimal10", float),
+            ("decimal5", float),
+            ("decimal5_3", float),
+            ("decimal8_2", float),
+            ("udecimal10", float),
+            ("udecimal5", float),
+            ("udecimal5_3", float),
+            ("udecimal8_2", float),
+            ("xs:double", float),
+            ("xs:string", str),
+            ("xs:boolean", bool),
+            ("xs:hexBinary", str),
+            ("data16", str),
+            ("data32", str),
+            ("string3", str),
+            ("string8", str),
+            ("madeup", str)
+        ]
+        for t in types:
+            st = "\n".join([
+                '<xs:element name="set_int">',
+                ('<xs:complexType><xs:sequence><xs:element name="All" '
+                 'minOccurs="0"/>'),
+                ('<xs:element name="Item" minOccurs="0" maxOccurs="unbounded" '
+                 'type="{}"/>'),
+                '</xs:sequence></xs:complexType></xs:element>'
+            ]).format(t[0])
+            start = ('<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" '
+                     'xmlns:hpcc="urn:hpccsystems:xsd:appinfo" '
+                     'elementFormDefault="qualified" '
+                     'attributeFormDefault="unqualified">')
+            end = "</xs:schema>"
+            sch = "\n".join([start, st, end])
+            child = ElementTree.fromstring(sch)[0]
+            r = get_python_type_from_ecl_type(child)
+            self.assertEqual(t[1], r)

@@ -163,6 +163,20 @@ def parse_schema_from_xml(xml):
 
 
 def get_python_type_from_ecl_type(child):
+    """
+    Get the python type from an hpcc schema node
+    Parameters
+
+    ----------
+    child: XML node
+       Node of schema xml. See `parse_schema_from_xml`
+
+    Returns
+    -------
+    type: type
+        Pythonic type. If the HPCC type cannot be mapped, is str.
+
+    """
     translated_type = {
         "boolean": bool,
         "decimal": float,
