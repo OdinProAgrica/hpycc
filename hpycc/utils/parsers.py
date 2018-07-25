@@ -135,6 +135,20 @@ def parse_wuid_from_xml(result):
 
 
 def parse_schema_from_xml(xml):
+    """
+    Parse an ECL schema into python types.
+
+    Parameters
+    ----------
+    xml: str
+        xml string returned by ecl run. This is located in the json
+        as ["WUResultResponse]["Result"]["XmlSchema"]["xml"].
+
+    Returns
+    -------
+    list of namedtuples in form [(name, is_set, type)].
+
+    """
     x = xml.replace("\n", "")
     xml = ElementTree.fromstring(x)
     schema = xml[0][0][0][0][0][0]
