@@ -1,14 +1,15 @@
 import os
 import subprocess
-from tempfile import TemporaryDirectory
 import unittest
-from unittest.mock import patch
 import warnings
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
 
 import hpycc
+from hpycc.get import get_thor_file
 from tests.test_helpers import hpcc_functions
 
 
@@ -326,3 +327,194 @@ class TestGetOutputsWithServer(unittest.TestCase):
         _get_outputs_from_ecl_string(self.conn, script, delete_workunit=False)
         self.assertFalse(mock.called)
 
+
+class TestGetThorFile(unittest.TestCase):
+    def setUp(self):
+        self.conn = hpycc.Connection("user", test_conn=False)
+
+    def test_get_thor_file_returns_empty_dataset(self):
+        self.conn.run_ecl_string(
+            "a := DATASET([], {INTEGER int;}); "
+            "OUTPUT(a,,'~test_get_thor_file_returns_empty_dataset');",
+            True,
+            True
+        )
+        res = get_thor_file(
+            connection=self.conn,
+            thor_file="test_get_thor_file_returns_empty_dataset")
+        expected = pd.DataFrame(columns=["int", "__fileposition__"])
+        pd.testing.assert_frame_equal(expected, res)
+
+    def test_get_thor_file_returns_single_row_dataset(self):
+        self.conn.run_ecl_string(
+            "a := DATASET([{1}], {INTEGER int;}); "
+            "OUTPUT(a,,'~test_get_thor_file_returns_single_row_dataset');",
+            True,
+            True
+        )
+        res = get_thor_file(
+            connection=self.conn,
+            thor_file="test_get_thor_file_returns_single_row_dataset")
+        expected = pd.DataFrame({"int": [1], "__fileposition__": 0})
+        pd.testing.assert_frame_equal(expected, res, check_column_type=False,
+                                      check_dtype=False)
+
+    def test_get_thor_file_returns_100_row_dataset(self):
+        lots_of_1s = "[" + ",".join(["{1}"]*100) + "]"
+        self.conn.run_ecl_string(
+            "a := DATASET({}, {{INTEGER int;}}); "
+            "OUTPUT(a,,'~test_get_thor_file_returns_100_row_dataset');".format(
+                lots_of_1s),
+            True,
+            True
+        )
+        res = get_thor_file(
+            connection=self.conn,
+            thor_file="test_get_thor_file_returns_100_row_dataset")
+        expected = pd.DataFrame({
+            "int": [1]*100,
+            "__fileposition__": [i*8 for i in range(100)]
+        })
+        pd.testing.assert_frame_equal(expected, res, check_column_type=False,
+                                      check_dtype=False)
+
+    # test the chunking
+    # test it gets file when num rows is less than chunk
+    # test it gets file when num of rows is more than chunk
+    # test it gets file when num of rows is equal chunk
+    # what happens when chunksize = 0
+    # test it chunks properly when num of rows is less than chunk
+    # test it chunks properly when num of rows is equal to chunk
+    # test it chunks properly when num of rows is more than chunk
+    def test_get_thor_file_works_when_num_rows_less_than_chunksize(self):
+        file_name = ("test_get_thor_file_works_when_num_rows_less_than_"
+                     "chunksize")
+        self.conn.run_ecl_string(
+            "a := DATASET([{{1}}], {{INTEGER int;}}); "
+            "OUTPUT(a,,'~{}');".format(file_name),
+            True,
+            True
+        )
+        res = get_thor_file(
+            connection=self.conn, thor_file=file_name, chunk_size=2)
+        expected = pd.DataFrame({"int": [1], "__fileposition__": 0})
+        pd.testing.assert_frame_equal(expected, res, check_dtype=False)
+
+    def test_get_thor_file_works_when_num_rows_equal_to_chunksize(self):
+        file_name = "test_get_thor_file_works_when_num_rows_equal_to_chunksize"
+        self.conn.run_ecl_string(
+            "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
+            "OUTPUT(a,,'~{}');".format(file_name),
+            True,
+            True
+        )
+        res = get_thor_file(
+            connection=self.conn, thor_file=file_name, chunk_size=2)
+        expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]})
+        pd.testing.assert_frame_equal(expected, res, check_dtype=False)
+
+    def test_get_thor_file_works_when_num_rows_greater_than_chunksize(self):
+        file_name = ("test_get_thor_file_works_when_num_rows_greater_than_"
+                     "chunksize")
+        self.conn.run_ecl_string(
+            "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
+            "OUTPUT(a,,'~{}');".format(file_name),
+            True,
+            True
+        )
+        res = get_thor_file(
+            connection=self.conn,
+            thor_file=file_name, chunk_size=1)
+        res = res.sort_values("__fileposition__")
+        expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]})
+        pd.testing.assert_frame_equal(expected, res, check_dtype=False)
+
+    @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
+    def test_get_thor_file_chunks_when_num_rows_less_than_chunksize(
+            self, mock):
+        file_name = ("test_get_thor_file_chunks_when_num_rows_less_than"
+                     "_chunksize")
+        mock.return_value = [{'int': '1', '__fileposition__': '0'}]
+        self.conn.run_ecl_string(
+            "a := DATASET([{{1}}], {{INTEGER int;}}); "
+            "OUTPUT(a,,'~{}');".format(file_name),
+            True,
+            True
+        )
+        get_thor_file(
+            connection=self.conn, thor_file=file_name, chunk_size=3)
+        mock.assert_called_with(file_name, 0, 1, 3, 10)
+
+    @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
+    def test_get_thor_file_chunks_when_num_rows_equal_to_chunksize(self, mock):
+        file_name = ("test_get_thor_file_chunks_when_num_rows_equal_to_"
+                     "chunksize")
+        mock.return_value = [{'int': '1', '__fileposition__': '0'}]
+        self.conn.run_ecl_string(
+            "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
+            "OUTPUT(a,,'~{}');".format(file_name),
+            True,
+            True
+        )
+        get_thor_file(
+            connection=self.conn, thor_file=file_name, chunk_size=2)
+        mock.assert_called_with(file_name, 0, 2, 3, 10)
+
+    @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
+    def test_get_thor_file_chunks_when_num_rows_greater_than_chunksize(
+            self, mock):
+        file_name = ("test_get_thor_file_chunks_when_num_rows_greater_than_"
+                     "chunksize")
+        mock.return_value = [{'int': '1', '__fileposition__': '0'}]
+        self.conn.run_ecl_string(
+           "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
+           "OUTPUT(a,,'~{}');".format(file_name),
+           True,
+           True
+        )
+        get_thor_file(
+            connection=self.conn, thor_file=file_name, chunk_size=1)
+        expected = [
+            unittest.mock.call(file_name, 0, 1, 3, 10),
+            unittest.mock.call(file_name, 1, 1, 3, 10)
+        ]
+        self.assertEqual(expected, mock.call_args_list)
+
+    @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
+    def test_get_thor_file_uses_default_chunk_size(self, mock):
+        file_name = "test_get_thor_file_uses_default_chunk_size"
+        mock.return_value = [{'int': '1', '__fileposition__': '0'}]
+        self.conn.run_ecl_string(
+           "a := DATASET([{}], {{INTEGER int;}}); "
+           "OUTPUT(a,,'~{}');".format(",".join(["{1}"]*10001), file_name),
+           True,
+           True
+        )
+        get_thor_file(
+            connection=self.conn, thor_file=file_name)
+        expected = [
+            unittest.mock.call(file_name, 0, 10000, 3, 10),
+            unittest.mock.call(file_name, 10000, 1, 3, 10)
+        ]
+        self.assertEqual(expected, mock.call_args_list)
+
+    def test_get_thor_file_works_when_chunksize_is_zero(self):
+        file_name = "test_get_thor_file_works_when_chunksize_is_zero"
+        self.conn.run_ecl_string(
+            "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
+            "OUTPUT(a,,'~{}');".format(file_name),
+            True,
+            True
+        )
+        with self.assertRaises(ZeroDivisionError):
+            get_thor_file(connection=self.conn, thor_file=file_name,
+                          chunk_size=0)
+
+    # test the schema
+
+    # test the dtypes
+    # test the max_workers
+    # test the max attempts
+    # test the max sleep
+    # test the dtype
+    pass

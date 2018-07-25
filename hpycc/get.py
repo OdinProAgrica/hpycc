@@ -10,9 +10,10 @@ Functions
 - `get_output` -- Return the first output of an ECL script.
 - `get_outputs` -- Return all outputs of an ECL script.
 - `get_logical_file` -- Return the contents of a logical file.
+- `get_thor_file` -- Return the contents of a thor file.
 
 """
-__all__ = ["get_output", "get_outputs", "get_logical_file"]
+__all__ = ["get_output", "get_outputs", "get_thor_file", "get_logical_file"]
 
 from concurrent.futures import ThreadPoolExecutor, wait
 import re
@@ -245,10 +246,10 @@ def get_logical_file(**kwargs):
 def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
                   max_attempts=3, max_sleep=10, dtype=None):
     """
-    Return a logical thor file as a pandas.DataFrame.
+    Return a thor file as a pandas.DataFrame.
 
     Note: Ordering of the resulting DataFrame is
-    not deterministic and may not be the same as the logical file.
+    not deterministic and may not be the same as on the HPCC cluster.
 
     Parameters
     ----------
@@ -275,12 +276,12 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
         Data type for data or columns. E.g. {‘a’: np.float64, ‘b’:
         np.int32}. If converters are specified, they will be applied
         INSTEAD of dtype conversion. If a dict is given, any
-        unspecified columns will be returned as str. Nine by default.
+        unspecified columns will be returned as str. None by default.
 
     Returns
     -------
     df: pandas.DataFrame
-        Logical file as a pandas.DataFrame.
+        Thor file as a pandas.DataFrame.
 
     See Also
     --------
@@ -329,6 +330,11 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
 
     num_rows = wuresultresponse["Total"]
 
+    # if there are no rows to go and get, we should return an empty dataframe
+    if not num_rows:
+        cols = [c.name for c in schema]
+        return pd.DataFrame(columns=cols)
+
     chunks = filechunker.make_chunks(num_rows, chunk_size)
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -340,7 +346,7 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
 
         finished, _ = wait(futures)
 
-    results = (i.result() for i in finished)
+    results = [i.result() for i in finished]
     flat_list = (item for sublist in results for item in sublist)
 
     df = pd.DataFrame(flat_list)
