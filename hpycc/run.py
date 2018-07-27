@@ -16,7 +16,8 @@ Functions
 __all__ = ["run_script"]
 
 
-def run_script(connection, script, syntax_check=True, delete_workunit=True):
+def run_script(connection, script, syntax_check=True, delete_workunit=True,
+               stored=None):
     """
     Run an ECL script.
 
@@ -34,6 +35,11 @@ def run_script(connection, script, syntax_check=True, delete_workunit=True):
         default.
     delete_workunit: bool, optional
         Delete workunit once completed. True by default.
+    stored : dict
+         Dictionary of key value pairs do to replace stored
+         variables within ECL. Values can be str, int, bool.
+         Sets are known to not work.
+
 
     Returns
     -------
@@ -49,5 +55,5 @@ def run_script(connection, script, syntax_check=True, delete_workunit=True):
     Connection.run_ecl_string
 
     """
-    connection.run_ecl_script(script, syntax_check, delete_workunit)
+    connection.run_ecl_script(script, syntax_check, delete_workunit, stored)
     return True

@@ -31,22 +31,22 @@ def _spray_df(conn, df, name):
 
 
 def _get_output_from_ecl_string(conn, string, syntax=True,
-                                delete_workunit=True):
+                                delete_workunit=True, stored=None):
     with TemporaryDirectory() as d:
         p = os.path.join(d, "test.ecl")
         with open(p, "w+") as file:
             file.write(string)
-        res = hpycc.get_output(conn, p, syntax, delete_workunit)
+        res = hpycc.get_output(conn, p, syntax, delete_workunit, stored)
         return res
 
 
 def _get_outputs_from_ecl_string(conn, string, syntax=True,
-                                 delete_workunit=True):
+                                 delete_workunit=True, stored=None):
     with TemporaryDirectory() as d:
         p = os.path.join(d, "test.ecl")
         with open(p, "w+") as file:
             file.write(string)
-        res = hpycc.get_outputs(conn, p, syntax, delete_workunit)
+        res = hpycc.get_outputs(conn, p, syntax, delete_workunit, stored)
         return res
 
 
@@ -184,6 +184,44 @@ class TestGetOutputWithServer(unittest.TestCase):
         script = "OUTPUT(2);"
         _get_output_from_ecl_string(self.conn, script, delete_workunit=False)
         self.assertFalse(mock.called)
+
+    def test_get_output_stored_variables_change_output_same_type_string(self):
+        script_one = "a := 'abc' : STORED('a'); a;"
+        script_two = "a := 'Hello'; a;"
+        result = _get_outputs_from_ecl_string(self.conn, script_one,
+                                              stored={'a': 'Hello'})
+        expected = _get_outputs_from_ecl_string(self.conn, script_two)
+        for df in expected:
+            pd.testing.assert_frame_equal(result[df], expected[df])
+
+    def test_get_output_stored_variables_change_output_same_type_int(self):
+        script_one = "a :=  123 : STORED('a'); a;"
+        script_two = "a := 24601; a;"
+        result = _get_outputs_from_ecl_string(self.conn, script_one,
+                                              stored={'a': 24601})
+        expected = _get_outputs_from_ecl_string(self.conn, script_two)
+        for df in expected:
+            pd.testing.assert_frame_equal(result[df], expected[df])
+
+    def test_get_output_stored_variables_change_output_same_type_bool(self):
+        script_one = "a := FALSE : STORED('a'); a;"
+        script_two = "a := TRUE; a;"
+        result = _get_outputs_from_ecl_string(self.conn, script_one,
+                                              stored={'a': True})
+        expected = _get_outputs_from_ecl_string(self.conn, script_two)
+        for df in expected:
+            pd.testing.assert_frame_equal(result[df], expected[df])
+
+
+    def test_get_output_stored_wrong_key_inputs(self):
+        script_one = "a := 'abc' : STORED('a'); a;"
+        script_two = "a := 'abc'; a;"
+        result = _get_outputs_from_ecl_string(self.conn, script_one,
+                                              stored={'f': 'WhyNotZoidberg'})
+        expected = _get_outputs_from_ecl_string(self.conn, script_two)
+        for df in expected:
+            pd.testing.assert_frame_equal(result[df], expected[df])
+
 
 
 class TestGetOutputsWithServer(unittest.TestCase):
@@ -325,4 +363,26 @@ class TestGetOutputsWithServer(unittest.TestCase):
         script = "OUTPUT(2);"
         _get_outputs_from_ecl_string(self.conn, script, delete_workunit=False)
         self.assertFalse(mock.called)
+
+    def test_get_outputs_stored_variables_change_output_same_type(self):
+        script_one = ("a := 'abc' : STORED('a'); b := FALSE : STORED('b'); "
+                      "c := 'ghi' : STORED('c'); a; b; c;")
+        script_two = "a := 'Hello'; b := true; c := 24601; a; b; c;"
+        result = _get_outputs_from_ecl_string(self.conn, script_one,
+                                              stored={'a': 'Hello', 'b': True,
+                                                      'c': 24601})
+        expected = _get_outputs_from_ecl_string(self.conn, script_two)
+        for df in expected:
+            pd.testing.assert_frame_equal(result[df], expected[df])
+
+    def test_get_outputs_stored_wrong_key_inputs(self):
+        script_one = ("a := 'abc' : STORED('a'); b := FALSE : STORED('b'); "
+                      "c := 'ghi' : STORED('c'); a; b; c;")
+        script_two = "a := 'abc'; b := FALSE; c := 'ghi'; a; b; c;"
+        result = _get_outputs_from_ecl_string(self.conn, script_one,
+                                              stored={'d': 'Why', 'e': 'Not',
+                                                      'f': 'Zoidberg'})
+        expected = _get_outputs_from_ecl_string(self.conn, script_two)
+        for df in expected:
+            pd.testing.assert_frame_equal(result[df], expected[df])
 

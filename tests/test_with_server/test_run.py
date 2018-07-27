@@ -31,7 +31,7 @@ class TestRunWithServer(unittest.TestCase):
             with open(p, "w+") as file:
                 file.write(good_script)
             res = conn.run_ecl_script(p, syntax_check=True,
-                                      delete_workunit=False)
+                                      delete_workunit=False, stored={})
             self.assertTrue(res)
         res = conn.get_logical_file_chunk(
             "thor::testrunscriptsaveslogicalfile", 0, 1, 3, 1)
@@ -73,3 +73,31 @@ class TestRunWithServer(unittest.TestCase):
                 file.write(good_script)
             res = hpycc.run_script(conn, p, delete_workunit=False)
         self.assertTrue(res)
+
+    def test_run_script_uses_stored(self):
+        conn = hpycc.Connection("user", test_conn=False)
+        good_script = "a:='b':STORED('a');a;"
+
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(good_script)
+            res = conn.run_ecl_script(p, syntax_check=True,
+                                      delete_workunit=False,
+                                      stored={'a': 'Shouldbethecorrectoutput'})
+
+        self.assertRegex(res.stdout, 'Shouldbethecorrectoutput')
+
+    def test_run_script_does_nothing_when_not_using_stored_(self):
+        conn = hpycc.Connection("user", test_conn=False)
+        good_script = "a:='b':STORED('a');a;"
+
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(good_script)
+            res = conn.run_ecl_script(p, syntax_check=True,
+                                      delete_workunit=False,
+                                      stored={'b': 'Shouldbethecorrectoutput'})
+
+        self.assertTrue('Shouldbethecorrectoutput' not in res.stdout)

@@ -2,7 +2,7 @@ import os
 import tarfile
 import time
 from io import BytesIO
-
+import pathlib
 import docker
 from docker.errors import NotFound
 
@@ -32,10 +32,15 @@ def start_hpcc_container():
 
 
 def password_hpcc(container):
+
+    if pathlib.Path.cwd().name == "tests":
+        p = pathlib.Path() / 'test_helpers'
+    else:
+        p = pathlib.Path() / '..' / 'test_helpers'
     try:
-        put_file_into_container(container, "test_helpers//environment.xml",
+        put_file_into_container(container, p / "environment.xml",
                                 "etc/HPCCSystems")
-        put_file_into_container(container, "test_helpers//.htpasswd",
+        put_file_into_container(container, p / ".htpasswd",
                                 "etc/HPCCSystems")
     except KILL_EXCEPTIONS as e:
         container.stop()
