@@ -705,7 +705,8 @@ class TestGetThorFile(unittest.TestCase):
             True
         )
         res = get_thor_file(
-            self.conn, file_name, dtype={"str": int, "bool": bool, "int": str, "__fileposition__": str})
+            self.conn, file_name, dtype={"str": int, "bool": bool, "int": str,
+                                         "__fileposition__": str})
         expected = pd.DataFrame({
             "int": ["1", "2"],
             "str": [1, 2],
@@ -742,4 +743,4 @@ class TestGetThorFile(unittest.TestCase):
         )
         with self.assertRaises(KeyError):
             get_thor_file(self.conn, file_name,
-                                dtype={"bool": bool, "int": str, "made_up": str})
+                          dtype={"bool": bool, "int": str, "made_up": str})
