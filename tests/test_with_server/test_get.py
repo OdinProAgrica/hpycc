@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 import os
 import subprocess
 import unittest
@@ -378,14 +379,6 @@ class TestGetThorFile(unittest.TestCase):
         pd.testing.assert_frame_equal(expected, res, check_column_type=False,
                                       check_dtype=False)
 
-    # test the chunking
-    # test it gets file when num rows is less than chunk
-    # test it gets file when num of rows is more than chunk
-    # test it gets file when num of rows is equal chunk
-    # what happens when chunksize = 0
-    # test it chunks properly when num of rows is less than chunk
-    # test it chunks properly when num of rows is equal to chunk
-    # test it chunks properly when num of rows is more than chunk
     def test_get_thor_file_works_when_num_rows_less_than_chunksize(self):
         file_name = ("test_get_thor_file_works_when_num_rows_less_than_"
                      "chunksize")
@@ -425,9 +418,11 @@ class TestGetThorFile(unittest.TestCase):
         res = get_thor_file(
             connection=self.conn,
             thor_file=file_name, chunk_size=1)
-        res = res.sort_values("__fileposition__")
         expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]})
-        pd.testing.assert_frame_equal(expected, res, check_dtype=False)
+        res = res.sort_values("__fileposition__")
+        pd.testing.assert_frame_equal(
+            expected, res, check_index_type=False, check_column_type=False,
+            check_dtype=False, check_like=False)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_get_thor_file_chunks_when_num_rows_less_than_chunksize(
@@ -510,11 +505,241 @@ class TestGetThorFile(unittest.TestCase):
             get_thor_file(connection=self.conn, thor_file=file_name,
                           chunk_size=0)
 
-    # test the schema
+    def test_get_thor_file_parses_column_types_correctly(self):
+        i = 1
+        d = 1.5
+        u = "U'ABC'"
+        s = "'ABC'"
+        b = "TRUE"
+        x = "x'ABC'"
+        es = "ABC"
+        types = [("INTEGER", "int", i),
+                 ("INTEGER1", "int1", i),
+                 ("UNSIGNED INTEGER", "unsigned_int", i),
+                 ("UNSIGNED INTEGER1", "unsigned_int_1", i),
+                 ("UNSIGNED8", "is_unsigned_8", i),
+                 ("UNSIGNED", "usigned", i),
+                 ("DECIMAL10", "dec10", d, round(d)),
+                 ("DECIMAL5_3", "dec5_3", d),
+                 ("UNSIGNED DECIMAL10", "unsigned_dec10", d, round(d)),
+                 ("UNSIGNED DECIMAL5_3", "unsigned_decl5_3", d),
+                 ("UDECIMAL10", "udec10", d, round(d)),
+                 ("UDECIMAL5_3", "udec5_3", d),
+                 ("REAL", "is_real", d),
+                 ("REAL4", "is_real4", d),
+                 ("UNICODE", "ucode", u, es),
+                 ("UNICODE_de", "ucode_de", u, es),
+                 ("UNICODE3", "ucode4", u, es),
+                 ("UNICODE_de3", "ucode_de4", u, es),
+                 ("UTF8", "is_utf8", u, es),
+                 ("UTF8_de", "is_utf8_de", u, es),
+                 ("STRING", "str", s, es),
+                 ("STRING3", "str1", s, es),
+                 ("ASCII STRING", "ascii_str", s, es),
+                 ("ASCII STRING3", "ascii_str1", s, es),
+                 ("EBCDIC STRING", "ebcdic_str", s, es),
+                 ("EBCDIC STRING3", "ebcdic_str1", s, es),
+                 ("BOOLEAN", "bool", b, True),
+                 ("DATA", "is_data", x, "0ABC"),
+                 ("DATA3", "is_data_16", x, "0ABC00"),
+                 ("VARUNICODE", "varucode", u, es),
+                 ("VARUNICODE_de", "varucode_de", u, es),
+                 ("VARUNICODE3", "varucode4", u, es),
+                 ("VARUNICODE_de3", "varucode_de4", u, es),
+                 ("VARSTRING", "varstr", u, es),
+                 ("VARSTRING3", "varstr3", u, es),
+                 ("QSTRING", "qstr", s, es),
+                 ("QSTRING3", "qstr8", s, es)]
+        for t in types:
+            file_name = ("test_get_thor_file_parses_column_types"
+                         "_correctly_{}").format(t[1])
+            self.conn.run_ecl_string(
+                "a := DATASET([{{{}}}], {{{} {};}}); "
+                "OUTPUT(a,,'~{}');".format(t[2], t[0], t[1], file_name),
+                True,
+                True
+            )
+            try:
+                expected_val = t[3]
+            except IndexError:
+                expected_val = t[2]
+            a = get_thor_file(
+                connection=self.conn, thor_file=file_name, dtype=None)
+            expected = pd.DataFrame(
+                {"__fileposition__": [0], t[1]: [expected_val]})
+            pd.testing.assert_frame_equal(expected, a, check_dtype=False)
 
-    # test the dtypes
-    # test the max_workers
-    # test the max attempts
-    # test the max sleep
+    def test_get_thor_file_parses_set_types_correctly(self):
+        i = 1
+        d = 1.5
+        u = "U'ABC'"
+        s = "'ABC'"
+        b = "TRUE"
+        x = "x'ABC'"
+        es = "ABC"
+        types = [("INTEGER", "int", i),
+                 ("INTEGER1", "int1", i),
+                 ("UNSIGNED INTEGER", "unsigned_int", i),
+                 ("UNSIGNED INTEGER1", "unsigned_int_1", i),
+                 ("UNSIGNED8", "is_unsigned_8", i),
+                 ("UNSIGNED", "usigned", i),
+                 ("DECIMAL10", "dec10", d, round(d)),
+                 ("DECIMAL5_3", "dec5_3", d),
+                 ("UNSIGNED DECIMAL10", "unsigned_dec10", d, round(d)),
+                 ("UNSIGNED DECIMAL5_3", "unsigned_decl5_3", d),
+                 ("UDECIMAL10", "udec10", d, round(d)),
+                 ("UDECIMAL5_3", "udec5_3", d),
+                 ("REAL", "is_real", d),
+                 ("REAL4", "is_real4", d),
+                 ("UNICODE", "ucode", u, es),
+                 ("UNICODE_de", "ucode_de", u, es),
+                 ("UNICODE3", "ucode4", u, es),
+                 ("UNICODE_de3", "ucode_de4", u, es),
+                 ("UTF8", "is_utf8", u, es),
+                 ("UTF8_de", "is_utf8_de", u, es),
+                 ("STRING", "str", s, es),
+                 ("STRING3", "str1", s, es),
+                 ("ASCII STRING", "ascii_str", s, es),
+                 ("ASCII STRING3", "ascii_str1", s, es),
+                 ("EBCDIC STRING", "ebcdic_str", s, es),
+                 ("EBCDIC STRING3", "ebcdic_str1", s, es),
+                 ("BOOLEAN", "bool", b, True),
+                 ("DATA", "is_data", x, "0ABC"),
+                 ("DATA3", "is_data_16", x, "0ABC00"),
+                 ("VARUNICODE", "varucode", u, es),
+                 ("VARUNICODE_de", "varucode_de", u, es),
+                 ("VARUNICODE3", "varucode4", u, es),
+                 ("VARUNICODE_de3", "varucode_de4", u, es),
+                 ("VARSTRING", "varstr", u, es),
+                 ("VARSTRING3", "varstr3", u, es),
+                 ("QSTRING", "qstr", s, es),
+                 ("QSTRING3", "qstr8", s, es)]
+        for t in types:
+            file_name = ("test_get_thor_file_parses_set_types_"
+                         "correctly_{}").format(t[1])
+            s = ("a := DATASET([{{[{}]}}], {{SET OF {} {};}}); "
+                 "OUTPUT(a,,'~{}');").format(t[2], t[0], t[1], file_name)
+            self.conn.run_ecl_string(s, True, False)
+            try:
+                expected_val = t[3]
+            except IndexError:
+                expected_val = t[2]
+            a = get_thor_file(connection=self.conn, thor_file=file_name,
+                              dtype=None)
+            expected = pd.DataFrame(
+                {"__fileposition__": [0], t[1]: [[expected_val]]})
+            pd.testing.assert_frame_equal(expected, a, check_dtype=False)
+
+    @patch.object(hpycc.get, "ThreadPoolExecutor")
+    def test_get_thor_file_uses_default_max_workers(self, mock):
+        mock.return_value = ThreadPoolExecutor(max_workers=15)
+        file_name = "test_get_thor_file_uses_default_max_workers"
+        self.conn.run_ecl_string(
+            "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
+            "OUTPUT(a,,'~{}');".format(file_name),
+            True,
+            True
+        )
+        get_thor_file(self.conn, file_name)
+        mock.assert_called_with(max_workers=15)
+
+    @patch.object(hpycc.get, "ThreadPoolExecutor")
+    def test_get_thor_file_uses_custom_max_workers(self, mock):
+        mock.return_value = ThreadPoolExecutor(max_workers=15)
+        file_name = "test_get_thor_file_uses_custom_max_workers"
+        self.conn.run_ecl_string(
+            "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
+            "OUTPUT(a,,'~{}');".format(file_name),
+            True,
+            True
+        )
+        get_thor_file(self.conn, file_name, max_workers=2)
+        mock.assert_called_with(max_workers=2)
+
+    @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
+    def test_get_thor_file_uses_defaults(self, mock):
+        mock.return_value = [{"int": 1, "__fileposition__": 0}]
+        file_name = "test_get_thor_file_uses_defaults"
+        self.conn.run_ecl_string(
+            "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
+            "OUTPUT(a,,'~{}');".format(file_name),
+            True,
+            False
+        )
+        get_thor_file(self.conn, file_name)
+        mock.assert_called_with(file_name, 0, 2, 3, 10)
+
+    @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
+    def test_get_thor_file_uses_max_sleep(self, mock):
+        mock.return_value = [{"int": 1, "__fileposition__": 0}]
+        file_name = "test_get_thor_file_uses_max_sleep"
+        self.conn.run_ecl_string(
+            "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
+            "OUTPUT(a,,'~{}');".format(file_name),
+            True,
+            False
+        )
+        get_thor_file(self.conn, file_name, max_sleep=20)
+        mock.assert_called_with(file_name, 0, 2, 3, 20)
+
     # test the dtype
-    pass
+    def test_get_thor_file_uses_single_dtype(self):
+        file_name = "test_get_thor_file_uses_single_dtype"
+        self.conn.run_ecl_string(
+            "a := DATASET([{{'1'}}, {{'2'}}], {{STRING int;}}); "
+            "OUTPUT(a,,'~{}');".format(file_name),
+            True,
+            True
+        )
+        res = get_thor_file(self.conn, file_name, dtype=int)
+        expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 5]})
+        pd.testing.assert_frame_equal(expected, res, check_dtype=False)
+
+    def test_get_thor_file_uses_dict_of_dtypes(self):
+        file_name = "test_get_thor_file_uses_dict_of_dtypes"
+        self.conn.run_ecl_string(
+            "a := DATASET([{{'1', TRUE, 1}}, {{'2', FALSE, 2}}], "
+            "{{STRING str; BOOLEAN bool; INTEGER int;}}); "
+            "OUTPUT(a,,'~{}');".format(file_name),
+            True,
+            True
+        )
+        res = get_thor_file(
+            self.conn, file_name, dtype={"str": int, "bool": bool, "int": str, "__fileposition__": str})
+        expected = pd.DataFrame({
+            "int": ["1", "2"],
+            "str": [1, 2],
+            "bool": [True, False],
+            "__fileposition__": ["0", "14"]})
+        pd.testing.assert_frame_equal(expected, res, check_dtype=False)
+
+    def test_get_thor_file_uses_dict_of_dtypes_with_missing_cols(self):
+        file_name = "test_get_thor_file_uses_dict_of_dtypes_with_missing__cols"
+        self.conn.run_ecl_string(
+            "a := DATASET([{{'1', TRUE, 1}}, {{'2', FALSE, 2}}], "
+            "{{STRING str; BOOLEAN bool; INTEGER int;}}); "
+            "OUTPUT(a,,'~{}');".format(file_name),
+            True,
+            True
+        )
+        res = get_thor_file(self.conn, file_name,
+                            dtype={"bool": bool, "int": str})
+        expected = pd.DataFrame({
+            "int": ["1", "2"],
+            "str": ["1", "2"],
+            "bool": [True, False],
+            "__fileposition__": ["0", "14"]})
+        pd.testing.assert_frame_equal(expected, res, check_dtype=False)
+
+    def test_get_thor_file_uses_dict_of_dtypes_with_extra_cols(self):
+        file_name = "test_get_thor_file_uses_dict_of_dtypes_with_extra_cols"
+        self.conn.run_ecl_string(
+            "a := DATASET([{{'1', TRUE, 1}}, {{'2', FALSE, 2}}], "
+            "{{STRING str; BOOLEAN bool; INTEGER int;}}); "
+            "OUTPUT(a,,'~{}');".format(file_name),
+            True,
+            True
+        )
+        with self.assertRaises(KeyError):
+            get_thor_file(self.conn, file_name,
+                                dtype={"bool": bool, "int": str, "made_up": str})
