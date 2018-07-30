@@ -22,7 +22,7 @@ import warnings
 import pandas as pd
 
 from hpycc.utils import filechunker
-from hpycc.utils.parsers import parse_xml, parse_schema_from_xml
+from hpycc.utils.parsers import parse_xml, parse_schema_from_xml, Schema
 
 
 def get_output(connection, script, syntax_check=True, delete_workunit=True):
@@ -350,13 +350,23 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
     flat_list = (item for sublist in results for item in sublist)
 
     df = pd.DataFrame(flat_list)
+
+    # dtype is a dict
+    # we replace all those in the dict, then those not specified with schema
+    if not isinstance(dtype, dict) and dtype:
+            return df.astype(dtype)
+
+    schema_dict = {i.name: i for i in schema}
+
     if dtype:
-        return df.astype(dtype)
-    else:
-        for col in schema:
-            if col.is_set:
-                df[col.name] = df[col.name].map(
-                    lambda x: [col.type(i) for i in x["Item"]])
-            else:
-                df[col.name] = df[col.name].astype(col.type)
-        return df
+        i = {col: Schema(col, False, dtype[col]) for col in dtype}
+        schema_dict.update(i)
+
+    for col in schema_dict:
+        c = schema_dict[col]
+        if c.is_set:
+            df[c.name] = df[c.name].map(
+                lambda x: [c.type(i) for i in x["Item"]])
+        else:
+            df[c.name] = df[c.name].astype(c.type)
+    return df

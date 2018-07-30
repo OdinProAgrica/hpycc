@@ -356,9 +356,9 @@ class TestGetThorFile(unittest.TestCase):
         res = get_thor_file(
             connection=self.conn,
             thor_file="test_get_thor_file_returns_single_row_dataset")
-        expected = pd.DataFrame({"int": [1], "__fileposition__": 0})
-        pd.testing.assert_frame_equal(expected, res, check_column_type=False,
-                                      check_dtype=False)
+        expected = pd.DataFrame({"int": [1], "__fileposition__": 0},
+                                dtype=np.int32)
+        pd.testing.assert_frame_equal(expected, res)
 
     def test_get_thor_file_returns_100_row_dataset(self):
         lots_of_1s = "[" + ",".join(["{1}"]*100) + "]"
@@ -375,9 +375,8 @@ class TestGetThorFile(unittest.TestCase):
         expected = pd.DataFrame({
             "int": [1]*100,
             "__fileposition__": [i*8 for i in range(100)]
-        })
-        pd.testing.assert_frame_equal(expected, res, check_column_type=False,
-                                      check_dtype=False)
+        }, dtype=np.int32)
+        pd.testing.assert_frame_equal(expected, res)
 
     def test_get_thor_file_works_when_num_rows_less_than_chunksize(self):
         file_name = ("test_get_thor_file_works_when_num_rows_less_than_"
@@ -390,8 +389,9 @@ class TestGetThorFile(unittest.TestCase):
         )
         res = get_thor_file(
             connection=self.conn, thor_file=file_name, chunk_size=2)
-        expected = pd.DataFrame({"int": [1], "__fileposition__": 0})
-        pd.testing.assert_frame_equal(expected, res, check_dtype=False)
+        expected = pd.DataFrame({"int": [1], "__fileposition__": 0},
+                                dtype=np.int32)
+        pd.testing.assert_frame_equal(expected, res)
 
     def test_get_thor_file_works_when_num_rows_equal_to_chunksize(self):
         file_name = "test_get_thor_file_works_when_num_rows_equal_to_chunksize"
@@ -403,8 +403,9 @@ class TestGetThorFile(unittest.TestCase):
         )
         res = get_thor_file(
             connection=self.conn, thor_file=file_name, chunk_size=2)
-        expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]})
-        pd.testing.assert_frame_equal(expected, res, check_dtype=False)
+        expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]},
+                                dtype=np.int32)
+        pd.testing.assert_frame_equal(expected, res)
 
     def test_get_thor_file_works_when_num_rows_greater_than_chunksize(self):
         file_name = ("test_get_thor_file_works_when_num_rows_greater_than_"
@@ -418,11 +419,11 @@ class TestGetThorFile(unittest.TestCase):
         res = get_thor_file(
             connection=self.conn,
             thor_file=file_name, chunk_size=1)
-        expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]})
+        expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]},
+                                dtype=np.int32)
         res = res.sort_values("__fileposition__")
         pd.testing.assert_frame_equal(
-            expected, res, check_index_type=False, check_column_type=False,
-            check_dtype=False, check_like=False)
+            expected, res)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_get_thor_file_chunks_when_num_rows_less_than_chunksize(
@@ -566,8 +567,9 @@ class TestGetThorFile(unittest.TestCase):
             a = get_thor_file(
                 connection=self.conn, thor_file=file_name, dtype=None)
             expected = pd.DataFrame(
-                {"__fileposition__": [0], t[1]: [expected_val]})
-            pd.testing.assert_frame_equal(expected, a, check_dtype=False)
+                {"__fileposition__": [0], t[1]: [expected_val]},
+                dtype=np.int32)
+            pd.testing.assert_frame_equal(expected, a)
 
     def test_get_thor_file_parses_set_types_correctly(self):
         i = 1
@@ -627,8 +629,9 @@ class TestGetThorFile(unittest.TestCase):
             a = get_thor_file(connection=self.conn, thor_file=file_name,
                               dtype=None)
             expected = pd.DataFrame(
-                {"__fileposition__": [0], t[1]: [[expected_val]]})
-            pd.testing.assert_frame_equal(expected, a, check_dtype=False)
+                {"__fileposition__": [0], t[1]: [[expected_val]]},
+                dtype=np.int32)
+            pd.testing.assert_frame_equal(expected, a)
 
     @patch.object(hpycc.get, "ThreadPoolExecutor")
     def test_get_thor_file_uses_default_max_workers(self, mock):
@@ -683,6 +686,7 @@ class TestGetThorFile(unittest.TestCase):
         mock.assert_called_with(file_name, 0, 2, 3, 20)
 
     # test the dtype
+
     def test_get_thor_file_uses_single_dtype(self):
         file_name = "test_get_thor_file_uses_single_dtype"
         self.conn.run_ecl_string(
@@ -692,8 +696,9 @@ class TestGetThorFile(unittest.TestCase):
             True
         )
         res = get_thor_file(self.conn, file_name, dtype=int)
-        expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 5]})
-        pd.testing.assert_frame_equal(expected, res, check_dtype=False)
+        expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 5]},
+                                dtype=np.int32)
+        pd.testing.assert_frame_equal(expected, res)
 
     def test_get_thor_file_uses_dict_of_dtypes(self):
         file_name = "test_get_thor_file_uses_dict_of_dtypes"
@@ -711,8 +716,9 @@ class TestGetThorFile(unittest.TestCase):
             "int": ["1", "2"],
             "str": [1, 2],
             "bool": [True, False],
-            "__fileposition__": ["0", "14"]})
-        pd.testing.assert_frame_equal(expected, res, check_dtype=False)
+            "__fileposition__": ["0", "14"]}).astype(
+            {"str": int, "bool": bool, "int": str, "__fileposition__": str})
+        pd.testing.assert_frame_equal(expected, res)
 
     def test_get_thor_file_uses_dict_of_dtypes_with_missing_cols(self):
         file_name = "test_get_thor_file_uses_dict_of_dtypes_with_missing__cols"
@@ -729,7 +735,7 @@ class TestGetThorFile(unittest.TestCase):
             "int": ["1", "2"],
             "str": ["1", "2"],
             "bool": [True, False],
-            "__fileposition__": ["0", "14"]})
+            "__fileposition__": [0, 14]})
         pd.testing.assert_frame_equal(expected, res, check_dtype=False)
 
     def test_get_thor_file_uses_dict_of_dtypes_with_extra_cols(self):
@@ -744,3 +750,14 @@ class TestGetThorFile(unittest.TestCase):
         with self.assertRaises(KeyError):
             get_thor_file(self.conn, file_name,
                           dtype={"bool": bool, "int": str, "made_up": str})
+
+    def test_get_thor_file_returns_a_set(self):
+        file_name = "test_get_thor_file_returns_a_set"
+        s = ("a := DATASET([{{[1, 2, 3]}}], {{SET OF INTEGER set;}}); "
+             "OUTPUT(a,,'~{}');").format(file_name)
+        self.conn.run_ecl_string(s, True, True)
+        res = get_thor_file(self.conn, file_name)
+        expected = pd.DataFrame({"set": [[1, 2, 3]], "__fileposition__": 0},
+                                dtype=np.int32)
+        self.assertEqual(res.set.values[0], [1, 2, 3])
+        pd.testing.assert_frame_equal(expected, res)
