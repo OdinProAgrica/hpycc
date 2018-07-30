@@ -275,8 +275,9 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
     dtype: type name or dict of col -> type, optional.
         Data type for data or columns. E.g. {‘a’: np.float64, ‘b’:
         np.int32}. If converters are specified, they will be applied
-        INSTEAD of dtype conversion. If a dict is given, any
-        unspecified columns will be returned as str. None by default.
+        INSTEAD of dtype conversion. If None, or columns are missing
+        from the provided dict, they will be converted to one of
+        bool, str or int based on the HPCC datatype. None by default.
 
     Returns
     -------
