@@ -567,9 +567,8 @@ class TestGetThorFile(unittest.TestCase):
             a = get_thor_file(
                 connection=self.conn, thor_file=file_name, dtype=None)
             expected = pd.DataFrame(
-                {"__fileposition__": [0], t[1]: [expected_val]},
-                dtype=np.int32)
-            pd.testing.assert_frame_equal(expected, a)
+                {"__fileposition__": [0], t[1]: [expected_val]})
+            pd.testing.assert_frame_equal(expected, a, check_dtype=False)
 
     def test_get_thor_file_parses_set_types_correctly(self):
         i = 1
@@ -629,9 +628,8 @@ class TestGetThorFile(unittest.TestCase):
             a = get_thor_file(connection=self.conn, thor_file=file_name,
                               dtype=None)
             expected = pd.DataFrame(
-                {"__fileposition__": [0], t[1]: [[expected_val]]},
-                dtype=np.int32)
-            pd.testing.assert_frame_equal(expected, a)
+                {"__fileposition__": [0], t[1]: [[expected_val]]})
+            pd.testing.assert_frame_equal(expected, a, check_dtype=False)
 
     @patch.object(hpycc.get, "ThreadPoolExecutor")
     def test_get_thor_file_uses_default_max_workers(self, mock):
