@@ -2,6 +2,8 @@ import os
 from tempfile import TemporaryDirectory
 import unittest
 
+import pandas as pd
+
 import hpycc
 from tests.test_helpers import hpcc_functions
 
@@ -76,28 +78,28 @@ class TestRunWithServer(unittest.TestCase):
 
     def test_run_script_uses_stored(self):
         conn = hpycc.Connection("user", test_conn=False)
-        good_script = "a:='b':STORED('a');a;"
-
+        file_name = "test_run_script_uses_stored"
+        good_script = "str := 'abc' : STORED('str'); z := DATASET([{{str + str}}], {{STRING str;}}); OUTPUT(z,,'~{}', EXPIRE(1));".format(file_name)
         with TemporaryDirectory() as d:
             p = os.path.join(d, "test.ecl")
             with open(p, "w+") as file:
                 file.write(good_script)
-            res = conn.run_ecl_script(p, syntax_check=True,
-                                      delete_workunit=False,
-                                      stored={'a': 'Shouldbethecorrectoutput'})
-
-        self.assertRegex(res.stdout, 'Shouldbethecorrectoutput')
+            hpycc.run_script(conn, p, stored={'str': 'Shouldbethecorrectoutput'})
+        res = hpycc.get_thor_file(conn, file_name)
+        expected = pd.DataFrame({"str": ["ShouldbethecorrectoutputShouldbethecorrectoutput"], "__fileposition__": [0]})
+        pd.testing.assert_frame_equal(expected, res, check_dtype=False)
 
     def test_run_script_does_nothing_when_not_using_stored_(self):
         conn = hpycc.Connection("user", test_conn=False)
-        good_script = "a:='b':STORED('a');a;"
+        file_name = "test_run_script_does_nothing_when_not_using_stored_"
+        good_script = "str := 'abc' : STORED('str'); z := DATASET([{{str + str}}], {{STRING str;}}); OUTPUT(z,,'~{}', EXPIRE(1));".format(
+            file_name)
 
         with TemporaryDirectory() as d:
             p = os.path.join(d, "test.ecl")
             with open(p, "w+") as file:
                 file.write(good_script)
-            res = conn.run_ecl_script(p, syntax_check=True,
-                                      delete_workunit=False,
-                                      stored={'b': 'Shouldbethecorrectoutput'})
-
-        self.assertTrue('Shouldbethecorrectoutput' not in res.stdout)
+            hpycc.run_script(conn, p, stored={'b': 'Shouldbethecorrectoutput'})
+        res = hpycc.get_thor_file(conn, file_name)
+        expected = pd.DataFrame({"str": ["abcabc"], "__fileposition__": [0]})
+        pd.testing.assert_frame_equal(expected, res, check_dtype=False)
