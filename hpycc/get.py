@@ -47,10 +47,9 @@ def get_output(connection, script, syntax_check=True, delete_workunit=True,
         default.
     delete_workunit: bool, optional
         Delete workunit once completed. True by default.
-    stored : dict
-         Dictionary of key value pairs do to replace stored
-         variables within ECL. Values can be str, int, bool.
-         Sets are known to not work.
+    stored : dict or None, optional
+        Key value pairs to replace stored variables within the
+        script. Values should be str, int or bool. None by default.
 
 
     Returns
@@ -149,11 +148,9 @@ def get_outputs(connection, script, syntax_check=True, delete_workunit=True,
         default.
     delete_workunit: bool,
        Delete the workunit once completed. True by default.
-    stored : dict
-         Dictionary of key value pairs do to replace stored
-         variables within ECL. Values can be str, int, bool.
-         Sets are known to not work.
-
+    stored : dict or None, optional
+        Key value pairs to replace stored variables within the
+        script. Values should be str, int or bool. None by default.
 
     Returns
     -------
