@@ -308,7 +308,8 @@ class TestConnectionRunECLScript(unittest.TestCase):
             with open(p, "w+") as file:
                 file.write(bad_script)
             with self.assertRaises(subprocess.SubprocessError):
-                conn.run_ecl_script(p, syntax_check=True, delete_workunit=False)
+                conn.run_ecl_script(p, syntax_check=True,
+                                    delete_workunit=False)
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_run_script_passes_syntax_check_with_good_script(self, mock):

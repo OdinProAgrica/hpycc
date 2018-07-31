@@ -134,6 +134,9 @@ def parse_wuid_from_xml(result):
     return wuid.group(0)
 
 
+Schema = namedtuple("Schema", ["name", "is_set", "type"])
+
+
 def parse_schema_from_xml(xml):
     """
     Parse an ECL schema into python types.
@@ -152,8 +155,6 @@ def parse_schema_from_xml(xml):
     x = xml.replace("\n", "")
     xml = ElementTree.fromstring(x)
     schema = xml[0][0][0][0][0][0]
-
-    Schema = namedtuple("Schema", ["name", "is_set", "type"])
 
     return (Schema(
         child.attrib["name"],
