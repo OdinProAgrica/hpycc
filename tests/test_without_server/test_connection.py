@@ -247,9 +247,6 @@ class TestConnectionRunECLScript(unittest.TestCase):
         conn = hpycc.Connection("user", password="a\nb", test_conn=False)
         conn.run_ecl_script("test.ecl", syntax_check=False,
                             delete_workunit=False, stored={})
-        #mock.assert_called_with(
-        #    "ecl run -v --server localhost --port 8010 --username user "
-        #    "--password=a\nb thor test.ecl")
         mock.assert_called_with(['ecl', 'run', '-v', '--server=localhost',
                                  '--port=8010', '--username=user',
                                  '--password=a\nb',
