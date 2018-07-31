@@ -274,7 +274,7 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
         Number of concurrent threads to use when downloading file.
         Warning: too many may cause either your machine or
         your cluster to crash! 15 by default.
-    chunk_size: int, optional.
+    chunk_size: int, optional
         Size of chunks to use when downloading file. 10000 by
         default.
     max_attempts: int, optional
@@ -285,7 +285,7 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
             Maximum time, in seconds, to sleep between attempts.
             The true sleep time is a random int between 0 and
             `max_sleep`.
-    dtype: type name or dict of col -> type, optional.
+    dtype: type name or dict of col -> type, optional
         Data type for data or columns. E.g. {‘a’: np.float64, ‘b’:
         np.int32}. If converters are specified, they will be applied
         INSTEAD of dtype conversion. If None, or columns are missing
