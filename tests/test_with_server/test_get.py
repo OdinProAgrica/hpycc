@@ -204,7 +204,7 @@ class TestGetOutputWithServer(unittest.TestCase):
     def test_get_output_stored_variables_change_output_same_type_string(self):
         script_one = "str := 'xyz' : STORED('str'); str + str;"
         result = _get_output_from_ecl_string(self.conn, script_one,
-                                              stored={'a': 'Hello'})
+                                              stored={'str': 'Hello'})
         expected = pd.DataFrame({"Result_1": ["HelloHello"]})
         pd.testing.assert_frame_equal(expected, result)
 
@@ -372,23 +372,29 @@ class TestGetOutputsWithServer(unittest.TestCase):
 
     def test_get_outputs_stored_variables_change_output_same_type(self):
         script_one = ("a := 'abc' : STORED('a'); b := FALSE : STORED('b'); "
-                      "c := 'ghi' : STORED('c'); a; b; c;")
-        script_two = "a := 'Hello'; b := true; c := 24601; a; b; c;"
-        result = _get_outputs_from_ecl_string(self.conn, script_one,
-                                              stored={'a': 'Hello', 'b': True,
-                                                      'c': 24601})
-        expected = _get_outputs_from_ecl_string(self.conn, script_two)
+                      "c := 546 : STORED('c'); a + a; b AND TRUE; c + c;")
+        result = _get_outputs_from_ecl_string(
+            self.conn, script_one,
+            stored={'a': 'Hello', 'b': True, 'c': 24601})
+        expected = {
+            "Result_1": pd.DataFrame({"Result_1": ["HelloHello"]}),
+            "Result_2": pd.DataFrame({"Result_2": [True]}),
+            "Result_3": pd.DataFrame({"Result_3": [49202]})
+                    }
         for df in expected:
             pd.testing.assert_frame_equal(result[df], expected[df])
 
     def test_get_outputs_stored_wrong_key_inputs(self):
         script_one = ("a := 'abc' : STORED('a'); b := FALSE : STORED('b'); "
                       "c := 'ghi' : STORED('c'); a; b; c;")
-        script_two = "a := 'abc'; b := FALSE; c := 'ghi'; a; b; c;"
         result = _get_outputs_from_ecl_string(self.conn, script_one,
                                               stored={'d': 'Why', 'e': 'Not',
                                                       'f': 'Zoidberg'})
-        expected = _get_outputs_from_ecl_string(self.conn, script_two)
+        expected = {
+            "Result_1": pd.DataFrame({"Result_1": ["abc"]}),
+            "Result_2": pd.DataFrame({"Result_2": [False]}),
+            "Result_3": pd.DataFrame({"Result_3": ["ghi"]})
+                    }
         for df in expected:
             pd.testing.assert_frame_equal(result[df], expected[df])
 
