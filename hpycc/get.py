@@ -298,9 +298,9 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
     >>> hpycc.spray_file(conn, "example.csv", "example")
     >>> hpycc.get_logical_file(conn, "example")
         col1
-    0     '1'
-    1     '2'
-    2     '3'
+    0     1
+    1     2
+    2     3
 
     >>> import hpycc
     >>> import pandas
@@ -308,11 +308,11 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
     >>> df = pandas.DataFrame({"col1": [1, 2, 3]})
     >>> df.to_csv("example.csv", index=False)
     >>> hpycc.spray_file(conn, "example.csv", "example")
-    >>> hpycc.get_logical_file(conn, "example", dtype=int)
+    >>> hpycc.get_logical_file(conn, "example", dtype=str)
         col1
-    0     1
-    1     2
-    2     3
+    0     '1'
+    1     '2'
+    2     '3'
 
     """
     url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
