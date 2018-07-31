@@ -251,7 +251,7 @@ def get_logical_file(*args, **kwargs):
 
     """
     _ = kwargs
-    __ = args
+    _ = args
     raise ImportError("This function has been deprecated, use get_thor_file "
                       "instead.")
 
