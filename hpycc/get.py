@@ -244,13 +244,14 @@ def get_outputs(connection, script, syntax_check=True, delete_workunit=True,
     return as_dict
 
 
-def get_logical_file(**kwargs):
+def get_logical_file(*args, **kwargs):
     """
     .. deprecated:: 0.1.3
         `get_logical_file` has been deprecated. Use `get_thor_file`.
 
     """
     _ = kwargs
+    __ = args
     raise ImportError("This function has been deprecated, use get_thor_file "
                       "instead.")
 
