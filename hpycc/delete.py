@@ -19,7 +19,8 @@ def delete_logical_file(connection, logical_file, delete_workunit=True):
     script = "IMPORT std; STD.File.DeleteLogicalFile('{}');".format(
         logical_file)
 
-    connection.run_ecl_string(script, True, delete_workunit=delete_workunit)
+    connection.run_ecl_string(script, True, delete_workunit=delete_workunit,
+                              stored={})
 
 
 def delete_workunit(connection, wuid, max_attempts=3, max_sleep=5):

@@ -4,11 +4,11 @@ import os
 
 import hpycc.get
 import hpycc.utils.parsers
-from hpycc import get_output, get_logical_file
+from hpycc import get_output, get
 
 
 def save_output(connection, script, path_or_buf=None, syntax_check=True,
-                delete_workunit=True, **kwargs):
+                delete_workunit=True, stored=None, **kwargs):
     """
     Save the first output of an ECL script as a csv. See
     save_outputs() for saving multiple outputs to file and
@@ -26,8 +26,12 @@ def save_output(connection, script, path_or_buf=None, syntax_check=True,
     :param syntax_check: bool, optional
         Should script be syntax checked before execution. True by
         default.
-    delete_workunit: bool, optional
+    :param delete_workunit: bool, optional
         Delete workunit once completed. True by default.
+    stored : dict or None, optional
+        Key value pairs to replace stored variables within the
+        script. Values should be str, int or bool. None by default.
+
     :param kwargs
         Additional parameters to be provided to
         pandas.DataFrame.to_csv().
@@ -39,13 +43,14 @@ def save_output(connection, script, path_or_buf=None, syntax_check=True,
     """
     result = get_output(connection=connection, script=script,
                         syntax_check=syntax_check,
-                        delete_workunit=delete_workunit)
+                        delete_workunit=delete_workunit,
+                        stored=stored)
     return result.to_csv(path_or_buf=path_or_buf, **kwargs)
 
 
 def save_outputs(connection, script, directory=".", filenames=None,
                  prefix=None, syntax_check=True, delete_workunit=True,
-                 **kwargs):
+                 stored=None, **kwargs):
     """
     Save all outputs of an ECL script as csvs. See get_outputs()
     for returning DataFrames and save_output() for writing a single
@@ -53,7 +58,7 @@ def save_outputs(connection, script, directory=".", filenames=None,
 
     Parameters
     ----------
-    connection: hpycc.Connection
+    :param connection: hpycc.Connection
         HPCC Connection instance, see also `Connection`.
     :param script: str
          Path of script to execute.
@@ -68,9 +73,13 @@ def save_outputs(connection, script, directory=".", filenames=None,
     :param syntax_check: bool, optional
         Should the script be syntax checked before execution. True by
         default.
-    delete_workunit: bool, optional
+    :param delete_workunit: bool, optional
         Delete workunit once completed. True by default.
-    :param kwargs:
+    stored : dict or None, optional
+        Key value pairs to replace stored variables within the
+        script. Values should be str, int or bool. None by default.
+
+    :param kwargs
         Additional parameters to be provided to
         pandas.DataFrame.to_csv().
 
@@ -79,7 +88,8 @@ def save_outputs(connection, script, directory=".", filenames=None,
     -------
     :return: None
     """
-    result = connection.run_ecl_script(script, syntax_check, delete_workunit)
+    result = connection.run_ecl_script(script, syntax_check, delete_workunit,
+                                       stored)
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
     results = re.findall(regex, result.stdout)
     parsed_data_frames = [(name, hpycc.utils.parsers.parse_xml(xml))
@@ -142,7 +152,7 @@ def save_logical_file(connection, logical_file, path_or_buf, csv=False,
         representation of the output csv.
     """
 
-    file = get_logical_file(connection, logical_file, csv, max_workers,
+    file = get.get_logical_file(connection, logical_file, csv, max_workers,
                             chunk_size, max_attempts)
 
     return file.to_csv(path_or_buf, **kwargs)

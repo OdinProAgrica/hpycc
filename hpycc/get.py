@@ -25,7 +25,8 @@ from hpycc.utils import filechunker
 from hpycc.utils.parsers import parse_xml, parse_schema_from_xml, Schema
 
 
-def get_output(connection, script, syntax_check=True, delete_workunit=True):
+def get_output(connection, script, syntax_check=True, delete_workunit=True,
+               stored=None):
     """
     Return the first output of an ECL script as a pandas.DataFrame.
 
@@ -46,6 +47,10 @@ def get_output(connection, script, syntax_check=True, delete_workunit=True):
         default.
     delete_workunit: bool, optional
         Delete workunit once completed. True by default.
+    stored : dict or None, optional
+        Key value pairs to replace stored variables within the
+        script. Values should be str, int or bool. None by default.
+
 
     Returns
     -------
@@ -105,7 +110,9 @@ def get_output(connection, script, syntax_check=True, delete_workunit=True):
 
     """
 
-    result = connection.run_ecl_script(script, syntax_check, delete_workunit)
+    result = connection.run_ecl_script(script, syntax_check, delete_workunit,
+                                       stored)
+
     result = result.stdout.replace("\r\n", "")
 
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
@@ -121,7 +128,8 @@ def get_output(connection, script, syntax_check=True, delete_workunit=True):
         return parsed
 
 
-def get_outputs(connection, script, syntax_check=True, delete_workunit=True):
+def get_outputs(connection, script, syntax_check=True, delete_workunit=True,
+                stored=None):
     """
     Return all outputs of an ECL script.
 
@@ -140,6 +148,9 @@ def get_outputs(connection, script, syntax_check=True, delete_workunit=True):
         default.
     delete_workunit: bool,
        Delete the workunit once completed. True by default.
+    stored : dict or None, optional
+        Key value pairs to replace stored variables within the
+        script. Values should be str, int or bool. None by default.
 
     Returns
     -------
@@ -218,7 +229,8 @@ def get_outputs(connection, script, syntax_check=True, delete_workunit=True):
     }
 
     """
-    result = connection.run_ecl_script(script, syntax_check, delete_workunit)
+    result = connection.run_ecl_script(script, syntax_check, delete_workunit,
+                                       stored)
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.*?)</Dataset>"
 
     result = result.stdout.replace("\r\n", "")
@@ -232,13 +244,14 @@ def get_outputs(connection, script, syntax_check=True, delete_workunit=True):
     return as_dict
 
 
-def get_logical_file(**kwargs):
+def get_logical_file(*args, **kwargs):
     """
     .. deprecated:: 0.1.3
         `get_logical_file` has been deprecated. Use `get_thor_file`.
 
     """
     _ = kwargs
+    _ = args
     raise ImportError("This function has been deprecated, use get_thor_file "
                       "instead.")
 
@@ -261,7 +274,7 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
         Number of concurrent threads to use when downloading file.
         Warning: too many may cause either your machine or
         your cluster to crash! 15 by default.
-    chunk_size: int, optional.
+    chunk_size: int, optional
         Size of chunks to use when downloading file. 10000 by
         default.
     max_attempts: int, optional
@@ -272,7 +285,7 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
             Maximum time, in seconds, to sleep between attempts.
             The true sleep time is a random int between 0 and
             `max_sleep`.
-    dtype: type name or dict of col -> type, optional.
+    dtype: type name or dict of col -> type, optional
         Data type for data or columns. E.g. {‘a’: np.float64, ‘b’:
         np.int32}. If converters are specified, they will be applied
         INSTEAD of dtype conversion. If None, or columns are missing

@@ -64,7 +64,8 @@ class TestConnectionRunECLScriptWithServer(unittest.TestCase):
             with open(p, "w+") as file:
                 file.write(good_script)
             self.assertTrue(conn.run_ecl_script(p, syntax_check=False,
-                                                delete_workunit=False))
+                                                delete_workunit=False,
+                                                stored={}))
 
     def test_run_script_returns_correct_tuple(self):
         conn = hpycc.Connection("user", test_conn=False)
@@ -87,7 +88,8 @@ class TestConnectionRunECLScriptWithServer(unittest.TestCase):
             with open(p, "w+") as file:
                 file.write(good_script)
             result = conn.run_ecl_script(p, syntax_check=False,
-                                         delete_workunit=False)
+                                         delete_workunit=False,
+                                         stored={})
         self.assertEqual(result.__class__.__name__, "Result")
         stdout_output = re.sub("path (.+?)eclcc", 'path ',
                                result.stdout)
@@ -105,21 +107,21 @@ class TestConnectionRunECLScriptWithServer(unittest.TestCase):
         conn = hpycc.Connection("user", test_conn=False)
         with self.assertRaises(subprocess.SubprocessError):
             conn.run_ecl_script("test.ecl", syntax_check=False,
-                                delete_workunit=False)
+                                delete_workunit=False, stored={})
 
     @patch.object(hpycc.connection.delete, "delete_workunit")
-    def test_run_ecl_string_runs_delete_workunit_if_true(self, mock):
+    def test_run_ecl_script_runs_delete_workunit_if_true(self, mock):
         conn = hpycc.Connection("user", test_conn=False)
         script = "OUTPUT(2);"
         with TemporaryDirectory() as d:
             p = os.path.join(d, "test.ecl")
             with open(p, "w+") as file:
                 file.write(script)
-            conn.run_ecl_script(p, False, True)
+            conn.run_ecl_script(p, False, True, {})
         mock.assert_called()
 
     @patch.object(hpycc.connection.delete, "delete_workunit")
-    def test_get_run_ecl_string_doesnt_run_delete_workunit_if_false(
+    def test_get_run_ecl_script_doesnt_run_delete_workunit_if_false(
             self, mock):
         conn = hpycc.Connection("user", test_conn=False)
         script = "OUTPUT(2);"
@@ -127,8 +129,113 @@ class TestConnectionRunECLScriptWithServer(unittest.TestCase):
             p = os.path.join(d, "test.ecl")
             with open(p, "w+") as file:
                 file.write(script)
-            conn.run_ecl_script(p, False, False)
+            conn.run_ecl_script(p, False, False, {})
         self.assertFalse(mock.called)
+
+    def test_run_ecl_script_stored_variables_change_outputs_all_types(self):
+        conn = hpycc.Connection("user", test_conn=False)
+
+        script = ("a := 'abc' : STORED('a'); b := FALSE : STORED('b'); "
+                  "c := 546 : STORED('c'); a + a; b AND TRUE; c + c;")
+
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(script)
+            result = conn.run_ecl_script(
+                p, True, True, stored={'a': 'Hello', 'b': True, 'c': 24601})
+
+        result_stdout = str(result.stdout)
+
+        res1 = re.search(r'<Row><Result_1>(.*?)</Result_1>',
+                         result_stdout).group(1)
+
+        res2 = re.search(r'<Row><Result_2>(.*?)</Result_2>',
+                         result_stdout).group(1)
+
+        res3 = re.search(r'<Row><Result_3>(.*?)</Result_3>',
+                         result_stdout).group(1)
+
+        expected1 = 'HelloHello'
+        expected2 = 'true'
+        expected3 = '49202'
+
+        self.assertEqual(res1, expected1)
+        self.assertEqual(res2, expected2)
+        self.assertEqual(res3, expected3)
+
+    def test_run_ecl_script_outputs_stored_wrong_key_inputs(self):
+        conn = hpycc.Connection("user", test_conn=False)
+
+        script = ("a := 'abc' : STORED('a'); b := FALSE : STORED('b'); "
+                  "c := 12345 : STORED('c'); a; b; c;")
+
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(script)
+            result = conn.run_ecl_script(
+                p, True, True, stored={'d': 'Why', 'e': 'Not',
+                                       'f': 'Zoidberg'})
+
+        result_stdout = str(result.stdout)
+
+        res1 = re.search(r'<Row><Result_1>(.*?)</Result_1>',
+                         result_stdout).group(1)
+
+        res2 = re.search(r'<Row><Result_2>(.*?)</Result_2>',
+                         result_stdout).group(1)
+
+        res3 = re.search(r'<Row><Result_3>(.*?)</Result_3>',
+                         result_stdout).group(1)
+
+        expected1 = 'abc'
+        expected2 = 'false'
+        expected3 = '12345'
+
+        self.assertEqual(res1, expected1)
+        self.assertEqual(res2, expected2)
+        self.assertEqual(res3, expected3)
+
+    def test_run_ecl_script_passes_with_missing_stored(self):
+        conn = hpycc.Connection("user", test_conn=False)
+        script = "str := 'xyz' : STORED('str'); str + str;"
+
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(script)
+            result = conn.run_ecl_script(
+                p, True, True, stored=None)
+
+        result_stdout = str(result.stdout)
+
+        res1 = re.search(r'<Row><Result_1>(.*?)</Result_1>',
+                         result_stdout).group(1)
+        expected1 = 'xyzxyz'
+
+        self.assertEqual(res1, expected1)
+
+    def test_run_ecl_script_output_changes_single_stored_value(self):
+
+        conn = hpycc.Connection("user", test_conn=False)
+
+        script = ("str_1 := 'xyz' : STORED('str_1'); str_2 := 'xyz' : "
+                  "STORED('str_2'); str_1 + str_2;")
+
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(script)
+            result = conn.run_ecl_script(
+                p, True, True, stored={"str_1": "abc"})
+
+        result_stdout = str(result.stdout)
+
+        res1 = re.search(r'<Row><Result_1>(.*?)</Result_1>',
+                         result_stdout).group(1)
+        expected1 = 'abcxyz'
+        self.assertEqual(res1, expected1)
 
 
 class TestRunURLRequestWithServer(unittest.TestCase):
@@ -195,7 +302,8 @@ class TestConnectionRunECLStringWithServer(unittest.TestCase):
         ])
         conn = hpycc.Connection("user", test_conn=False)
         result = conn.run_ecl_string("OUTPUT(2);", syntax_check=True,
-                                     delete_workunit=False)
+                                     delete_workunit=False,
+                                     stored={})
         self.assertEqual(result.__class__.__name__, "Result")
         stdout_output = re.sub("path (.+?)eclcc", 'path ',
                                result.stdout)
@@ -213,7 +321,7 @@ class TestConnectionRunECLStringWithServer(unittest.TestCase):
     def test_run_ecl_string_runs_delete_workunit_if_true(self, mock):
         script = "OUTPUT(2);"
         conn = hpycc.Connection("user", test_conn=False)
-        conn.run_ecl_string(script, False, True)
+        conn.run_ecl_string(script, False, True, {})
         mock.assert_called()
 
     @patch.object(hpycc.connection.delete, "delete_workunit")
@@ -221,5 +329,86 @@ class TestConnectionRunECLStringWithServer(unittest.TestCase):
             self, mock):
         script = "OUTPUT(2);"
         conn = hpycc.Connection("user", test_conn=False)
-        conn.run_ecl_string(script, False, False)
+        conn.run_ecl_string(script, False, False, {})
         self.assertFalse(mock.called)
+
+    def test_run_ecl_string_stored_variables_change_outputs_all_types(self):
+        conn = hpycc.Connection("user", test_conn=False)
+
+        string = ("a := 'abc' : STORED('a'); b := FALSE : STORED('b'); "
+                  "c := 546 : STORED('c'); a + a; b AND TRUE; c + c;")
+
+        result = conn.run_ecl_string(string, True, True,
+                                     stored={'a': 'Hello', 'b': True,
+                                             'c': 24601})
+
+        result_stdout = str(result.stdout)
+
+        res1 = re.search(r'<Row><Result_1>(.*?)</Result_1>',
+                         result_stdout).group(1)
+
+        res2 = re.search(r'<Row><Result_2>(.*?)</Result_2>',
+                         result_stdout).group(1)
+
+        res3 = re.search(r'<Row><Result_3>(.*?)</Result_3>',
+                         result_stdout).group(1)
+
+        expected1 = 'HelloHello'
+        expected2 = 'true'
+        expected3 = '49202'
+
+        self.assertEqual(res1, expected1)
+        self.assertEqual(res2, expected2)
+        self.assertEqual(res3, expected3)
+
+    def test_run_ecl_string_outputs_stored_wrong_key_inputs(self):
+        conn = hpycc.Connection("user", test_conn=False)
+
+        string = ("a := 'abc' : STORED('a'); b := FALSE : STORED('b'); "
+                  "c := 12345 : STORED('c'); a; b; c;")
+
+        result = conn.run_ecl_string(string, True, True,
+                                     stored={'d': 'Why', 'e': 'Not',
+                                             'f': 'Zoidberg'})
+
+        result_stdout = str(result.stdout)
+
+        res1 = re.search(r'<Row><Result_1>(.*?)</Result_1>',
+                         result_stdout).group(1)
+
+        res2 = re.search(r'<Row><Result_2>(.*?)</Result_2>',
+                         result_stdout).group(1)
+
+        res3 = re.search(r'<Row><Result_3>(.*?)</Result_3>',
+                         result_stdout).group(1)
+        expected1 = 'abc'
+        expected2 = 'false'
+        expected3 = '12345'
+
+        self.assertEqual(res1, expected1)
+        self.assertEqual(res2, expected2)
+        self.assertEqual(res3, expected3)
+
+    def test_run_ecl_string_passes_with_missing_stored(self):
+        conn = hpycc.Connection("user", test_conn=False)
+        string = "str := 'xyz' : STORED('str'); str + str;"
+
+        result = conn.run_ecl_string(string, True, True, stored=None)
+        result_stdout = str(result.stdout)
+        res1 = re.search(r'<Row><Result_1>(.*?)</Result_1>',
+                         result_stdout).group(1)
+        expected1 = 'xyzxyz'
+        self.assertEqual(res1, expected1)
+
+    def test_run_ecl_string_output_changes_single_stored_value(self):
+        conn = hpycc.Connection("user", test_conn=False)
+        string = ("str_1 := 'xyz' : STORED('str_1'); str_2 := 'xyz' : "
+                  "STORED('str_2'); str_1 + str_2;")
+
+        result = conn.run_ecl_string(string, True, True,
+                                     stored={"str_1": "abc"})
+        result_stdout = str(result.stdout)
+        res1 = re.search(r'<Row><Result_1>(.*?)</Result_1>',
+                         result_stdout).group(1)
+        expected1 = 'abcxyz'
+        self.assertEqual(res1, expected1)

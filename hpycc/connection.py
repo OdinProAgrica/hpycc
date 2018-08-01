@@ -172,7 +172,8 @@ class Connection:
 
         self._run_command(base_cmd)
 
-    def run_ecl_script(self, script, syntax_check, delete_workunit):
+    def run_ecl_script(self, script, syntax_check, delete_workunit,
+                       stored):
         """
         Run an ECL script and return the stdout and stderr.
 
@@ -191,6 +192,9 @@ class Connection:
             executed.
         delete_workunit: bool
             Delete workunit once completed.
+        stored : dict or None
+            Key value pairs to replace stored variables within the
+            script. Values should be str, int or bool.
 
         Returns
         -------
@@ -208,13 +212,24 @@ class Connection:
         run_ecl_string
 
         """
-        pw = "{} ".format(self.password)
-        legacy = "-legacy " if self.legacy else ""
-        repo = " -I={}".format(self.repo) if self.repo else ""
 
-        base_cmd = ("ecl run -v --server {} --port {} --username {} "
-                    "--password={}{}thor {}{}").format(
-            self.server, self.port, self.username, pw, legacy, script, repo)
+        base_cmd = ['ecl', 'run', '-v', '--server={}'.format(self.server),
+                    '--port={}'.format(self.port),
+                    '--username={}'.format(self.username),
+                    '--password={}'.format(self.password)]
+
+        if self.legacy:
+            base_cmd += ['-legacy']
+
+        base_cmd += ['thor', script]
+
+        if self.repo:
+            base_cmd += ['-I={}'.format(self.repo)]
+
+        stored = stored or {}
+        for key, value in stored.items():
+            string = '-X{}={}'.format(key, value)
+            base_cmd.append(string)
 
         if syntax_check:
             self.check_syntax(script)
@@ -323,7 +338,7 @@ class Connection:
             raise KeyError("json is : {}".format(rj))
         return result_response
 
-    def run_ecl_string(self, string, syntax_check, delete_workunit):
+    def run_ecl_string(self, string, syntax_check, delete_workunit, stored):
         """
         Run an ECL string and return the stdout and stderr.
 
@@ -342,6 +357,11 @@ class Connection:
             executed.
         delete_workunit: bool
             Delete workunit once completed.
+        stored : dict or None
+            Key value pairs to replace stored variables within the
+            script. Values should be str, int or bool.
+
+
 
         Returns
         -------
@@ -364,5 +384,5 @@ class Connection:
             with open(p, "w+") as file:
                 file.write(string)
 
-            r = self.run_ecl_script(p, syntax_check, delete_workunit)
+            r = self.run_ecl_script(p, syntax_check, delete_workunit, stored)
         return r

@@ -37,7 +37,8 @@ def _spray_stringified_data(connection, data, record_set, logical_file,
     if overwrite:
         script_content += ", OVERWRITE"
     script_content += ");"
-    connection.run_ecl_string(script_content, True, delete_workunit)
+    connection.run_ecl_string(script_content, True, delete_workunit,
+                              stored=None)
 
 
 def _get_type(typ):
@@ -223,4 +224,5 @@ def concatenate_logical_files(connection, to_concat, logical_file, record_set,
     script += ");"
     script = script.format(read_files, logical_file)
 
-    connection.run_ecl_string(script, True, delete_workunit)
+    connection.run_ecl_string(script, True, delete_workunit=delete_workunit,
+                              stored=None)
