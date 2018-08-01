@@ -79,20 +79,28 @@ class TestRunWithServer(unittest.TestCase):
     def test_run_script_uses_stored(self):
         conn = hpycc.Connection("user", test_conn=False)
         file_name = "test_run_script_uses_stored"
-        good_script = "str := 'abc' : STORED('str'); z := DATASET([{{str + str}}], {{STRING str;}}); OUTPUT(z,,'~{}', EXPIRE(1));".format(file_name)
+        good_script = "str := 'abc' : STORED('str'); " \
+                      "z := DATASET([{{str + str}}], {{STRING str;}}); " \
+                      "OUTPUT(z,,'~{}', EXPIRE(1));".format(file_name)
         with TemporaryDirectory() as d:
             p = os.path.join(d, "test.ecl")
             with open(p, "w+") as file:
                 file.write(good_script)
-            hpycc.run_script(conn, p, stored={'str': 'Shouldbethecorrectoutput'})
+            hpycc.run_script(conn, p,
+                             stored={'str': 'Shouldbethecorrectoutput'})
         res = hpycc.get_thor_file(conn, file_name)
-        expected = pd.DataFrame({"str": ["ShouldbethecorrectoutputShouldbethecorrectoutput"], "__fileposition__": [0]})
+        expected = pd.DataFrame({
+            "str": ["ShouldbethecorrectoutputShouldbethecorrectoutput"],
+            "__fileposition__": [0]})
         pd.testing.assert_frame_equal(expected, res, check_dtype=False)
 
     def test_run_script_does_nothing_when_not_using_stored_(self):
         conn = hpycc.Connection("user", test_conn=False)
         file_name = "test_run_script_does_nothing_when_not_using_stored_"
-        good_script = "str := 'abc' : STORED('str'); z := DATASET([{{str + str}}], {{STRING str;}}); OUTPUT(z,,'~{}', EXPIRE(1));".format(
+        good_script = "str := 'abc' : STORED('str');" \
+                      " z := DATASET([{{str + str}}]," \
+                      " {{STRING str;}}); OUTPUT(z,,'~{}', " \
+                      "EXPIRE(1));".format(
             file_name)
 
         with TemporaryDirectory() as d:

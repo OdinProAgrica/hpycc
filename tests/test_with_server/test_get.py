@@ -204,28 +204,28 @@ class TestGetOutputWithServer(unittest.TestCase):
     def test_get_output_stored_variables_change_output_same_type_string(self):
         script_one = "str := 'xyz' : STORED('str'); str + str;"
         result = _get_output_from_ecl_string(self.conn, script_one,
-                                              stored={'str': 'Hello'})
+                                             stored={'str': 'Hello'})
         expected = pd.DataFrame({"Result_1": ["HelloHello"]})
         pd.testing.assert_frame_equal(expected, result)
 
     def test_get_output_stored_variables_change_output_same_type_int(self):
         script_one = "a :=  123 : STORED('a'); a * 2;"
         result = _get_output_from_ecl_string(self.conn, script_one,
-                                              stored={'a': 24601})
+                                             stored={'a': 24601})
         expected = pd.DataFrame({"Result_1": [49202]})
         pd.testing.assert_frame_equal(expected, result)
 
     def test_get_output_stored_variables_change_output_same_type_bool(self):
         script_one = "a := FALSE : STORED('a'); a AND TRUE;"
         result = _get_output_from_ecl_string(self.conn, script_one,
-                                              stored={'a': True})
+                                             stored={'a': True})
         expected = pd.DataFrame({"Result_1": [True]})
         pd.testing.assert_frame_equal(expected, result)
 
     def test_get_output_stored_wrong_key_inputs(self):
         script_one = "a := 'abc' : STORED('a'); a;"
         result = _get_output_from_ecl_string(self.conn, script_one,
-                                              stored={'f': 'WhyNotZoidberg'})
+                                             stored={'f': 'WhyNotZoidberg'})
         expected = pd.DataFrame({"Result_1": ['abc']})
         pd.testing.assert_frame_equal(expected, result)
 
@@ -408,7 +408,8 @@ class TestGetThorFile(unittest.TestCase):
             "a := DATASET([], {INTEGER int;}); "
             "OUTPUT(a,,'~test_get_thor_file_returns_empty_dataset');",
             True,
-            True
+            True,
+            None
         )
         res = get_thor_file(
             connection=self.conn,
@@ -421,7 +422,8 @@ class TestGetThorFile(unittest.TestCase):
             "a := DATASET([{1}], {INTEGER int;}); "
             "OUTPUT(a,,'~test_get_thor_file_returns_single_row_dataset');",
             True,
-            True
+            True,
+            None
         )
         res = get_thor_file(
             connection=self.conn,
@@ -437,7 +439,8 @@ class TestGetThorFile(unittest.TestCase):
             "OUTPUT(a,,'~test_get_thor_file_returns_100_row_dataset');".format(
                 lots_of_1s),
             True,
-            True
+            True,
+            None
         )
         res = get_thor_file(
             connection=self.conn,
@@ -455,7 +458,8 @@ class TestGetThorFile(unittest.TestCase):
             "a := DATASET([{{1}}], {{INTEGER int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
             True,
-            True
+            True,
+            None
         )
         res = get_thor_file(
             connection=self.conn, thor_file=file_name, chunk_size=2)
@@ -469,7 +473,8 @@ class TestGetThorFile(unittest.TestCase):
             "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
             True,
-            True
+            True,
+            None
         )
         res = get_thor_file(
             connection=self.conn, thor_file=file_name, chunk_size=2)
@@ -484,16 +489,17 @@ class TestGetThorFile(unittest.TestCase):
             "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
             True,
-            True
+            True,
+            None
         )
         res = get_thor_file(
             connection=self.conn,
             thor_file=file_name, chunk_size=1)
         expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]},
                                 dtype=np.int32)
-        res = res.sort_values("__fileposition__")
+        res = res.sort_values("__fileposition__").reset_index(drop=True)
         pd.testing.assert_frame_equal(
-            expected, res)
+            expected, res, check_dtype=False)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_get_thor_file_chunks_when_num_rows_less_than_chunksize(
@@ -505,7 +511,8 @@ class TestGetThorFile(unittest.TestCase):
             "a := DATASET([{{1}}], {{INTEGER int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
             True,
-            True
+            True,
+            None
         )
         get_thor_file(
             connection=self.conn, thor_file=file_name, chunk_size=3)
@@ -520,7 +527,8 @@ class TestGetThorFile(unittest.TestCase):
             "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
             True,
-            True
+            True,
+            None
         )
         get_thor_file(
             connection=self.conn, thor_file=file_name, chunk_size=2)
@@ -536,7 +544,8 @@ class TestGetThorFile(unittest.TestCase):
            "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
            "OUTPUT(a,,'~{}');".format(file_name),
            True,
-           True
+           True,
+           None
         )
         get_thor_file(
             connection=self.conn, thor_file=file_name, chunk_size=1)
@@ -554,7 +563,8 @@ class TestGetThorFile(unittest.TestCase):
            "a := DATASET([{}], {{INTEGER int;}}); "
            "OUTPUT(a,,'~{}');".format(",".join(["{1}"]*10001), file_name),
            True,
-           True
+           True,
+           None
         )
         get_thor_file(
             connection=self.conn, thor_file=file_name)
@@ -570,7 +580,8 @@ class TestGetThorFile(unittest.TestCase):
             "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
             True,
-            True
+            True,
+            None
         )
         with self.assertRaises(ZeroDivisionError):
             get_thor_file(connection=self.conn, thor_file=file_name,
@@ -628,7 +639,8 @@ class TestGetThorFile(unittest.TestCase):
                 "a := DATASET([{{{}}}], {{{} {};}}); "
                 "OUTPUT(a,,'~{}');".format(t[2], t[0], t[1], file_name),
                 True,
-                True
+                True,
+                None
             )
             try:
                 expected_val = t[3]
@@ -690,7 +702,7 @@ class TestGetThorFile(unittest.TestCase):
                          "correctly_{}").format(t[1])
             s = ("a := DATASET([{{[{}]}}], {{SET OF {} {};}}); "
                  "OUTPUT(a,,'~{}');").format(t[2], t[0], t[1], file_name)
-            self.conn.run_ecl_string(s, True, False)
+            self.conn.run_ecl_string(s, True, False, None)
             try:
                 expected_val = t[3]
             except IndexError:
@@ -709,7 +721,8 @@ class TestGetThorFile(unittest.TestCase):
             "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
             True,
-            True
+            True,
+            None
         )
         get_thor_file(self.conn, file_name)
         mock.assert_called_with(max_workers=15)
@@ -722,7 +735,8 @@ class TestGetThorFile(unittest.TestCase):
             "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
             True,
-            True
+            True,
+            None
         )
         get_thor_file(self.conn, file_name, max_workers=2)
         mock.assert_called_with(max_workers=2)
@@ -735,7 +749,8 @@ class TestGetThorFile(unittest.TestCase):
             "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
             True,
-            False
+            False,
+            None
         )
         get_thor_file(self.conn, file_name)
         mock.assert_called_with(file_name, 0, 2, 3, 10)
@@ -748,7 +763,8 @@ class TestGetThorFile(unittest.TestCase):
             "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
             True,
-            False
+            False,
+            None
         )
         get_thor_file(self.conn, file_name, max_sleep=20)
         mock.assert_called_with(file_name, 0, 2, 3, 20)
@@ -761,7 +777,8 @@ class TestGetThorFile(unittest.TestCase):
             "a := DATASET([{{'1'}}, {{'2'}}], {{STRING int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
             True,
-            True
+            True,
+            None
         )
         res = get_thor_file(self.conn, file_name, dtype=int)
         expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 5]},
@@ -775,7 +792,8 @@ class TestGetThorFile(unittest.TestCase):
             "{{STRING str; BOOLEAN bool; INTEGER int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
             True,
-            True
+            True,
+            None
         )
         res = get_thor_file(
             self.conn, file_name, dtype={"str": int, "bool": bool, "int": str,
@@ -795,7 +813,8 @@ class TestGetThorFile(unittest.TestCase):
             "{{STRING str; BOOLEAN bool; INTEGER int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
             True,
-            True
+            True,
+            None
         )
         res = get_thor_file(self.conn, file_name,
                             dtype={"bool": bool, "int": str})
@@ -813,7 +832,8 @@ class TestGetThorFile(unittest.TestCase):
             "{{STRING str; BOOLEAN bool; INTEGER int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
             True,
-            True
+            True,
+            None
         )
         with self.assertRaises(KeyError):
             get_thor_file(self.conn, file_name,
@@ -823,7 +843,7 @@ class TestGetThorFile(unittest.TestCase):
         file_name = "test_get_thor_file_returns_a_set"
         s = ("a := DATASET([{{[1, 2, 3]}}], {{SET OF INTEGER set;}}); "
              "OUTPUT(a,,'~{}');").format(file_name)
-        self.conn.run_ecl_string(s, True, True)
+        self.conn.run_ecl_string(s, True, True, None)
         res = get_thor_file(self.conn, file_name)
         expected = pd.DataFrame({"set": [[1, 2, 3]], "__fileposition__": 0},
                                 dtype=np.int32)
