@@ -4,7 +4,7 @@ import os
 
 import hpycc.get
 import hpycc.utils.parsers
-from hpycc import get_output, get_logical_file
+from hpycc import get_output, get
 
 
 def save_output(connection, script, path_or_buf=None, syntax_check=True,
@@ -28,10 +28,9 @@ def save_output(connection, script, path_or_buf=None, syntax_check=True,
         default.
     :param delete_workunit: bool, optional
         Delete workunit once completed. True by default.
-    :param stored : dict
-         Dictionary of key value pairs do to replace stored
-         variables within ECL. Values can be str, int, bool.
-         Sets are known to not work.
+    stored : dict or None, optional
+        Key value pairs to replace stored variables within the
+        script. Values should be str, int or bool. None by default.
 
     :param kwargs
         Additional parameters to be provided to
@@ -76,10 +75,9 @@ def save_outputs(connection, script, directory=".", filenames=None,
         default.
     :param delete_workunit: bool, optional
         Delete workunit once completed. True by default.
-    :param  stored : dict
-         Dictionary of key value pairs do to replace stored
-         variables within ECL. Values can be str, int, bool.
-         Sets are known to not work.
+    stored : dict or None, optional
+        Key value pairs to replace stored variables within the
+        script. Values should be str, int or bool. None by default.
 
     :param kwargs
         Additional parameters to be provided to
@@ -154,7 +152,7 @@ def save_logical_file(connection, logical_file, path_or_buf, csv=False,
         representation of the output csv.
     """
 
-    file = get_logical_file(connection, logical_file, csv, max_workers,
+    file = get.get_logical_file(connection, logical_file, csv, max_workers,
                             chunk_size, max_attempts)
 
     return file.to_csv(path_or_buf, **kwargs)

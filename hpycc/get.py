@@ -10,9 +10,10 @@ Functions
 - `get_output` -- Return the first output of an ECL script.
 - `get_outputs` -- Return all outputs of an ECL script.
 - `get_logical_file` -- Return the contents of a logical file.
+- `get_thor_file` -- Return the contents of a thor file.
 
 """
-__all__ = ["get_output", "get_outputs", "get_logical_file"]
+__all__ = ["get_output", "get_outputs", "get_thor_file", "get_logical_file"]
 
 from concurrent.futures import ThreadPoolExecutor, wait
 import re
@@ -21,7 +22,7 @@ import warnings
 import pandas as pd
 
 from hpycc.utils import filechunker
-from hpycc.utils.parsers import parse_xml, parse_schema_from_xml
+from hpycc.utils.parsers import parse_xml, parse_schema_from_xml, Schema
 
 
 def get_output(connection, script, syntax_check=True, delete_workunit=True,
@@ -46,10 +47,9 @@ def get_output(connection, script, syntax_check=True, delete_workunit=True,
         default.
     delete_workunit: bool, optional
         Delete workunit once completed. True by default.
-    stored : dict
-         Dictionary of key value pairs do to replace stored
-         variables within ECL. Values can be str, int, bool.
-         Sets are known to not work.
+    stored : dict or None, optional
+        Key value pairs to replace stored variables within the
+        script. Values should be str, int or bool. None by default.
 
 
     Returns
@@ -148,11 +148,9 @@ def get_outputs(connection, script, syntax_check=True, delete_workunit=True,
         default.
     delete_workunit: bool,
        Delete the workunit once completed. True by default.
-    stored : dict
-         Dictionary of key value pairs do to replace stored
-         variables within ECL. Values can be str, int, bool.
-         Sets are known to not work.
-
+    stored : dict or None, optional
+        Key value pairs to replace stored variables within the
+        script. Values should be str, int or bool. None by default.
 
     Returns
     -------
@@ -246,13 +244,14 @@ def get_outputs(connection, script, syntax_check=True, delete_workunit=True,
     return as_dict
 
 
-def get_logical_file(**kwargs):
+def get_logical_file(*args, **kwargs):
     """
     .. deprecated:: 0.1.3
         `get_logical_file` has been deprecated. Use `get_thor_file`.
 
     """
     _ = kwargs
+    _ = args
     raise ImportError("This function has been deprecated, use get_thor_file "
                       "instead.")
 
@@ -260,10 +259,10 @@ def get_logical_file(**kwargs):
 def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
                   max_attempts=3, max_sleep=10, dtype=None):
     """
-    Return a logical thor file as a pandas.DataFrame.
+    Return a thor file as a pandas.DataFrame.
 
     Note: Ordering of the resulting DataFrame is
-    not deterministic and may not be the same as the logical file.
+    not deterministic and may not be the same as on the HPCC cluster.
 
     Parameters
     ----------
@@ -275,7 +274,7 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
         Number of concurrent threads to use when downloading file.
         Warning: too many may cause either your machine or
         your cluster to crash! 15 by default.
-    chunk_size: int, optional.
+    chunk_size: int, optional
         Size of chunks to use when downloading file. 10000 by
         default.
     max_attempts: int, optional
@@ -286,16 +285,17 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
             Maximum time, in seconds, to sleep between attempts.
             The true sleep time is a random int between 0 and
             `max_sleep`.
-    dtype: type name or dict of col -> type, optional.
+    dtype: type name or dict of col -> type, optional
         Data type for data or columns. E.g. {‘a’: np.float64, ‘b’:
         np.int32}. If converters are specified, they will be applied
-        INSTEAD of dtype conversion. If a dict is given, any
-        unspecified columns will be returned as str. Nine by default.
+        INSTEAD of dtype conversion. If None, or columns are missing
+        from the provided dict, they will be converted to one of
+        bool, str or int based on the HPCC datatype. None by default.
 
     Returns
     -------
     df: pandas.DataFrame
-        Logical file as a pandas.DataFrame.
+        Thor file as a pandas.DataFrame.
 
     See Also
     --------
@@ -311,9 +311,9 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
     >>> hpycc.spray_file(conn, "example.csv", "example")
     >>> hpycc.get_logical_file(conn, "example")
         col1
-    0     '1'
-    1     '2'
-    2     '3'
+    0     1
+    1     2
+    2     3
 
     >>> import hpycc
     >>> import pandas
@@ -321,11 +321,11 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
     >>> df = pandas.DataFrame({"col1": [1, 2, 3]})
     >>> df.to_csv("example.csv", index=False)
     >>> hpycc.spray_file(conn, "example.csv", "example")
-    >>> hpycc.get_logical_file(conn, "example", dtype=int)
+    >>> hpycc.get_logical_file(conn, "example", dtype=str)
         col1
-    0     1
-    1     2
-    2     3
+    0     '1'
+    1     '2'
+    2     '3'
 
     """
     url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
@@ -344,6 +344,11 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
 
     num_rows = wuresultresponse["Total"]
 
+    # if there are no rows to go and get, we should return an empty dataframe
+    if not num_rows:
+        cols = [c.name for c in schema]
+        return pd.DataFrame(columns=cols)
+
     chunks = filechunker.make_chunks(num_rows, chunk_size)
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -355,17 +360,27 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
 
         finished, _ = wait(futures)
 
-    results = (i.result() for i in finished)
+    results = [i.result() for i in finished]
     flat_list = (item for sublist in results for item in sublist)
 
     df = pd.DataFrame(flat_list)
+
+    # dtype is a dict
+    # we replace all those in the dict, then those not specified with schema
+    if not isinstance(dtype, dict) and dtype:
+            return df.astype(dtype)
+
+    schema_dict = {i.name: i for i in schema}
+
     if dtype:
-        return df.astype(dtype)
-    else:
-        for col in schema:
-            if col.is_set:
-                df[col.name] = df[col.name].map(
-                    lambda x: [col.type(i) for i in x["Item"]])
-            else:
-                df[col.name] = df[col.name].astype(col.type)
-        return df
+        i = {col: Schema(col, False, dtype[col]) for col in dtype}
+        schema_dict.update(i)
+
+    for col in schema_dict:
+        c = schema_dict[col]
+        if c.is_set:
+            df[c.name] = df[c.name].map(
+                lambda x: [c.type(i) for i in x["Item"]])
+        else:
+            df[c.name] = df[c.name].astype(c.type)
+    return df

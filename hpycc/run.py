@@ -4,9 +4,9 @@ Function to run an ECL script
 This module provides a function, `run_script`, to run an ECL script
 using an existing `Connection`. This can be used to run a script,
 saving a logical file which can then be accessing
-with get_file(). This method takes advantage using `hpycc.get`. This
-approach allows for multi-threading, something which script outputs
-cannot do.
+with `get_thor_file()`. This approach allows for multi-threading,
+something which functions in `get_output`, `get_outputs`,
+`save_output` and `save_outputs` cannot do.
 
 Functions
 ---------
@@ -35,11 +35,9 @@ def run_script(connection, script, syntax_check=True, delete_workunit=True,
         default.
     delete_workunit: bool, optional
         Delete workunit once completed. True by default.
-    stored : dict
-         Dictionary of key value pairs do to replace stored
-         variables within ECL. Values can be str, int, bool.
-         Sets are known to not work.
-
+    stored : dict or None, optional
+        Key value pairs to replace stored variables within the
+        script. Values should be str, int or bool. None by default.
 
     Returns
     -------
@@ -49,10 +47,6 @@ def run_script(connection, script, syntax_check=True, delete_workunit=True,
     ------
     subprocess.CalledProcessError:
         If script fails syntax check or during execution.
-
-    See Also
-    --------
-    Connection.run_ecl_string
 
     """
     connection.run_ecl_script(script, syntax_check, delete_workunit, stored)

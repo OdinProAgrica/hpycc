@@ -192,9 +192,9 @@ class Connection:
             executed.
         delete_workunit: bool
             Delete workunit once completed.
-        stored : dict
-            Dictionary of key value pairs do to replace stored
-            variables within ECL.
+        stored : dict or None
+            Key value pairs to replace stored variables within the
+            script. Values should be str, int or bool.
 
         Returns
         -------
@@ -271,7 +271,7 @@ class Connection:
 
         Returns
         -------
-        r: requests.models.
+        r: requests.models.Response
             Response object from `url`
 
         Raises
@@ -357,10 +357,10 @@ class Connection:
             executed.
         delete_workunit: bool
             Delete workunit once completed.
-        stored : dict
-            Dictionary of key value pairs do to replace stored
-            variables within ECL. Values can be str, int, bool.
-         Sets are known to not work.
+        stored : dict or None
+            Key value pairs to replace stored variables within the
+            script. Values should be str, int or bool.
+
 
 
         Returns
