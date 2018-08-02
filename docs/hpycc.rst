@@ -6,37 +6,19 @@ Subpackages
 
 .. toctree::
 
-    hpycc.filerunning
-    hpycc.scriptrunning
     hpycc.utils
 
 Submodules
 ----------
 
-hpycc\.get module
------------------
+.. toctree::
 
-.. automodule:: hpycc.get
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-hpycc\.run module
------------------
-
-.. automodule:: hpycc.run
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-hpycc\.send module
-------------------
-
-.. automodule:: hpycc.send
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
+   hpycc.connection
+   hpycc.delete
+   hpycc.get
+   hpycc.run
+   hpycc.save
+   hpycc.spray
 
 Module contents
 ---------------

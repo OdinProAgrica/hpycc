@@ -21,13 +21,19 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
+# to run, change the version number below. Then run:
+#  sphinx-apidoc ../hpycc -o . -f -e
+# make html
+
+version = '0.1.3'
+
 # See http://blog.rtwilson.com/how-to-make-your-sphinx-documentation-compile-with-readthedocs-when-youre-using-numpy-and-scipy/
-import mock
+#import mock
  
 # MOCK_MODULES = ['numpy', 'numpy.ma', 'scipy', 'scipy.stats']
-MOCK_MODULES = ['pandas']
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
+#MOCK_MODULES = ['pandas']
+#for mod_name in MOCK_MODULES:
+#    sys.modules[mod_name] = mock.Mock()
 
 # -- General configuration ------------------------------------------------
 
@@ -40,7 +46,9 @@ for mod_name in MOCK_MODULES:
 # ones.
 extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.todo',
-    'sphinx.ext.viewcode']
+    'sphinx.ext.viewcode',
+    "sphinx.ext.napoleon"
+              ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -64,7 +72,7 @@ author = 'Rob Mansfield (mansfieldbitter@gmail.com)'
 # built documents.
 #
 # The short X.Y version.
-version = ''
+
 # The full version, including alpha/beta/rc tags.
 release = ''
 

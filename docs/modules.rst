@@ -1,4 +1,4 @@
-HPyCC
+hpycc
 =====
 
 .. toctree::
