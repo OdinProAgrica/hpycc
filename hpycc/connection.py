@@ -118,10 +118,11 @@ class Connection:
             If the connection fails, the relevant exception is
             raised.
         """
-        with requests.get("http://{}:{}".format(self.server, self.port),
-                          auth=(self.username, self.password),
-                          timeout=5) as r:
-                    r.raise_for_status()
+        r = requests.get("http://{}:{}".format(self.server, self.port),
+                         auth=(self.username, self.password),
+                         timeout=5)
+        r.raise_for_status()
+
         return True
 
     @staticmethod
