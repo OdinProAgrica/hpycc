@@ -256,7 +256,7 @@ def get_logical_file(*args, **kwargs):
                       "instead.")
 
 
-def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10_000,
+def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10000,
                   max_attempts=3, max_sleep=10, dtype=None):
     """
     Return a thor file as a pandas.DataFrame.
