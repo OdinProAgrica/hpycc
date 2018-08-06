@@ -39,26 +39,26 @@ class Connection:
 
         Parameters
         ----------
-        username: str
+        username : str
             The username to provide to HPCC.
-        server: str, optional
+        server : str, optional
             The ip address of the HPCC instance in the form
             `XX.XX.XX.XX`. Note that neither `http://` nor the port
             number should be included. 'localhost' by default.
-        port: int, optional
+        port : int, optional
             The port number ECL Watch is running on on the HPCC
             instance. 8010 by default.
-        repo: str, list, None, optional
+        repo : str, list, None, optional
             A path to a location or locations to search for ecl
             imports. A single path can be a str, multiple paths
             should be in an iterable. None by default.
-        password: str
+        password : str
             Password to provide to HPCC alongside the username.
             "password" by default. Note: this cannot be blank.
-        legacy: bool, optional
+        legacy : bool, optional
             Should legacy flag should be enabled when executing ECL
             commands. False by default.
-        test_conn: bool, optional
+        test_conn : bool, optional
             Test connection to the server on initialisation.
             True by default.
 
