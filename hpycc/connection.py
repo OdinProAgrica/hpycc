@@ -12,7 +12,7 @@ Classes
 """
 __all__ = ["Connection"]
 
-from collections import namedtuple
+import collections
 import os
 import random
 import requests
@@ -48,9 +48,10 @@ class Connection:
         port: int, optional
             The port number ECL Watch is running on on the HPCC
             instance. 8010 by default.
-        repo: str, optional
-            A path to locations to search for ecl imports. None by
-            default.
+        repo: str, list, None, optional
+            A path to a location or locations to search for ecl
+            imports. A single path can be a str, multiple paths
+            should be in an iterable. None by default.
         password: str
             Password to provide to HPCC alongside the username.
             "password" by default. Note: this cannot be blank.
@@ -72,9 +73,10 @@ class Connection:
         port: int
             The port number ECL Watch is running on on the HPCC
             instance.
-        repo: str or None
-            A path to locations to search for ecl imports. May be
-            `None`.
+        repo: str, list-like or None, optional
+            A path to a location or locations to search for ecl
+            imports. A single path can be a str, multiple paths
+            should be in an iterable. None by default.
         password: str
             Password to provide to HPCC alongside the username.
         legacy: bool
@@ -138,7 +140,7 @@ class Connection:
         stderr = result.stderr.decode('utf-8')
         stdout = result.stdout.decode("utf-8")
 
-        Result = namedtuple("Result", ["stdout", "stderr"])
+        Result = collections.namedtuple("Result", ["stdout", "stderr"])
         result_tuple = Result(stdout, stderr)
         return result_tuple
 
@@ -167,11 +169,27 @@ class Connection:
             If the script fails the syntax check.
 
         """
-        legacy = "-legacy " if self.legacy else ""
-        repo = "-I={} ".format(self.repo) if self.repo else ""
-        base_cmd = "eclcc -syntax {}{}{}".format(legacy, repo, script)
+        b = ["eclcc", "-syntax"]
+        b += self._legacy_arg
+        b += self._repo_arg
+        b += [script]
 
-        self._run_command(base_cmd)
+        self._run_command(b)
+
+    @property
+    def _repo_arg(self):
+        r = [self.repo] if isinstance(self.repo, str) else self.repo
+        try:
+            return ["-I={}".format(repo) for repo in r]
+        except TypeError:
+            return []
+
+    @property
+    def _legacy_arg(self):
+        if self.legacy:
+            return ["-legacy"]
+        else:
+            return []
 
     def run_ecl_script(self, script, syntax_check, delete_workunit,
                        stored):
@@ -219,13 +237,10 @@ class Connection:
                     '--username={}'.format(self.username),
                     '--password={}'.format(self.password)]
 
-        if self.legacy:
-            base_cmd += ['-legacy']
+        base_cmd += self._legacy_arg
 
         base_cmd += ['thor', script]
-
-        if self.repo:
-            base_cmd += ['-I={}'.format(self.repo)]
+        base_cmd += self._repo_arg
 
         stored = stored or {}
         for key, value in stored.items():
@@ -361,8 +376,6 @@ class Connection:
         stored : dict or None
             Key value pairs to replace stored variables within the
             script. Values should be str, int or bool.
-
-
 
         Returns
         -------
