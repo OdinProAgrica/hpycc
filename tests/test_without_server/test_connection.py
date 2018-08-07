@@ -151,28 +151,29 @@ class TestConnectionCheckSyntax(unittest.TestCase):
         conn = hpycc.Connection("user", legacy=False, repo=None,
                                 test_conn=False)
         conn.check_syntax("non.ecl")
-        mock.assert_called_with("eclcc -syntax non.ecl")
+        mock.assert_called_with(["eclcc", "-syntax", "non.ecl"])
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_check_syntax_builds_correct_path_with_legacy(self, mock):
         conn = hpycc.Connection("user", legacy=True, repo=None,
                                 test_conn=False)
         conn.check_syntax("non.ecl")
-        mock.assert_called_with("eclcc -syntax -legacy non.ecl")
+        mock.assert_called_with(["eclcc", "-syntax", "-legacy", "non.ecl"])
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_check_syntax_builds_correct_path_with_legacy_and_repo(self, mock):
         conn = hpycc.Connection("user", legacy=True, repo="./dir",
                                 test_conn=False)
         conn.check_syntax("non.ecl")
-        mock.assert_called_with("eclcc -syntax -legacy -I=./dir non.ecl")
+        mock.assert_called_with(["eclcc", "-syntax", "-legacy", "-I=./dir",
+                                 "non.ecl"])
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_check_syntax_builds_correct_path_with_repo(self, mock):
         conn = hpycc.Connection("user", legacy=False, repo="./dir",
                                 test_conn=False)
         conn.check_syntax("non.ecl")
-        mock.assert_called_with("eclcc -syntax -I=./dir non.ecl")
+        mock.assert_called_with(["eclcc", "-syntax", "-I=./dir", "non.ecl"])
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_check_syntax_calls_run_command(self, mock):
@@ -187,6 +188,13 @@ class TestConnectionCheckSyntax(unittest.TestCase):
             with open(p, "w+") as file:
                 file.write("output(2);")
             self.assertIsNone(conn.check_syntax(p))
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_check_syntax_uses_repo_if_list(self, mock):
+        conn = hpycc.Connection("user", test_conn=False, repo=["C:", "D:"])
+        conn.check_syntax("test.ecl")
+        mock.assert_called_with(['eclcc', '-syntax', "-I=C:", "-I=D:",
+                                 'test.ecl'])
 
     def test_check_syntax_passes_with_warnings(self):
         conn = hpycc.Connection("user", test_conn=False)
@@ -291,6 +299,16 @@ class TestConnectionRunECLScript(unittest.TestCase):
                                  '--port=8010', '--username=user',
                                  '--password=password',
                                  'thor', 'test.ecl'])
+
+    @patch.object(hpycc.Connection, "_run_command")
+    def test_run_ecl_script_command_uses_repo_if_list(self, mock):
+        conn = hpycc.Connection("user", test_conn=False, repo=["C:", "D:"])
+        conn.run_ecl_script("test.ecl", syntax_check=False,
+                            delete_workunit=False, stored={})
+        mock.assert_called_with(['ecl', 'run', '-v', '--server=localhost',
+                                 '--port=8010', '--username=user',
+                                 '--password=password',
+                                 'thor', 'test.ecl', "-I=C:", "-I=D:"])
 
     @patch.object(hpycc.Connection, "_run_command")
     @patch.object(hpycc.Connection, "check_syntax")

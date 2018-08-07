@@ -217,7 +217,6 @@ class TestConnectionRunECLScriptWithServer(unittest.TestCase):
         self.assertEqual(res1, expected1)
 
     def test_run_ecl_script_output_changes_single_stored_value(self):
-
         conn = hpycc.Connection("user", test_conn=False)
 
         script = ("str_1 := 'xyz' : STORED('str_1'); str_2 := 'xyz' : "
@@ -236,6 +235,20 @@ class TestConnectionRunECLScriptWithServer(unittest.TestCase):
                          result_stdout).group(1)
         expected1 = 'abcxyz'
         self.assertEqual(res1, expected1)
+
+    def test_run_ecl_script_accepts_multiple_repos(self):
+        script = "OUTPUT(2);"
+        with TemporaryDirectory() as d_1:
+            p = os.path.join(d_1, "test.ecl")
+            with open(p, "w+") as file:
+                file.write(script)
+            with TemporaryDirectory() as d_2:
+                conn = hpycc.Connection("user", repo=[d_1, d_2])
+                res = conn.run_ecl_script(p, True, True, None)
+        out = re.search(
+            r'<Row><Result_1>(.*?)</Result_1>', res.stdout).group(1)
+
+        self.assertEqual("2", out)
 
 
 class TestRunURLRequestWithServer(unittest.TestCase):
