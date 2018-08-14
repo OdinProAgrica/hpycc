@@ -60,7 +60,7 @@ def save_outputs(connection, script, directory=".", filenames=None,
     ----------
     connection : hpycc.Connection
         HPCC Connection instance, see also `Connection`.
-    cript : str
+    script : str
          Path of script to execute.
     directory : str, optional
         Directory to save output files in. "." by default.
@@ -87,6 +87,7 @@ def save_outputs(connection, script, directory=".", filenames=None,
     -------
     None
     """
+
     result = connection.run_ecl_script(script, syntax_check, delete_workunit,
                                        stored)
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
@@ -154,6 +155,6 @@ def save_logical_file(connection, logical_file, path_or_buf, csv=False,
     """
 
     file = get.get_logical_file(connection, logical_file, csv, max_workers,
-                            chunk_size, max_attempts)
+                                chunk_size, max_attempts)
 
     return file.to_csv(path_or_buf, **kwargs)
