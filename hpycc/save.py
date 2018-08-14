@@ -115,9 +115,9 @@ def save_outputs(connection, script, directory=".", filenames=None,
         result[1].to_csv(path, **kwargs)
 
 
-def save_logical_file(connection, logical_file, path_or_buf, csv=False,
-                      max_workers=15, chunk_size=10000, max_attempts=3,
-                      **kwargs):
+def save_thor_file(connection, thor_file, path_or_buf,
+                   max_workers=15, chunk_size=10000, max_attempts=3,
+                   max_sleep=10, dtype=None, **kwargs):
     """
     Save a logical file to disk, see get_file() for returning a
     DataFrame.
@@ -126,13 +126,11 @@ def save_logical_file(connection, logical_file, path_or_buf, csv=False,
     ----------
     connection: `Connection`
         HPCC Connection instance, see also `Connection`.
-    logical_file: str
+    thor_file: str
         Logical file to be downloaded
     path_or_buf: str, optional.
         File path or object, if None is provided the result is
         returned as a string. None by default.
-    csv: bool, optional
-        Is the logical file a CSV? False by default.
     max_workers: int, optional
         Number of concurrent threads to use when downloading.
         Warning: too many will likely cause either your machine or
@@ -141,7 +139,19 @@ def save_logical_file(connection, logical_file, path_or_buf, csv=False,
         Size of chunks to use when downloading file. 10000 by
         default.
     max_attempts: int, optional
-        Max number of attempts to download a chunk. 3 by default.
+        Maximum number of times a chunk should attempt to be
+        downloaded in the case of an exception being raised.
+        3 by default.
+    max_sleep: int, optional
+            Maximum time, in seconds, to sleep between attempts.
+            The true sleep time is a random int between 0 and
+            `max_sleep`.
+    dtype: type name or dict of col -> type, optional
+        Data type for data or columns. E.g. {‘a’: np.float64, ‘b’:
+        np.int32}. If converters are specified, they will be applied
+        INSTEAD of dtype conversion. If None, or columns are missing
+        from the provided dict, they will be converted to one of
+        bool, str or int based on the HPCC datatype. None by default.
     kwargs
         Additional parameters to be provided to
         pandas.DataFrame.to_csv().
@@ -154,7 +164,8 @@ def save_logical_file(connection, logical_file, path_or_buf, csv=False,
 
     """
 
-    file = get.get_logical_file(connection, logical_file, csv, max_workers,
-                                chunk_size, max_attempts)
+    file = get.get_thor_file(connection, thor_file, max_workers,
+                             chunk_size, max_attempts, max_sleep,
+                             dtype)
 
     return file.to_csv(path_or_buf, **kwargs)

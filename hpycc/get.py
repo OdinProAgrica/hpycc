@@ -299,7 +299,7 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10000,
 
     See Also
     --------
-    save_logical_file
+    save_thor_file
 
     Examples
     --------
