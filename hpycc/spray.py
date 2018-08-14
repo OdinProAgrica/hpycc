@@ -1,7 +1,7 @@
 """
 The module contains functions to send files to HPCC.
 """
-import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor, wait
 
 import pandas as pd
 
@@ -150,6 +150,10 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
     else:
         raise TypeError
 
+    if logical_file[0] != '~':
+        SyntaxWarning("""Your Logical file name (%s) did not start with
+                        ~ so may not be sprayed to root""" % logical_file)
+
     record_set = _make_record_set(df)
 
     chunks = make_chunks(len(df), chunk_size=chunk_size)
@@ -157,17 +161,16 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
     stringified_rows = (_stringify_rows(df, start_row, num_rows)
                         for start_row, num_rows in chunks)
 
-    target_names = ["TEMPHPYCC::{}from{}to{}".format(
+    target_names = ["~TEMPHPYCC::{}from{}to{}".format(
             logical_file, start_row, start_row + num_rows)
         for start_row, num_rows in chunks]
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as \
-            executor:
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [
             executor.submit(_spray_stringified_data, connection, row,
                             record_set, name, overwrite, delete_workunit)
             for row, name in zip(stringified_rows, target_names)]
-        _, __ = concurrent.futures.wait(futures)
+        _, __ = wait(futures)
 
     concatenate_logical_files(connection, target_names, logical_file,
                               record_set, overwrite, delete_workunit)
