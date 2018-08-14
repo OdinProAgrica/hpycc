@@ -51,7 +51,7 @@ class Testconcatenatelogicalfiles(unittest.TestCase):
         delete_workunit = True
         conn = hpycc.Connection("user", test_conn=False)
 
-        output_names = ['~a', '~b', '~c', '~x']
+        output_names = ['~a1', '~b1', '~c1', '~x1']
         col_1_values = ['1', '3', '5', '6']
         col_2_values = ['aa', 'ab', 'ac', 'ad']
 
@@ -67,13 +67,13 @@ class Testconcatenatelogicalfiles(unittest.TestCase):
         np.array_equal(res.values, expected_result.values)
 
     def test_concatenate_logical_files_concatenates_one_file(self):
-        thor_file = '~thor::testsprayconcatenatelogicalfiles'
+        thor_file = '~thor::testsprayconcatenateonefile'
         overwrite = True
         expire = 1
         delete_workunit = True
         conn = hpycc.Connection("user", test_conn=False)
 
-        output_names = ['~a']
+        output_names = ['~a2']
         col_1_values = ['1']
         col_2_values = ['aa']
 
@@ -97,7 +97,7 @@ class Testsprayfiles(unittest.TestCase):
         self.conn = hpycc.Connection("user", test_conn=False)
 
     def test_spray_file_df(self):
-        thor_file = '~thor::testsprayfile1'
+        thor_file = '~thor::testsprayfiledf'
         overwrite = True
         expire = 1
         delete_workunit = True
@@ -116,7 +116,7 @@ class Testsprayfiles(unittest.TestCase):
         np.array_equal(res.values, df.values)
 
     def test_spray_file_string(self):
-        thor_file = '~thor::testsprayfile2'
+        thor_file = '~thor::testsprayfilestring'
         overwrite = True
         expire = 1
         delete_workunit = True
@@ -138,11 +138,30 @@ class Testsprayfiles(unittest.TestCase):
         np.array_equal(res.values, df.values)
 
     def test_spray_file_string_no_tilde(self):
-        thor_file = 'thor::testsprayfile3'
+        thor_file = 'testsprayfilenotilde'
         overwrite = True
         expire = 1
         delete_workunit = True
         chunk_size = 10000
+        max_workers = 3
+        conn = hpycc.Connection("user", test_conn=False)
+
+        col_1_values = ['1', '3', '5', '6']
+        col_2_values = ['aa', 'ab', 'ac', 'ad']
+        df = pd.DataFrame({"a": col_1_values, "b": col_2_values}).sort_values('a')
+
+        spray_file(conn, df, thor_file, overwrite, expire, chunk_size, max_workers, delete_workunit)
+
+        res = get_thor_file(connection=conn, thor_file='thor::' + thor_file)[['a', 'b']].sort_values('a')
+
+        np.array_equal(res.values, df.values)
+
+    def test_spray_file_string_small_chunks(self):
+        thor_file = '~testsprayfilenotilde'
+        overwrite = True
+        expire = 1
+        delete_workunit = True
+        chunk_size = 1
         max_workers = 3
         conn = hpycc.Connection("user", test_conn=False)
 

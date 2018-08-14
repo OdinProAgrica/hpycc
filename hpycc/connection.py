@@ -135,6 +135,8 @@ class Connection:
         try:
             result.check_returncode()
         except subprocess.CalledProcessError:
+            # err = {'stderr': result.stderr, 'stdout': result.stderr, 'cmd': cmd}
+            # print(err)
             raise subprocess.SubprocessError(result.stderr)
 
         stderr = result.stderr.decode('utf-8')
