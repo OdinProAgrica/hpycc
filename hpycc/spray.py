@@ -115,7 +115,8 @@ def _stringify_rows(df, start_row, num_rows):
 
 
 def spray_file(connection, source_file, logical_file, overwrite=False,
-               chunk_size=10000, max_workers=3, delete_workunit=True):
+               expire=None, chunk_size=10000, max_workers=3,
+               delete_workunit=True):
     """
     Spray a file to a HPCC logical file.
 
@@ -137,6 +138,11 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
         Number of concurrent threads to use when spraying.
         Warning: too many will likely cause either your machine or
         your cluster to crash! 3 by default.
+    expire: int
+        How long (days) until the produced logical file expires? None
+        (ie no expiry) by default
+    delete_workunit: bool
+        Delete workunit once completed.
 
     Returns
     -------
@@ -172,8 +178,7 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
             for row, name in zip(stringified_rows, target_names)]
         _, __ = wait(futures)
 
-    concatenate_logical_files(connection, target_names, logical_file,
-                              record_set, overwrite, delete_workunit)
+    concatenate_logical_files(connection, target_names, logical_file, record_set, overwrite, expire, delete_workunit)
 
     for tmp in target_names:
         delete_logical_file(connection, tmp, delete_workunit)
@@ -199,7 +204,7 @@ def _make_record_set(df):
 
 
 def concatenate_logical_files(connection, to_concat, logical_file, record_set,
-                              overwrite, delete_workunit=True):
+                              overwrite, expire, delete_workunit):
     """
     Concatenate a list of logical files (with the same recordset)
     into a single logical file.
@@ -217,7 +222,9 @@ def concatenate_logical_files(connection, to_concat, logical_file, record_set,
     overwrite: bool
         Should the file overwrite any pre-existing logical file.
     delete_workunit: bool
-        Delete workunit once completed. True by default.
+        Delete workunit once completed.
+    expire: int
+        How long (days) until the produced logical file expires?
 
     Returns
     -------
@@ -231,6 +238,8 @@ def concatenate_logical_files(connection, to_concat, logical_file, record_set,
     script = "a := {};\nOUTPUT(a, ,'{}' "
     if overwrite:
         script += ", OVERWRITE"
+    if expire:
+        script += ", EXPIRE({})".format(expire)
     script += ");"
     script = script.format(read_files, logical_file)
 

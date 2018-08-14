@@ -308,7 +308,7 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10000,
     >>> conn = hpycc.Connection("user")
     >>> df = pandas.DataFrame({"col1": [1, 2, 3]})
     >>> df.to_csv("example.csv", index=False)
-    >>> hpycc.spray_file(conn, "example.csv", "example")
+    >>> hpycc.spray_file(conn,"example.csv","example")
     >>> hpycc.get_logical_file(conn, "example")
         col1
     0     1
@@ -320,7 +320,7 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10000,
     >>> conn = hpycc.Connection("user")
     >>> df = pandas.DataFrame({"col1": [1, 2, 3]})
     >>> df.to_csv("example.csv", index=False)
-    >>> hpycc.spray_file(conn, "example.csv", "example")
+    >>> hpycc.spray_file(conn,"example.csv","example")
     >>> hpycc.get_logical_file(conn, "example", dtype=str)
         col1
     0     '1'

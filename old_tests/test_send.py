@@ -17,10 +17,7 @@ hpycc.delete.delete_logical_file(logical_file, server)
 
 def test_send_file_1():
 
-    send.spray_file(source_file, logical_file, 'localhost', port="8010", repo=None,
-                    username="hpycc_get_output", password='" "',
-                    legacy=False, overwrite=False, delete=True,
-                    silent=False, debg=False, log_to_file=False)
+    send.spray_file(source_file, logical_file, 'localhost', overwrite=False)
 
     file_uploaded = md.check_exists(logical_file, hpcc_connection)
     assert file_uploaded  # File contents is tested in test_sendfiles
