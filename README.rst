@@ -4,6 +4,8 @@ hpycc Readme
 .. image:: img/logo.jpg
    :scale: 100 %
 
+The hpycc package is intended to simplify the use of data stored on HPCC and make it easily available to both users and other servers through basic Python calls. Its long-term goal is to make access to and manipulation of HPCC data as quick and easy as any other type system. 
+   
 Documentation
 -------------
 The below readme and package documentation is available at http://hpycc.readthedocs.io

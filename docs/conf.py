@@ -49,9 +49,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'HPyCC'
+project = 'hpycc'
 copyright = '2018, Author'
-author = 'Author'
+author = 'Rob Mansfield, Jacks Cooper and Maughan'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -103,7 +103,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'HPyCCdoc'
+htmlhelp_basename = 'hpyccdoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -130,7 +130,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'HPyCC.tex', 'HPyCC Documentation',
+    (master_doc, 'hpycc.tex', 'hpycc Documentation',
      'Author', 'manual'),
 ]
 
@@ -140,7 +140,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'hpycc', 'HPyCC Documentation',
+    (master_doc, 'hpycc', 'hpycc Documentation',
      [author], 1)
 ]
 
@@ -151,8 +151,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'HPyCC', 'HPyCC Documentation',
-     author, 'HPyCC', 'One line description of project.',
+    (master_doc, 'hpycc', 'hpycc Documentation',
+     author, 'hpycc', 'One line description of project.',
      'Miscellaneous'),
 ]
 
