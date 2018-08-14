@@ -42,6 +42,8 @@ def _spray_stringified_data(connection, data, record_set, logical_file,
     if overwrite:
         script_content += ", OVERWRITE"
     script_content += ");"
+
+    # print(script_content)
     connection.run_ecl_string(script_content, True, delete_workunit,
                               stored=None)
 
@@ -168,7 +170,7 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
                         for start_row, num_rows in chunks)
 
     target_names = ["~TEMPHPYCC::{}from{}to{}".format(
-            logical_file, start_row, start_row + num_rows)
+            logical_file.replace("~", ""), start_row, start_row + num_rows)
         for start_row, num_rows in chunks]
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -244,5 +246,6 @@ def concatenate_logical_files(connection, to_concat, logical_file, record_set,
     script += ");"
     script = script.format(read_files, logical_file)
 
+    # print(script)
     connection.run_ecl_string(script, True, delete_workunit=delete_workunit,
                               stored=None)
