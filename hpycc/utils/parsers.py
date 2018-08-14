@@ -10,10 +10,14 @@ def parse_xml(xml):
     """
     Return a DataFrame from a nested XML.
 
-    :param xml: str
+    Parameters
+    ----------
+    xml : str
         xml to be parsed.
 
-    :return pd.DataFrame
+    Returns
+    -------
+    df : pd.DataFrame
         Parsed xml.
     """
     vls = []
@@ -45,15 +49,16 @@ def _make_col_numeric(df):
 
     Parameters
     ----------
-    :param df: pd.DataFrame
+    df : pd.DataFrame
         DataFrame to run conversion on.
 
     Returns
     -------
-    :return: DataFrame
+    df : pd.DataFrame
         Data frame with all string numeric columns converted to
         numeric.
     """
+
     for col in df.columns:
         try:
             nums = pd.to_numeric(df[col])
@@ -70,12 +75,12 @@ def _make_col_bool(df):
 
     Parameters
     ----------
-    :param df: pd.DataFrame
+    df : pd.DataFrame
         DataFrame to run conversion on.
 
     Returns
     -------
-    :return: DataFrame
+    df : pd.DataFrame
         Data frame with all string boolean columns converted to
         boolean.
     """
@@ -107,15 +112,17 @@ def parse_wuid_from_xml(result):
     """
     Function retrieves a WUID for a script that has run. This retrieves it
     only in the cases where the request response was in XML format.
+
     Parameters
     ----------
-    result: 'XML'
+    result : 'XML'
         The XML response for the script that has run.
 
     Returns
     -------
-    :return: wuid - string
+    wuid : str
         The Workunit ID from the XML.
+
     """
     regex = "wuid: (.+?)   state:"
     result = result.replace("\r\n", "")
@@ -143,13 +150,14 @@ def parse_schema_from_xml(xml):
 
     Parameters
     ----------
-    xml: str
+    xml : str
         xml string returned by ecl run. This is located in the json
         as ["WUResultResponse]["Result"]["XmlSchema"]["xml"].
 
     Returns
     -------
-    list of namedtuples in form [(name, is_set, type)].
+    list
+        List of namedtuples in form [(name, is_set, type)].
 
     """
     x = xml.replace("\n", "")
@@ -166,15 +174,15 @@ def parse_schema_from_xml(xml):
 def get_python_type_from_ecl_type(child):
     """
     Get the python type from an hpcc schema node
-    Parameters
 
+    Parameters
     ----------
-    child: XML node
+    child : XML node
        Node of schema xml. See `parse_schema_from_xml`
 
     Returns
     -------
-    type: type
+    type : type
         Pythonic type. If the HPCC type cannot be mapped, is str.
 
     """

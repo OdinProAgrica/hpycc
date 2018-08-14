@@ -4,10 +4,22 @@ hpycc\.utils package
 Submodules
 ----------
 
-.. toctree::
+hpycc\.utils\.filechunker module
+--------------------------------
 
-   hpycc.utils.filechunker
-   hpycc.utils.parsers
+.. automodule:: hpycc.utils.filechunker
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+hpycc\.utils\.parsers module
+----------------------------
+
+.. automodule:: hpycc.utils.parsers
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# hpycc documentation build configuration file, created by
-# sphinx-quickstart on Sun Apr 22 15:58:02 2018.
+# HPyCC documentation build configuration file, created by
+# sphinx-quickstart on Mon Aug 13 22:18:14 2018.
 #
 # This file is execfile()d with the current directory set to its
 # containing dir.
@@ -16,24 +16,12 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-
+#
 import os
 import sys
-sys.path.insert(0, os.path.abspath('..'))
+# sys.path.insert(0, 'C:\z\HPyCC\HPyCC')
+sys.path.insert(0, '../')
 
-# to run, change the version number below. Then run:
-#  sphinx-apidoc ../hpycc -o . -f -e
-# make html
-
-version = '0.1.3'
-
-# See http://blog.rtwilson.com/how-to-make-your-sphinx-documentation-compile-with-readthedocs-when-youre-using-numpy-and-scipy/
-#import mock
- 
-# MOCK_MODULES = ['numpy', 'numpy.ma', 'scipy', 'scipy.stats']
-#MOCK_MODULES = ['pandas']
-#for mod_name in MOCK_MODULES:
-#    sys.modules[mod_name] = mock.Mock()
 
 # -- General configuration ------------------------------------------------
 
@@ -46,9 +34,7 @@ version = '0.1.3'
 # ones.
 extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.todo',
-    'sphinx.ext.viewcode',
-    "sphinx.ext.napoleon"
-              ]
+    'sphinx.ext.viewcode', 'numpydoc']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -63,16 +49,16 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'hpycc'
-copyright = '2018, Rob Mansfield'
-author = 'Rob Mansfield (mansfieldbitter@gmail.com)'
+project = 'HPyCC'
+copyright = '2018, Author'
+author = 'Author'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-
+version = ''
 # The full version, including alpha/beta/rc tags.
 release = ''
 
@@ -86,7 +72,7 @@ language = 'en'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'old_tests']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -117,7 +103,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'hpyccdoc'
+htmlhelp_basename = 'HPyCCdoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -144,7 +130,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'hpycc.tex', 'hpycc Documentation',
+    (master_doc, 'HPyCC.tex', 'HPyCC Documentation',
      'Author', 'manual'),
 ]
 
@@ -154,7 +140,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'hpycc', 'hpycc Documentation',
+    (master_doc, 'hpycc', 'HPyCC Documentation',
      [author], 1)
 ]
 
@@ -165,8 +151,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'hpycc', 'hpycc Documentation',
-     author, 'hpycc', 'One line description of project.',
+    (master_doc, 'HPyCC', 'HPyCC Documentation',
+     author, 'HPyCC', 'One line description of project.',
      'Miscellaneous'),
 ]
 

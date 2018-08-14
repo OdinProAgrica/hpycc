@@ -150,6 +150,7 @@ def save_logical_file(connection, logical_file, path_or_buf, csv=False,
     -------
     :return: None if path_or_buf is not None, else a string
         representation of the output csv.
+
     """
 
     file = get.get_logical_file(connection, logical_file, csv, max_workers,
