@@ -47,12 +47,12 @@ def _get_type(typ):
 
     Parameters
     ----------
-    :param typ: dtype
+    typ: dtype
         Numpy or pandas dtype.
 
     Returns
     -------
-    :return type: string
+    type: string
         ECL data type.
     """
     typ = str(typ)
@@ -116,7 +116,7 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
 
     Parameters
     ----------
-    :connection: `Connection`
+    connection: `Connection`
         HPCC Connection instance, see also `Connection`.
     source_file: str, pd.DataFrame
          A pandas DataFrame or the path to a csv.
@@ -135,7 +135,7 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
 
     Returns
     -------
-    :return: None
+    None
 
     """
     if isinstance(source_file, pd.DataFrame):

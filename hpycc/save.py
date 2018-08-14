@@ -16,30 +16,30 @@ def save_output(connection, script, path_or_buf=None, syntax_check=True,
 
     Parameters
     ----------
-    :param connection: `Connection`
+    connection: `Connection`
         HPCC Connection instance, see also `Connection`.
-    :param script: str
+    script: str
         Path of script to execute.
-    :param path_or_buf: str, optional.
+    path_or_buf: str, optional.
         File path or object, if None is provided the result is
         returned as a string. None by default.
-    :param syntax_check: bool, optional
+    syntax_check: bool, optional
         Should script be syntax checked before execution. True by
         default.
-    :param delete_workunit: bool, optional
+    delete_workunit: bool, optional
         Delete workunit once completed. True by default.
     stored : dict or None, optional
         Key value pairs to replace stored variables within the
         script. Values should be str, int or bool. None by default.
-
-    :param kwargs
+    kwargs
         Additional parameters to be provided to
         pandas.DataFrame.to_csv().
 
     Returns
     -------
-    :return: None if path_or_buf is not None, else a string
-        representation of the output csv.
+    None
+        if path_or_buf is not None, else a string representation of
+        the output csv.
     """
     result = get_output(connection=connection, script=script,
                         syntax_check=syntax_check,
@@ -58,35 +58,34 @@ def save_outputs(connection, script, directory=".", filenames=None,
 
     Parameters
     ----------
-    :param connection: hpycc.Connection
+    connection : hpycc.Connection
         HPCC Connection instance, see also `Connection`.
-    :param script: str
+    cript : str
          Path of script to execute.
-    :param directory: str, optional
+    directory : str, optional
         Directory to save output files in. "." by default.
-    :param filenames: list, optional
+    filenames : list, optional
         File names to save results as. If not specified, files will
         be named as their output name assigned by the ECL script.
         None by default.
-    :param prefix: str, optional
+    prefix : str, optional
         Prefix to prepend to all file names. None by default.
-    :param syntax_check: bool, optional
+    syntax_check : bool, optional
         Should the script be syntax checked before execution. True by
         default.
-    :param delete_workunit: bool, optional
+    delete_workunit : bool, optional
         Delete workunit once completed. True by default.
     stored : dict or None, optional
         Key value pairs to replace stored variables within the
         script. Values should be str, int or bool. None by default.
-
-    :param kwargs
+    kwargs
         Additional parameters to be provided to
         pandas.DataFrame.to_csv().
 
 
     Returns
     -------
-    :return: None
+    None
     """
     result = connection.run_ecl_script(script, syntax_check, delete_workunit,
                                        stored)
@@ -124,31 +123,32 @@ def save_logical_file(connection, logical_file, path_or_buf, csv=False,
 
     Parameters
     ----------
-    :param connection: `Connection`
+    connection: `Connection`
         HPCC Connection instance, see also `Connection`.
-    :param logical_file: str
+    logical_file: str
         Logical file to be downloaded
-    :param path_or_buf: str, optional.
+    path_or_buf: str, optional.
         File path or object, if None is provided the result is
         returned as a string. None by default.
-    :param csv: bool, optional
+    csv: bool, optional
         Is the logical file a CSV? False by default.
-    :param max_workers: int, optional
+    max_workers: int, optional
         Number of concurrent threads to use when downloading.
         Warning: too many will likely cause either your machine or
         your cluster to crash! 15 by default.
-     :param chunk_size: int, optional.
+    chunk_size: int, optional.
         Size of chunks to use when downloading file. 10000 by
         default.
-    :param max_attempts: int, optional
+    max_attempts: int, optional
         Max number of attempts to download a chunk. 3 by default.
-    :param kwargs
+    kwargs
         Additional parameters to be provided to
         pandas.DataFrame.to_csv().
 
     Returns
     -------
-    :return: None if path_or_buf is not None, else a string
+    None
+        if path_or_buf is not None, else a string
         representation of the output csv.
 
     """

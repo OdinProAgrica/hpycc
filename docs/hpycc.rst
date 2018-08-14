@@ -59,11 +59,3 @@ hpycc\.spray module
     :undoc-members:
     :show-inheritance:
 
-
-Module contents
----------------
-
-.. automodule:: hpycc
-    :members:
-    :undoc-members:
-    :show-inheritance:

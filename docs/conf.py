@@ -34,7 +34,7 @@ sys.path.insert(0, '../')
 # ones.
 extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.todo',
-    'sphinx.ext.viewcode', 'numpydoc']
+    'sphinx.ext.viewcode', 'sphinxcontrib.napoleon']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
