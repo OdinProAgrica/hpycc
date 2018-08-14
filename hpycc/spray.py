@@ -198,8 +198,9 @@ def _make_record_set(df):
     record_set: string
         String recordset.
     """
-    record_set = ";".join([" ".join((_get_type(dtype), col)) for col, dtype in
-                           df.dtypes.to_dict().items()])
+    record_set = ";".join([" ".join((_get_type(dtype), col))
+                           for col, dtype
+                           in df.dtypes.to_dict().items()])
     return record_set
 
 
