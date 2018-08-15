@@ -62,12 +62,12 @@ def save_outputs(connection, script, directory=".", filenames=None,
          Path of script to execute.
     directory : str, optional
         Directory to save output files in. "." by default.
-    filenames : list, optional
+    filenames : list or None, optional
         File names to save results as. If None, files will
         be named as their output name assigned by the ECL script.
         An IndexError will be raised if this is a different length
         to the number of outputs. None by default.
-    prefix : str, optional
+    prefix : str or None, optional
         Prefix to prepend to all file names. None by default.
     syntax_check : bool, optional
         Should the script be syntax checked before execution. True by
