@@ -427,17 +427,15 @@ class TestConnectionRunECLStringWithServer(unittest.TestCase):
         self.assertEqual(res1, expected1)
 
 
-class TestConnectioneclcmd(unittest.TestCase):
+class TestConnectionEclCmd(unittest.TestCase):
     def test_check_ecl_cmd_passes(self):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             check_ecl_cmd(cmd='ecl')
-            print(w)
             assert True if not w else False
 
     def test_check_ecl_cmd_fails(self):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             check_ecl_cmd(cmd='ecl123')
-            print(w)
             assert False if not w else True
