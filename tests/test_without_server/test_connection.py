@@ -110,38 +110,8 @@ class TestConnectionRunCommand(unittest.TestCase):
     @patch.object(subprocess, "run")
     def test_run_command_calls_subprocess_run(self, mock):
         mock.check_returncode.return_value = True
-        self.conn._run_command("ls")
+        self.conn._run_command(["ls"])
         mock.assert_called()
-
-    def test_run_command_raises_error_if_bad_return_code(self):
-        with self.assertRaises(subprocess.SubprocessError):
-            self.conn._run_command("fghdf")
-
-    def test_run_command_passes_if_good_return_code(self):
-        cmd_result = self.conn._run_command("cd .")
-        expected = self.Result("", "")
-        self.assertEqual(cmd_result, expected)
-
-    def test_run_command_passes_if_stderr_present(self):
-        cmd_result = self.conn._run_command('>&2 echo error')
-        expected = self.Result("", "error\r\n")
-        self.assertEqual(cmd_result, expected)
-
-    def test_run_command_returns_stdout(self):
-        cmd_result = self.conn._run_command('echo hello')
-        expected = "hello\r\n"
-        self.assertEqual(cmd_result.stdout, expected)
-
-    def test_run_command_returns_named_tuple(self):
-        result = self.conn._run_command('>&2 echo error')
-        self.assertEqual(result.__class__.__name__, "Result")
-        self.assertEqual(result.stdout, "")
-        self.assertEqual(result.stderr, "error\r\n")
-
-    def test_run_command_returns_decoded_strings(self):
-        result = self.conn._run_command('>&2 echo error')
-        self.assertIsInstance(result.stderr, str)
-        self.assertIsInstance(result.stdout, str)
 
 
 class TestConnectionCheckSyntax(unittest.TestCase):

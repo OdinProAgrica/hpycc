@@ -129,18 +129,8 @@ class Connection:
 
     @staticmethod
     def _run_command(cmd):
-        result = subprocess.run(cmd, check=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-        # try:
-        #     result.check_returncode()
-        # except subprocess.CalledProcessError as e:
-        #     if result.stderr:
-        #         msg = result.stderr.decode()
-        #     else:
-        #         msg = result
-        #
-        #     raise subprocess.SubprocessError(e, msg)
-        print(result)
-        #return result
+        result = subprocess.run(cmd, check=True, stderr=subprocess.PIPE,
+                                stdout=subprocess.PIPE)
 
         stderr = result.stderr.decode('utf-8')
         stdout = result.stdout.decode("utf-8")
