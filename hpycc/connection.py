@@ -134,8 +134,13 @@ class Connection:
             stdin=subprocess.PIPE, shell=True)
         try:
             result.check_returncode()
-        except subprocess.CalledProcessError:
-            raise subprocess.SubprocessError(result.stderr)
+        except subprocess.CalledProcessError as e:
+            if result.stderr:
+                msg = result.stderr.decode()
+            else:
+                msg = result
+
+            raise subprocess.SubprocessError(e, msg)
 
         stderr = result.stderr.decode('utf-8')
         stdout = result.stdout.decode("utf-8")
