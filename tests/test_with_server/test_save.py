@@ -43,22 +43,23 @@ def _save_output_from_ecl_string(
         p = os.path.join(d, "test.ecl")
         with open(p, "w+") as file:
             file.write(string)
-        hpycc.save_output(conn, p, syntax_check=syntax, delete_workunit=delete_workunit,
-                          stored=stored, path_or_buf=path_or_buf, **kwargs)
-        res = pd.read_csv(path_or_buf)
+        res = hpycc.save_output(conn, p, syntax_check=syntax, delete_workunit=delete_workunit,
+                                stored=stored, path_or_buf=path_or_buf, **kwargs)
+
+        res = pd.read_csv(path_or_buf) if path_or_buf else res
+
         return res
 
 
 # TODO: test with index=True
-def _get_a_save(connection, thor_file, path_or_buf='test.csv',
+def _get_a_save(connection, thor_file, path_or_buf=test_loc,
                 max_workers=15, chunk_size=10000, max_attempts=3,
                 max_sleep=10, dtype=None, **kwargs):
 
-    save_thor_file(connection, thor_file, path_or_buf,
-                   max_workers, chunk_size, max_attempts,
-                   max_sleep, dtype, **kwargs)
-    df = pd.read_csv(path_or_buf)
-    os.remove(path_or_buf)
+    res = save_thor_file(connection, thor_file, path_or_buf,
+                              max_workers, chunk_size, max_attempts,
+                              max_sleep, dtype, **kwargs)
+    df = pd.read_csv(path_or_buf) if path_or_buf else res
 
     return df
 
@@ -81,6 +82,12 @@ class TestGetOutputWithServer(unittest.TestCase):
         print(expected)
         print(res)
         pd.testing.assert_frame_equal(expected, res)
+
+    def test_save_output_returns_no_name(self):
+        script = "OUTPUT(DATASET([{1, 'a'}], {INTEGER a; STRING b;}));"
+        res = _save_output_from_ecl_string(self.conn, script, index=False, path_or_buf=None)
+        expected = pd.DataFrame({"a": 1, "b": "a"}, index=[0]).to_csv(index=False)
+        self.assertEqual(expected, res)
 
 
 class TestSaveOutputs(unittest.TestCase):
@@ -189,6 +196,27 @@ class TestSaveThorFile(unittest.TestCase):
             "__fileposition__": [i*8 for i in range(100)]
         }, dtype=np.int64)
         pd.testing.assert_frame_equal(expected, res)
+
+    def test_save_thor_file_returns_no_path(self):
+        lots_of_1s = "[" + ",".join(["{1}"]*10) + "]"
+        self.conn.run_ecl_string(
+            "a := DATASET({}, {{INTEGER int;}}); "
+            "OUTPUT(a,,'~test_save_thor_file_returns_no_path');".format(
+                lots_of_1s),
+            True,
+            True,
+            None
+        )
+        res = _get_a_save(connection=self.conn, thor_file="test_save_thor_file_returns_no_path",
+                          path_or_buf=None, index=False)
+        expected = pd.DataFrame({
+            "int": [1]*10,
+            "__fileposition__": [i*8 for i in range(10)]
+        }, dtype=np.int64).to_csv(index=False)
+
+        print(expected)
+        print(res)
+        self.assertEqual(expected, res)
 
     def test_save_thor_file_returns_a_set(self):
         file_name = "test_save_thor_file_returns_a_set"

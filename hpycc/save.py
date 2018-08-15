@@ -18,9 +18,9 @@ def save_output(connection, script, path_or_buf=None, syntax_check=True,
         HPCC Connection instance, see also `Connection`.
     script: str
         Path of script to execute.
-    path_or_buf: str, optional.
-        File path or object, if None is provided the result is
-        returned as a string. None by default.
+    path_or_buf : string or file handle, default None
+        File path or object, if None is provided the result is returned as
+        a string.
     syntax_check: bool, optional
         Should script be syntax checked before execution. True by
         default.
@@ -35,7 +35,7 @@ def save_output(connection, script, path_or_buf=None, syntax_check=True,
 
     Returns
     -------
-    None
+    None or str
         if path_or_buf is not None, else a string representation of
         the output csv.
     """
@@ -134,9 +134,9 @@ def save_thor_file(connection, thor_file, path_or_buf,
         HPCC Connection instance, see also `Connection`.
     thor_file: str
         Logical file to be downloaded
-    path_or_buf: str, optional.
-        File path or object, if None is provided the result is
-        returned as a string. None by default.
+    path_or_buf : string or file handle, default None
+        File path or object, if None is provided the result is returned as
+        a string.
     max_workers: int, optional
         Number of concurrent threads to use when downloading.
         Warning: too many will likely cause either your machine or
@@ -164,7 +164,7 @@ def save_thor_file(connection, thor_file, path_or_buf,
 
     Returns
     -------
-    None
+    None or str
         if path_or_buf is not None, else a string
         representation of the output csv.
 
