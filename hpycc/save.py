@@ -1,5 +1,3 @@
-import itertools
-import re
 import os
 
 import hpycc.get
@@ -64,11 +62,12 @@ def save_outputs(connection, script, directory=".", filenames=None,
          Path of script to execute.
     directory : str, optional
         Directory to save output files in. "." by default.
-    filenames : list, optional
-        File names to save results as. If not specified, files will
+    filenames : list or None, optional
+        File names to save results as. If None, files will
         be named as their output name assigned by the ECL script.
-        None by default.
-    prefix : str, optional
+        An IndexError will be raised if this is a different length
+        to the number of outputs. None by default.
+    prefix : str or None, optional
         Prefix to prepend to all file names. None by default.
     syntax_check : bool, optional
         Should the script be syntax checked before execution. True by
@@ -86,31 +85,38 @@ def save_outputs(connection, script, directory=".", filenames=None,
     Returns
     -------
     None
+
+    Raises
+    ------
+    IndexError
+        If `filenames` is of different length to the number of
+        outputs.
     """
+    results = hpycc.get_outputs(
+        connection, script, syntax_check, delete_workunit, stored)
 
-    result = connection.run_ecl_script(script, syntax_check, delete_workunit,
-                                       stored)
-    regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
-    results = re.findall(regex, result.stdout)
-    parsed_data_frames = [(name, hpycc.utils.parsers.parse_xml(xml))
-                          for name, xml in results]
+    parsed_filenames = ["{}.csv".format(res) for res in results]
 
-    parsed_filenames = ["{}.csv".format(res[0]) for res in parsed_data_frames]
-    chosen_filenames = [fn if fn else pfn for fn, pfn in
-                        itertools.zip_longest(filenames, parsed_filenames)]
+    # if filenames was none, use parsed filenames
+    # if filenames is given and it is the wrong length - raise
+    # if filenames is given adn right length - use it
+
+    if not filenames:
+        chosen_filenames = parsed_filenames
+    elif len(filenames) == len(parsed_filenames):
+        chosen_filenames = filenames
+    else:
+        msg = (
+            "{0} filenames were specified. Only {1} outputs were returned. "
+            "Filenames should either be of length {1} or None").format(
+            len(filenames), len(parsed_filenames)
+        )
+        raise IndexError(msg)
+
     if prefix:
         chosen_filenames = [prefix + name for name in chosen_filenames]
 
-    if filenames is not None and len(filenames) > len(parsed_data_frames):
-        add_names = filenames[len(parsed_data_frames):]
-        UserWarning("Too many file names specified, ignoring {}".format(
-            add_names))
-    elif filenames is not None and len(filenames) < len(parsed_data_frames):
-        add_names = parsed_filenames[len(filenames):]
-        UserWarning("Too few file names specified. Additional files will be "
-                    "named {}".format(add_names))
-
-    for name, result in zip(chosen_filenames, parsed_data_frames):
+    for name, result in zip(chosen_filenames, results.items()):
         path = os.path.join(directory, name)
         result[1].to_csv(path, **kwargs)
 
