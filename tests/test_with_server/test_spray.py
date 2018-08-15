@@ -37,7 +37,7 @@ def send_file_chunks(conn, a_script):
         with open(p, "w+") as file:
             file.write(a_script)
         _ = conn.run_ecl_script(p, syntax_check=True,
-                                  delete_workunit=True, stored={})
+                                delete_workunit=True, stored={})
 
 
 class Testconcatenatelogicalfiles(unittest.TestCase):
