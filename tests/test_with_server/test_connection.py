@@ -8,12 +8,14 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 import re
+import warnings
 
 import pandas as pd
 import requests
 from requests.exceptions import ConnectionError
 
 import hpycc.connection
+from hpycc.connection import check_ecl_cmd
 from tests.test_helpers import hpcc_functions
 
 
@@ -423,3 +425,17 @@ class TestConnectionRunECLStringWithServer(unittest.TestCase):
                          result_stdout).group(1)
         expected1 = 'abcxyz'
         self.assertEqual(res1, expected1)
+
+
+class TestConnectionEclCmd(unittest.TestCase):
+    def test_check_ecl_cmd_passes(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            check_ecl_cmd(cmd='ecl')
+            assert True if not w else False
+
+    def test_check_ecl_cmd_fails(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            check_ecl_cmd(cmd='ecl123')
+            assert False if not w else True

@@ -14,7 +14,7 @@ def delete_logical_file(connection, logical_file, delete_workunit=True):
 
     Returns
     -------
-    :return: None
+    None
     """
     script = "IMPORT std; STD.File.DeleteLogicalFile('{}');".format(
         logical_file)
