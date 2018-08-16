@@ -61,13 +61,13 @@ class Testconcatenatelogicalfiles(unittest.TestCase):
         concatenate_logical_files(conn, output_names, thor_file, 'STRING a; STRING b;',
                                    overwrite, expire, delete_workunit)
 
-        res = get_thor_file(connection=conn, thor_file=thor_file)[['a', 'b']].sort_values('a')
-        expected_result = pd.DataFrame({"a": col_1_values, "b": col_2_values}).sort_values('a')
+        res = get_thor_file(connection=conn, thor_file=thor_file)[['a', 'b']]
+        expected_result = pd.DataFrame({"a": col_1_values, "b": col_2_values})
 
-        np.array_equal(res.values, expected_result.values)
+        pd.testing.assert_frame_equal(expected_result, res)
 
     def test_concatenate_logical_files_concatenates_one_file(self):
-        thor_file = '~thor::testsprayconcatenateonefile'
+        thor_file = '~thor::test_concatenate_logical_files_concatenates_one_file'
         overwrite = True
         expire = 1
         delete_workunit = True
@@ -86,10 +86,10 @@ class Testconcatenatelogicalfiles(unittest.TestCase):
                                   'STRING a; STRING b;',
                                    overwrite, expire, delete_workunit)
 
-        res = get_thor_file(connection=conn, thor_file=thor_file)[['a', 'b']].sort_values('a')
-        expected_result = pd.DataFrame({"a": col_1_values, "b": col_2_values}).sort_values('a')
+        res = get_thor_file(connection=conn, thor_file=thor_file)[['a', 'b']]
+        expected_result = pd.DataFrame({"a": col_1_values, "b": col_2_values})
 
-        np.array_equal(res.values, expected_result.values)
+        pd.testing.assert_frame_equal(expected_result, res)
 
 
 class Testsprayfiles(unittest.TestCase):
@@ -97,7 +97,7 @@ class Testsprayfiles(unittest.TestCase):
         self.conn = hpycc.Connection("user", test_conn=False)
 
     def test_spray_file_df(self):
-        thor_file = '~thor::testsprayfiledf'
+        thor_file = '~thor::test_spray_file_df'
         overwrite = True
         expire = 1
         delete_workunit = True
@@ -111,12 +111,12 @@ class Testsprayfiles(unittest.TestCase):
 
         spray_file(conn, df, thor_file, overwrite, expire, chunk_size, max_workers, delete_workunit)
 
-        res = get_thor_file(connection=conn, thor_file=thor_file)[['a', 'b']].sort_values('a')
+        res = get_thor_file(connection=conn, thor_file=thor_file)[['a', 'b']]
 
-        np.array_equal(res.values, df.values)
+        pd.testing.assert_frame_equal(df, res)
 
     def test_spray_file_string(self):
-        thor_file = '~thor::testsprayfilestring'
+        thor_file = '~thor::test_spray_file_string'
         overwrite = True
         expire = 1
         delete_workunit = True
@@ -133,12 +133,12 @@ class Testsprayfiles(unittest.TestCase):
             df.to_csv(p, index=False)
             spray_file(conn, p, thor_file, overwrite, expire, chunk_size, max_workers, delete_workunit)
 
-        res = get_thor_file(connection=conn, thor_file=thor_file)[['a', 'b']].sort_values('a')
+        res = get_thor_file(connection=conn, thor_file=thor_file)[['a', 'b']]
 
-        np.array_equal(res.values, df.values)
+        pd.testing.assert_frame_equal(df, res)
 
     def test_spray_file_string_no_tilde(self):
-        thor_file = 'testsprayfilenotilde'
+        thor_file = 'test_spray_file_string_no_tilde'
         overwrite = True
         expire = 1
         delete_workunit = True
@@ -152,12 +152,31 @@ class Testsprayfiles(unittest.TestCase):
 
         spray_file(conn, df, thor_file, overwrite, expire, chunk_size, max_workers, delete_workunit)
 
-        res = get_thor_file(connection=conn, thor_file='thor::' + thor_file)[['a', 'b']].sort_values('a')
+        res = get_thor_file(connection=conn, thor_file='thor::' + thor_file)[['a', 'b']]
 
-        np.array_equal(res.values, df.values)
+        pd.testing.assert_frame_equal(df, res)
 
     def test_spray_file_string_small_chunks(self):
-        thor_file = '~testsprayfilenotilde'
+        thor_file = '~test_spray_file_string_small_chunks'
+        overwrite = True
+        expire = 1
+        delete_workunit = True
+        chunk_size = 2
+        max_workers = 3
+        conn = hpycc.Connection("user", test_conn=False)
+
+        col_1_values = ['1', '3', '5', '7', '9', '11', '13']
+        col_2_values = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+        df = pd.DataFrame({"a": col_1_values, "b": col_2_values}).sort_values('a').reset_index(drop=True)
+
+        spray_file(conn, df, thor_file, overwrite, expire, chunk_size, max_workers, delete_workunit)
+
+        res = get_thor_file(connection=conn, thor_file=thor_file)[['a', 'b']].sort_values('a').reset_index(drop=True)
+
+        pd.testing.assert_frame_equal(df, res)
+
+    def test_spray_file_string_smallest_chunks(self):
+        thor_file = '~test_spray_file_string_smallest_chunks'
         overwrite = True
         expire = 1
         delete_workunit = True
@@ -165,12 +184,31 @@ class Testsprayfiles(unittest.TestCase):
         max_workers = 3
         conn = hpycc.Connection("user", test_conn=False)
 
-        col_1_values = ['1', '3', '5', '6']
-        col_2_values = ['aa', 'ab', 'ac', 'ad']
-        df = pd.DataFrame({"a": col_1_values, "b": col_2_values}).sort_values('a')
+        col_1_values = ['1', '3', '5', '7', '9', '11', '13']
+        col_2_values = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+        df = pd.DataFrame({"a": col_1_values, "b": col_2_values}).sort_values('a').reset_index(drop=True)
 
         spray_file(conn, df, thor_file, overwrite, expire, chunk_size, max_workers, delete_workunit)
 
-        res = get_thor_file(connection=conn, thor_file=thor_file)[['a', 'b']].sort_values('a')
+        res = get_thor_file(connection=conn, thor_file=thor_file)[['a', 'b']].sort_values('a').reset_index(drop=True)
 
-        np.array_equal(res.values, df.values)
+        pd.testing.assert_frame_equal(df, res)
+
+    def test_spray_file_string_smallest_chunks_many_workers(self):
+        thor_file = '~test_spray_file_string_smallest_chunks_many_workers'
+        overwrite = True
+        expire = 1
+        delete_workunit = True
+        chunk_size = 1
+        max_workers = 100
+        conn = hpycc.Connection("user", test_conn=False)
+
+        col_1_values = ['1', '3', '5', '7', '9', '11', '13']
+        col_2_values = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+        df = pd.DataFrame({"a": col_1_values, "b": col_2_values}).sort_values('a').reset_index(drop=True)
+
+        spray_file(conn, df, thor_file, overwrite, expire, chunk_size, max_workers, delete_workunit)
+
+        res = get_thor_file(connection=conn, thor_file=thor_file)[['a', 'b']].sort_values('a').reset_index(drop=True)
+
+        pd.testing.assert_frame_equal(df, res)
