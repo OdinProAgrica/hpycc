@@ -39,11 +39,11 @@ def _spray_stringified_data(connection, data, record_set, logical_file,
     script_content = ("a := DATASET([{}], {{{}}});\nOUTPUT(a, ,'{}' , "
                       "EXPIRE(1)").format(
         data, record_set, logical_file)
+
     if overwrite:
         script_content += ", OVERWRITE"
     script_content += ");"
 
-    # print(script_content)
     connection.run_ecl_string(script_content, True, delete_workunit,
                               stored=None)
 
@@ -98,7 +98,7 @@ def _stringify_rows(df, start_row, num_rows):
     str
         ECL ready string of the slice.
     """
-    sliced_df = df.loc[start_row:start_row + num_rows, df.columns]
+    sliced_df = df.loc[start_row:(start_row + num_rows - 1), df.columns]
 
     for col in sliced_df.columns:
         dtype = sliced_df.dtypes[col]
@@ -246,6 +246,5 @@ def concatenate_logical_files(connection, to_concat, logical_file, record_set,
     script += ");"
     script = script.format(read_files, logical_file)
 
-    # print(script)
     connection.run_ecl_string(script, True, delete_workunit=delete_workunit,
                               stored=None)
