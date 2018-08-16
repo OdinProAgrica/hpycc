@@ -26,7 +26,7 @@ pip install git+git://github.com/OdinProAgrica/hpycc
 
 Current Status
 --------------
-Tested and working on HPCC v6.4.2 and python 3.5.2 under windows 10. Will make linux-able in the future (if it isn't already) 
+Tested and working on HPCC v6.4.2 and python 3.5.2 under windows 10. Has been used on Linux systems but not extensively tested.
 
 Dependencies
 ------------
@@ -36,7 +36,7 @@ There is a dependency for client tools to run ECL scripts (you need ecl.exe and 
 Make sure you install the right client tools for your HPCC version and add the dir to your system path,
 e.g. C:\Program Files (x86)\HPCCSystems\X.X.X\clienttools\bin.
 
-Tests require an HPCC instance running on your local machine, docker images do exist for this.
+Tests require docker to spin up HPCC test environments.
 
 Main Functions
 --------------
