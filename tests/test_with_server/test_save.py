@@ -11,9 +11,6 @@ from hpycc.save import save_thor_file
 from tests.test_helpers import hpcc_functions
 
 
-test_loc = 'test.csv'
-
-
 # noinspection PyPep8Naming
 def setUpModule():
     a = hpcc_functions.start_hpcc_container()
@@ -23,10 +20,6 @@ def setUpModule():
 # noinspection PyPep8Naming
 def tearDownModule():
     hpcc_functions.stop_hpcc_container()
-    try:
-        os.remove(test_loc)
-    except FileNotFoundError:
-        pass
 
 
 def _spray_df(conn, df, name):
@@ -38,28 +31,31 @@ def _spray_df(conn, df, name):
 
 def _save_output_from_ecl_string(
         conn, string, syntax=True, delete_workunit=True,
-        stored=None, path_or_buf=test_loc, **kwargs):
+        stored=None, path_or_buf='test.csv', **kwargs):
+
     with TemporaryDirectory() as d:
+        path_or_buf = os.path.join(d, path_or_buf) if path_or_buf else None
         p = os.path.join(d, "test.ecl")
         with open(p, "w+") as file:
             file.write(string)
         res = hpycc.save_output(conn, p, syntax_check=syntax, delete_workunit=delete_workunit,
                                 stored=stored, path_or_buf=path_or_buf, **kwargs)
-
         res = pd.read_csv(path_or_buf) if path_or_buf else res
 
         return res
 
 
 # TODO: test with index=True
-def _get_a_save(connection, thor_file, path_or_buf=test_loc,
+def _get_a_save(connection, thor_file, path_or_buf='test.csv',
                 max_workers=15, chunk_size=10000, max_attempts=3,
                 max_sleep=10, dtype=None, **kwargs):
+    with TemporaryDirectory() as d:
+        path_or_buf = os.path.join(d, path_or_buf) if path_or_buf else None
 
-    res = save_thor_file(connection, thor_file, path_or_buf,
-                              max_workers, chunk_size, max_attempts,
-                              max_sleep, dtype, **kwargs)
-    df = pd.read_csv(path_or_buf) if path_or_buf else res
+        res = save_thor_file(connection, thor_file, path_or_buf,
+                             max_workers, chunk_size, max_attempts,
+                             max_sleep, dtype, **kwargs)
+        df = pd.read_csv(path_or_buf) if path_or_buf else res
 
     return df
 
