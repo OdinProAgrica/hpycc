@@ -45,8 +45,8 @@ def run_script(connection, script, syntax_check=True, delete_workunit=True,
 
     Raises
     ------
-    subprocess.CalledProcessError:
-        If script fails syntax check or during execution.
+    SyntaxError:
+        If script fails syntax check.
 
     """
     connection.run_ecl_script(script, syntax_check, delete_workunit, stored)

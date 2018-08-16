@@ -107,12 +107,6 @@ class TestConnectionRunCommand(unittest.TestCase):
         cls.conn = hpycc.connection.Connection("user", test_conn=False)
         cls.Result = namedtuple("Result", ["stdout", "stderr"])
 
-    @patch.object(subprocess, "run")
-    def test_run_command_calls_subprocess_run(self, mock):
-        mock.check_returncode.return_value = True
-        self.conn._run_command(["ls"])
-        mock.assert_called()
-
 
 class TestConnectionCheckSyntax(unittest.TestCase):
     @patch.object(hpycc.Connection, "_run_command")
@@ -192,7 +186,17 @@ class TestConnectionCheckSyntax(unittest.TestCase):
             p = os.path.join(d, "tmp.ecl")
             with open(p, "w+") as file:
                 file.write("sdfdsf")
-            with self.assertRaises(subprocess.SubprocessError):
+            with self.assertRaises(SyntaxError):
+                conn.check_syntax(p)
+
+    def test_check_syntax_returns_syntax_errors(self):
+        conn = hpycc.Connection("user", test_conn=False)
+        expected_err = "error C3002"
+        with TemporaryDirectory() as d:
+            p = os.path.join(d, "tmp.ecl")
+            with open(p, "w+") as file:
+                file.write("sdfdsf")
+            with self.assertRaisesRegex(SyntaxError, expected_err):
                 conn.check_syntax(p)
 
 
@@ -303,7 +307,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
             p = os.path.join(d, "test.ecl")
             with open(p, "w+") as file:
                 file.write(bad_script)
-            with self.assertRaises(subprocess.SubprocessError):
+            with self.assertRaises(SyntaxError):
                 conn.run_ecl_script(p, syntax_check=True,
                                     delete_workunit=False, stored={})
 

@@ -160,7 +160,7 @@ class TestGetOutputWithServer(unittest.TestCase):
 
     def test_get_output_raises_with_bad_script(self):
         script = "asa"
-        with self.assertRaises(subprocess.SubprocessError):
+        with self.assertRaises(SyntaxError):
             _get_output_from_ecl_string(self.conn, script)
 
     @patch.object(hpycc.Connection, "check_syntax")
@@ -343,7 +343,7 @@ class TestGetOutputsWithServer(unittest.TestCase):
 
     def test_get_outputs_raises_with_bad_script(self):
         script = "asa"
-        with self.assertRaises(subprocess.SubprocessError):
+        with self.assertRaises(SyntaxError):
             _get_outputs_from_ecl_string(self.conn, script)
 
     @patch.object(hpycc.Connection, "check_syntax")
