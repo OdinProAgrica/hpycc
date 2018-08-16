@@ -138,7 +138,7 @@ class Connection:
         Result = collections.namedtuple("Result", ["stdout", "stderr"])
         result_tuple = Result(stdout, stderr)
         
-        if result.return_code:
+        if result.returncode:
             raise subprocess.CalledProcessError(result_tuple)
 
         
