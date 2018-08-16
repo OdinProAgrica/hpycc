@@ -129,14 +129,20 @@ class Connection:
 
     @staticmethod
     def _run_command(cmd):
-        result = subprocess.run(cmd, check=True, stderr=subprocess.PIPE,
+        result = subprocess.run(cmd, stderr=subprocess.PIPE,
                                 stdout=subprocess.PIPE)
 
         stderr = result.stderr.decode('utf-8')
         stdout = result.stdout.decode("utf-8")
-
+        
         Result = collections.namedtuple("Result", ["stdout", "stderr"])
         result_tuple = Result(stdout, stderr)
+        
+        if result.return_code:
+            raise subprocess.CalledProcessError(result_tuple)
+
+        
+        
         return result_tuple
 
     def check_syntax(self, script):
