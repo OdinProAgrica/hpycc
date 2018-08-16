@@ -39,9 +39,11 @@ def _spray_stringified_data(connection, data, record_set, logical_file,
     script_content = ("a := DATASET([{}], {{{}}});\nOUTPUT(a, ,'{}' , "
                       "EXPIRE(1)").format(
         data, record_set, logical_file)
+
     if overwrite:
         script_content += ", OVERWRITE"
     script_content += ");"
+
     connection.run_ecl_string(script_content, True, delete_workunit,
                               stored=None)
 
@@ -96,7 +98,7 @@ def _stringify_rows(df, start_row, num_rows):
     str
         ECL ready string of the slice.
     """
-    sliced_df = df.loc[start_row:start_row + num_rows, df.columns]
+    sliced_df = df.loc[start_row:(start_row + num_rows - 1), df.columns]
 
     for col in sliced_df.columns:
         dtype = sliced_df.dtypes[col]
@@ -168,7 +170,7 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
                         for start_row, num_rows in chunks)
 
     target_names = ["~TEMPHPYCC::{}from{}to{}".format(
-            logical_file, start_row, start_row + num_rows)
+            logical_file.replace("~", ""), start_row, start_row + num_rows)
         for start_row, num_rows in chunks]
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -198,8 +200,9 @@ def _make_record_set(df):
     record_set: string
         String recordset.
     """
-    record_set = ";".join([" ".join((_get_type(dtype), col)) for col, dtype in
-                           df.dtypes.to_dict().items()])
+    record_set = ";".join([" ".join((_get_type(dtype), col))
+                           for col, dtype
+                           in df.dtypes.to_dict().items()])
     return record_set
 
 

@@ -20,11 +20,21 @@ from requests.exceptions import HTTPError, RetryError
 import subprocess
 from tempfile import TemporaryDirectory
 from time import sleep
+from warnings import warn
 
 from hpycc.utils.parsers import parse_wuid_from_failed_response, \
     parse_wuid_from_xml
 from hpycc import delete
 
+
+def check_ecl_cmd(cmd='ecl'):
+    try:
+        subprocess.run(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE, shell=False)
+    except FileNotFoundError:
+        warn("ecl is not on the system path! You may continue but functionality will be limited"
+             "to get and save_thor_file and deleting workunits. All other tasks will likely fail")
 
 class Connection:
     def __init__(self, username, server="localhost", port=8010, repo=None,
@@ -101,6 +111,8 @@ class Connection:
         if test_conn:
             self.test_connection()
 
+        check_ecl_cmd()
+
     def test_connection(self):
         """
         Assert that the `Connection` can connect to the HPCC
@@ -129,6 +141,7 @@ class Connection:
 
     @staticmethod
     def _run_command(cmd):
+
         result = subprocess.run(cmd, check=True, stderr=subprocess.PIPE,
                                 stdout=subprocess.PIPE)
 
