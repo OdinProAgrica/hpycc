@@ -58,7 +58,7 @@ def get_output(connection, script, syntax_check=True, delete_workunit=True,
 
     Raises
     ------
-    subprocess.CalledProcessError:
+    SyntaxError:
         If script fails syntax check.
 
     See Also
@@ -160,7 +160,7 @@ def get_outputs(connection, script, syntax_check=True, delete_workunit=True,
 
     Raises
     ------
-    subprocess.CalledProcessError:
+    SyntaxError:
         If script fails syntax check.
 
     See Also

@@ -141,11 +141,14 @@ class Connection:
 
     @staticmethod
     def _run_command(cmd):
-
-        result = subprocess.run(cmd, check=True, stderr=subprocess.PIPE,
+        result = subprocess.run(cmd, stderr=subprocess.PIPE,
                                 stdout=subprocess.PIPE)
 
         stderr = result.stderr.decode('utf-8')
+
+        if result.returncode:
+            raise subprocess.SubprocessError(stderr)
+
         stdout = result.stdout.decode("utf-8")
 
         Result = collections.namedtuple("Result", ["stdout", "stderr"])
@@ -157,7 +160,7 @@ class Connection:
         Run an ECL syntax check on an ECL script.
 
         Uses eclcc to run a syntax check on `script`. If the syntax
-        check fails, ie. an error is present, a CalledProcessError
+        check fails, ie. an error is present, a SyntaxError
         will be raised.
         Note that this requires that `eclcc.exe` is on the path.
         Attributes `legacy` and `repo` are also used.
@@ -173,7 +176,7 @@ class Connection:
 
         Raises
         ------
-        subprocess.CalledProcessError:
+        SyntaxError
             If the script fails the syntax check.
 
         """
@@ -181,8 +184,10 @@ class Connection:
         b += self._legacy_arg
         b += self._repo_arg
         b += [script]
-
-        self._run_command(b)
+        try:
+            self._run_command(b)
+        except subprocess.SubprocessError as e:
+            raise SyntaxError(e)
 
     @property
     def _repo_arg(self):
@@ -392,7 +397,7 @@ class Connection:
 
         Raises
         ------
-        subprocess.CalledProcessError:
+        SyntaxError:
             If script fails syntax check.
 
         See Also
