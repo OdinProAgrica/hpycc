@@ -29,7 +29,7 @@ from hpycc import delete
 
 def check_ecl_cmd(cmd='ecl'):
     try:
-        _ = subprocess.run(
+        subprocess.run(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             stdin=subprocess.PIPE, shell=False)
     except FileNotFoundError:

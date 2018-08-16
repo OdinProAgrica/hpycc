@@ -4,8 +4,8 @@ import hpycc
 import hpycc.utils.parsers
 from hpycc.delete import delete_logical_file
 from tests.test_helpers import hpcc_functions
-from tempfile import TemporaryDirectory
-import os
+import re
+
 
 # noinspection PyPep8Naming
 def setUpModule():
@@ -19,13 +19,10 @@ def tearDownModule():
 
 
 def check_file_exists(conn, file_name):
-    with TemporaryDirectory() as d:
-        p = os.path.join(d, "test.ecl")
-        with open(p, "w+") as file:
-            file.write("IMPORT std; STD.File.FileExists('%s');" % file_name)
-        res = hpycc.get_output(conn, p)
+    res = conn.run_ecl_string("IMPORT std; STD.File.FileExists('%s');" % file_name, syntax_check=False)
+    x = re.search('<Row><Result_1>([a-z]+)</Result_1></Row>', str(res))
 
-        return res.values[0]
+    return x == 'true'
 
 
 class TestDeleteWorkunitWithServer(unittest.TestCase):
@@ -62,7 +59,7 @@ class TestDeleteLogicalFile(unittest.TestCase):
 
     def test_delete_logical_file_deletes(self):
         string = "a := DATASET([{1}], {INTEGER int;}); OUTPUT(a,,'~test_delete_logical_file_deletes1');"
-        _ = self.conn.run_ecl_string(string, syntax_check=True,
+        self.conn.run_ecl_string(string, syntax_check=True,
                                      delete_workunit=True, stored={})
 
         res1 = check_file_exists(self.conn, '~test_delete_logical_file_deletes1')
@@ -71,12 +68,12 @@ class TestDeleteLogicalFile(unittest.TestCase):
 
         assert res1 and not res2
 
-    def test_delete_logical_file_doesnt_delete(self):
+    def test_delete_logical_file_doesnt_delete_other_files(self):
         string = "a := DATASET([{1}], {INTEGER int;}); OUTPUT(a,,'~test_delete_logical_file_doesnt_delete1');"
-        _ = self.conn.run_ecl_string(string, syntax_check=True,
+        self.conn.run_ecl_string(string, syntax_check=True,
                                      delete_workunit=True, stored={})
         string = "a := DATASET([{1}], {INTEGER int;}); OUTPUT(a,,'~test_delete_logical_file_doesnt_delete2');"
-        _ = self.conn.run_ecl_string(string, syntax_check=True,
+        self.conn.run_ecl_string(string, syntax_check=True,
                                      delete_workunit=True, stored={})
 
         res1 = check_file_exists(self.conn, '~test_delete_logical_file_doesnt_delete1')
