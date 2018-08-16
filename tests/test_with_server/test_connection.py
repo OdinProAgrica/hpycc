@@ -432,10 +432,10 @@ class TestConnectionEclCmd(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             check_ecl_cmd(cmd='ecl')
-            assert True if not w else False
+            self.assertTrue(True if not w else False)
 
     def test_check_ecl_cmd_fails(self):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             check_ecl_cmd(cmd='ecl123')
-            assert False if not w else True
+            self.assertTrue(False if not w else True)
