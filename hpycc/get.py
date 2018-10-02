@@ -23,6 +23,7 @@ import pandas as pd
 
 from hpycc.utils import filechunker
 from hpycc.utils.parsers import parse_xml, parse_schema_from_xml, Schema
+from urllib.parse import quote_plus
 
 
 def get_output(connection, script, syntax_check=True, delete_workunit=True,
@@ -328,10 +329,11 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10000,
     2     '3'
 
     """
+
     url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
            "&Cluster=thor&Start={}&Count={}").format(
-        connection.server, connection.port, thor_file, 0, 1)
-    r = connection.run_url_request(url, max_attempts, max_sleep)
+        connection.server, connection.port, quote_plus(thor_file), 0, 1)
+    r = connection.run_url_request(url, max_attempts, max_sleep, min_sleep)
     rj = r.json()
     try:
         wuresultresponse = rj["WUResultResponse"]
