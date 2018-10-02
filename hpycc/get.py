@@ -23,6 +23,7 @@ import pandas as pd
 
 from hpycc.utils import filechunker
 from hpycc.utils.parsers import parse_xml, parse_schema_from_xml, Schema
+from math import ceil
 from urllib.parse import quote_plus
 
 
@@ -257,8 +258,9 @@ def get_logical_file(*args, **kwargs):
                       "instead.")
 
 
-def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10000,
-                  max_attempts=3, max_sleep=10, dtype=None):
+def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None,
+                  max_attempts=3, max_sleep=60, dtype=None,
+                  min_sleep=50, low_mem=True):
     """
     Return a thor file as a pandas.DataFrame.
 
@@ -346,6 +348,10 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10000,
 
     num_rows = wuresultresponse["Total"]
 
+    if chunk_size is None:  # Automagically optimise. TODO: we could use width too.
+        suggested_size = ceil(num_rows/max_workers)
+        chunk_size = num_rows if suggested_size < 100000 else suggested_size
+        chunk_size = 275000 if suggested_size > 275000 else chunk_size
     # if there are no rows to go and get, we should return an empty dataframe
     if not num_rows:
         cols = [c.name for c in schema]
