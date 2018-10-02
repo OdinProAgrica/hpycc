@@ -258,9 +258,8 @@ def get_logical_file(*args, **kwargs):
                       "instead.")
 
 
-def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None,
-                  max_attempts=3, max_sleep=60, dtype=None,
-                  min_sleep=50, low_mem=True):
+def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None, max_attempts=3, max_sleep=60, min_sleep=50,
+                  dtype=None, low_mem=True):
     """
     Return a thor file as a pandas.DataFrame.
 
@@ -285,10 +284,21 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None,
         Maximum number of times a chunk should attempt to be
         downloaded in the case of an exception being raised.
         3 by default.
+    min_sleep: int, optional
+        Maximum time, in seconds, to sleep between attempts.
+        The true sleep time is a random int between 'min_sleep' and
+        `max_sleep`.
     max_sleep: int, optional
-            Maximum time, in seconds, to sleep between attempts.
-            The true sleep time is a random int between 0 and
-            `max_sleep`.
+        Minimum time, in seconds, to sleep between attempts.
+        The true sleep time is a random int between 'min_sleep' and
+        `max_sleep`.
+    low_mem: bool, optional
+        Should the function operate in low memory mode? This writes each
+        thread's result to disk then reads in the resultant file, rather
+        than storing all results in memory and concatenating. Much more
+        memory efficient but the need for a file lock and I/O time will
+        reduce speed.
+
     dtype: type name or dict of col -> type, optional
         Data type for data or columns. E.g. {‘a’: np.float64, ‘b’:
         np.int32}. If converters are specified, they will be applied

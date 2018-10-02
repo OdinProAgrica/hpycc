@@ -411,9 +411,7 @@ class TestGetThorFile(unittest.TestCase):
             True,
             None
         )
-        res = get_thor_file(
-            connection=self.conn,
-            thor_file="test_get_thor_file_returns_empty_dataset")
+        res = get_thor_file(connection=self.conn, thor_file="test_get_thor_file_returns_empty_dataset")
         expected = pd.DataFrame(columns=["int", "__fileposition__"])
         pd.testing.assert_frame_equal(expected, res)
 
@@ -425,9 +423,7 @@ class TestGetThorFile(unittest.TestCase):
             True,
             None
         )
-        res = get_thor_file(
-            connection=self.conn,
-            thor_file="test_get_thor_file_returns_single_row_dataset")
+        res = get_thor_file(connection=self.conn, thor_file="test_get_thor_file_returns_single_row_dataset")
         expected = pd.DataFrame({"int": [1], "__fileposition__": 0},
                                 dtype=np.int32)
         pd.testing.assert_frame_equal(expected, res)
@@ -442,9 +438,7 @@ class TestGetThorFile(unittest.TestCase):
             True,
             None
         )
-        res = get_thor_file(
-            connection=self.conn,
-            thor_file="test_get_thor_file_returns_100_row_dataset")
+        res = get_thor_file(connection=self.conn, thor_file="test_get_thor_file_returns_100_row_dataset")
         expected = pd.DataFrame({
             "int": [1]*100,
             "__fileposition__": [i*8 for i in range(100)]
@@ -461,8 +455,7 @@ class TestGetThorFile(unittest.TestCase):
             True,
             None
         )
-        res = get_thor_file(
-            connection=self.conn, thor_file=file_name, chunk_size=2)
+        res = get_thor_file(connection=self.conn, thor_file=file_name, chunk_size=2)
         expected = pd.DataFrame({"int": [1], "__fileposition__": 0},
                                 dtype=np.int32)
         pd.testing.assert_frame_equal(expected, res)
@@ -476,8 +469,7 @@ class TestGetThorFile(unittest.TestCase):
             True,
             None
         )
-        res = get_thor_file(
-            connection=self.conn, thor_file=file_name, chunk_size=2)
+        res = get_thor_file(connection=self.conn, thor_file=file_name, chunk_size=2)
         expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]},
                                 dtype=np.int32)
         pd.testing.assert_frame_equal(expected, res)
@@ -492,9 +484,7 @@ class TestGetThorFile(unittest.TestCase):
             True,
             None
         )
-        res = get_thor_file(
-            connection=self.conn,
-            thor_file=file_name, chunk_size=1)
+        res = get_thor_file(connection=self.conn, thor_file=file_name, chunk_size=1)
         expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]},
                                 dtype=np.int32)
         res = res.sort_values("__fileposition__").reset_index(drop=True)
@@ -514,8 +504,7 @@ class TestGetThorFile(unittest.TestCase):
             True,
             None
         )
-        get_thor_file(
-            connection=self.conn, thor_file=file_name, chunk_size=3)
+        get_thor_file(connection=self.conn, thor_file=file_name, chunk_size=3)
         mock.assert_called_with(file_name, 0, 1, 3, 10)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
@@ -530,8 +519,7 @@ class TestGetThorFile(unittest.TestCase):
             True,
             None
         )
-        get_thor_file(
-            connection=self.conn, thor_file=file_name, chunk_size=2)
+        get_thor_file(connection=self.conn, thor_file=file_name, chunk_size=2)
         mock.assert_called_with(file_name, 0, 2, 3, 10)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
@@ -547,8 +535,7 @@ class TestGetThorFile(unittest.TestCase):
            True,
            None
         )
-        get_thor_file(
-            connection=self.conn, thor_file=file_name, chunk_size=1)
+        get_thor_file(connection=self.conn, thor_file=file_name, chunk_size=1)
         expected = [
             unittest.mock.call(file_name, 0, 1, 3, 10),
             unittest.mock.call(file_name, 1, 1, 3, 10)
@@ -566,8 +553,7 @@ class TestGetThorFile(unittest.TestCase):
            True,
            None
         )
-        get_thor_file(
-            connection=self.conn, thor_file=file_name)
+        get_thor_file(connection=self.conn, thor_file=file_name)
         expected = [
             unittest.mock.call(file_name, 0, 10000, 3, 10),
             unittest.mock.call(file_name, 10000, 1, 3, 10)
@@ -584,8 +570,7 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         with self.assertRaises(ZeroDivisionError):
-            get_thor_file(connection=self.conn, thor_file=file_name,
-                          chunk_size=0)
+            get_thor_file(connection=self.conn, thor_file=file_name, chunk_size=0)
 
     def test_get_thor_file_parses_column_types_correctly(self):
         i = 1
@@ -646,8 +631,7 @@ class TestGetThorFile(unittest.TestCase):
                 expected_val = t[3]
             except IndexError:
                 expected_val = t[2]
-            a = get_thor_file(
-                connection=self.conn, thor_file=file_name, dtype=None)
+            a = get_thor_file(connection=self.conn, thor_file=file_name, dtype=None)
             expected = pd.DataFrame(
                 {"__fileposition__": [0], t[1]: [expected_val]})
             pd.testing.assert_frame_equal(expected, a, check_dtype=False)
@@ -707,8 +691,7 @@ class TestGetThorFile(unittest.TestCase):
                 expected_val = t[3]
             except IndexError:
                 expected_val = t[2]
-            a = get_thor_file(connection=self.conn, thor_file=file_name,
-                              dtype=None)
+            a = get_thor_file(connection=self.conn, thor_file=file_name, dtype=None)
             expected = pd.DataFrame(
                 {"__fileposition__": [0], t[1]: [[expected_val]]})
             pd.testing.assert_frame_equal(expected, a, check_dtype=False)
@@ -795,9 +778,8 @@ class TestGetThorFile(unittest.TestCase):
             True,
             None
         )
-        res = get_thor_file(
-            self.conn, file_name, dtype={"str": int, "bool": bool, "int": str,
-                                         "__fileposition__": str})
+        res = get_thor_file(self.conn, file_name, dtype={"str": int, "bool": bool, "int": str,
+                                                         "__fileposition__": str})
         expected = pd.DataFrame({
             "int": ["1", "2"],
             "str": [1, 2],
@@ -816,8 +798,7 @@ class TestGetThorFile(unittest.TestCase):
             True,
             None
         )
-        res = get_thor_file(self.conn, file_name,
-                            dtype={"bool": bool, "int": str})
+        res = get_thor_file(self.conn, file_name, dtype={"bool": bool, "int": str})
         expected = pd.DataFrame({
             "int": ["1", "2"],
             "str": ["1", "2"],
@@ -836,8 +817,7 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         with self.assertRaises(KeyError):
-            get_thor_file(self.conn, file_name,
-                          dtype={"bool": bool, "int": str, "made_up": str})
+            get_thor_file(self.conn, file_name, dtype={"bool": bool, "int": str, "made_up": str})
 
     def test_get_thor_file_returns_a_set(self):
         file_name = "test_get_thor_file_returns_a_set"

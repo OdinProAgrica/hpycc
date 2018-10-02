@@ -354,6 +354,13 @@ class Connection:
             Maximum time, in seconds, to sleep between attempts.
             The true sleep time is a random int between 0 and
             `max_sleep`.
+        min_sleep: int, optional
+            Maximum time, in seconds, to sleep between attempts.
+            The true sleep time is a random int between 'min_sleep' and
+            `max_sleep`.
+        temp_file: str, optional
+            The file to write results to, see `low_mem` in `hpycc.get.get_thor_file`
+            for the logic behind this. It saves RAM at the cost of speed.
 
         Returns
         -------

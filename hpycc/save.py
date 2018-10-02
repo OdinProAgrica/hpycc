@@ -170,8 +170,6 @@ def save_thor_file(connection, thor_file, path_or_buf,
 
     """
 
-    file = get.get_thor_file(connection, thor_file, max_workers,
-                             chunk_size, max_attempts, max_sleep,
-                             dtype)
+    file = get.get_thor_file(connection, thor_file, max_workers, chunk_size, max_attempts, max_sleep, dtype)
 
     return file.to_csv(path_or_buf, **kwargs)
