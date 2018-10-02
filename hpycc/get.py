@@ -18,7 +18,7 @@ __all__ = ["get_output", "get_outputs", "get_thor_file", "get_logical_file"]
 from concurrent.futures import ThreadPoolExecutor, wait
 import re
 import warnings
-
+import tempfile
 import pandas as pd
 
 from hpycc.utils import filechunker
@@ -276,10 +276,11 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None,
     max_workers: int, optional
         Number of concurrent threads to use when downloading file.
         Warning: too many may cause either your machine or
-        your cluster to crash! 15 by default.
+        your cluster to crash! 20 by default.
     chunk_size: int, optional
-        Size of chunks to use when downloading file. 10000 by
-        default.
+        Size of chunks to use when downloading file. By
+        default this is number of rows / number of workers,
+        bounded to a minimum of 100,000 and maximum of 400,000.
     max_attempts: int, optional
         Maximum number of times a chunk should attempt to be
         downloaded in the case of an exception being raised.
@@ -345,38 +346,47 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None,
 
     # get the schema as named tuples of (name, is_set, type)
     schema = parse_schema_from_xml(schema_str)
-
+    cols = [c.name for c in schema]
     num_rows = wuresultresponse["Total"]
 
     if chunk_size is None:  # Automagically optimise. TODO: we could use width too.
         suggested_size = ceil(num_rows/max_workers)
         chunk_size = num_rows if suggested_size < 100000 else suggested_size
         chunk_size = 275000 if suggested_size > 275000 else chunk_size
+
+    if low_mem:
+        temp_dir = tempfile.TemporaryDirectory()
+        temp_file = temp_dir.name + '\\hpycc_temp.csv'
+        pd.DataFrame(columns=cols).to_csv(temp_file, mode='w', index=False)
+    else:
+        temp_file = None
+
     # if there are no rows to go and get, we should return an empty dataframe
     if not num_rows:
-        cols = [c.name for c in schema]
         return pd.DataFrame(columns=cols)
 
     chunks = filechunker.make_chunks(num_rows, chunk_size)
-
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [
-            executor.submit(connection.get_logical_file_chunk, thor_file,
-                            start_row, n_rows, max_attempts, max_sleep)
+            executor.submit(connection.get_logical_file_chunk, thor_file, start_row,
+                            n_rows, max_attempts, max_sleep, min_sleep, temp_file)
             for start_row, n_rows in chunks
         ]
 
         finished, _ = wait(futures)
+    results = [i.result() for i in finished]  # Exception check too
 
-    results = [i.result() for i in finished]
-    flat_list = (item for sublist in results for item in sublist)
+    if low_mem:
+        df = pd.read_csv(temp_file, encoding="latin")
+        temp_dir.cleanup()
+    else:
+        df = pd.concat(results)
 
-    df = pd.DataFrame(flat_list)
-
+    # print('df created: %s' % df.head())
     # dtype is a dict
     # we replace all those in the dict, then those not specified with schema
     if not isinstance(dtype, dict) and dtype:
-            return df.astype(dtype)
+        return df.astype(dtype)
 
     schema_dict = {i.name: i for i in schema}
 
@@ -389,5 +399,8 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None,
         if c.is_a_set:  # TODO: Nested DF are also caught here. Open issue to fix
             df[c.name] = df[c.name].map(lambda x: [c.type(i) for i in x["Item"]])
         else:
-            df[c.name] = df[c.name].astype(c.type)
+            try:
+                df[c.name] = df[c.name].astype(c.type)
+            except OverflowError:  # An int that is horrifically long cannot be converted properly. Use float instead
+                df[c.name] = df[c.name].astype('float')
     return df

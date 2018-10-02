@@ -20,12 +20,16 @@ from requests.exceptions import HTTPError, RetryError
 import subprocess
 from tempfile import TemporaryDirectory
 from time import sleep
+import pandas as pd
 from warnings import warn
+import threading
 from urllib.parse import quote_plus
 
 from hpycc.utils.parsers import parse_wuid_from_failed_response, \
     parse_wuid_from_xml
 from hpycc import delete
+
+lock = threading.Lock()
 
 
 def check_ecl_cmd(cmd='ecl'):
@@ -324,7 +328,8 @@ class Connection:
                     raise RetryError(e)
 
     def get_logical_file_chunk(self, logical_file, start_row, n_rows,
-                               max_attempts, max_sleep):
+                               max_attempts, max_sleep, min_sleep,
+                               temp_file):
         """
         Return a chunk of a logical file from a HPCC instance.
 
@@ -359,14 +364,27 @@ class Connection:
         """
         url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
                "&Cluster=thor&Start={}&Count={}").format(
-            self.server, self.port, logical_file, start_row, n_rows)
-        r = self.run_url_request(url, max_attempts, max_sleep)
-        rj = r.json()
+            self.server, self.port, quote_plus(logical_file), start_row, n_rows)
+
+        # print('Getting Chunk (start: %s). Call: %s' % (start_row, url))
+
+        resp = self.run_url_request(url, max_attempts, max_sleep, min_sleep)
+        resp = resp.json()
         try:
-            result_response = rj["WUResultResponse"]["Result"]["Row"]
+            resp = resp["WUResultResponse"]["Result"]["Row"]
+            # print('Chunk (start: %s) acquired. response head: %s' % (start_row, str(resp)[0:500]))
         except KeyError:
-            raise KeyError("json is : {}".format(rj))
-        return result_response
+            raise KeyError("json is : {}".format(resp))
+
+        resp = pd.DataFrame((item for item in resp))
+
+        if temp_file:
+            lock.acquire()
+            resp.to_csv(temp_file, mode='a', index=False)
+            lock.release()
+            resp = 'Completed Successfully'
+
+        return resp
 
     def run_ecl_string(self, string, syntax_check, delete_workunit, stored):
         """
