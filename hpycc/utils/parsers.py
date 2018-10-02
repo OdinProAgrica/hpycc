@@ -141,7 +141,7 @@ def parse_wuid_from_xml(result):
     return wuid.group(0)
 
 
-Schema = namedtuple("Schema", ["name", "is_set", "type"])
+Schema = namedtuple("Schema", ["name", "is_a_set", "type"])
 
 
 def parse_schema_from_xml(xml):

@@ -378,11 +378,10 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10000,
         i = {col: Schema(col, False, dtype[col]) for col in dtype}
         schema_dict.update(i)
 
-    for col in schema_dict:
+    for col in schema_dict.keys():
         c = schema_dict[col]
-        if c.is_set:
-            df[c.name] = df[c.name].map(
-                lambda x: [c.type(i) for i in x["Item"]])
+        if c.is_a_set:  # TODO: Nested DF are also caught here. Open issue to fix
+            df[c.name] = df[c.name].map(lambda x: [c.type(i) for i in x["Item"]])
         else:
             df[c.name] = df[c.name].astype(c.type)
     return df
