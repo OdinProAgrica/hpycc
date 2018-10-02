@@ -21,6 +21,7 @@ import subprocess
 from tempfile import TemporaryDirectory
 from time import sleep
 from warnings import warn
+from urllib.parse import quote_plus
 
 from hpycc.utils.parsers import parse_wuid_from_failed_response, \
     parse_wuid_from_xml
@@ -276,7 +277,7 @@ class Connection:
                 delete.delete_workunit(self, wuid)
             return result
 
-    def run_url_request(self, url, max_attempts, max_sleep):
+    def run_url_request(self, url, max_attempts, max_sleep, min_sleep):
         """
         Return the contents of a url.
 
@@ -317,7 +318,7 @@ class Connection:
                 return r
             except (HTTPError, ValueError) as e:
                 attempts += 1
-                time_to_sleep = random.randint(0, max_sleep)
+                time_to_sleep = random.randint(min_sleep, max_sleep)
                 sleep(time_to_sleep)
                 if attempts == max_attempts:
                     raise RetryError(e)
