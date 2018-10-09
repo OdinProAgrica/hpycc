@@ -164,7 +164,7 @@ def parse_schema_from_xml(xml, dtype):
     schema = xml[0][0][0][0][0][0]
 
     schema_out = {}
-    cols = []
+    cols = ['__fileposition__']
     for child in schema:
         name = child.attrib["name"]
         is_set = "type" not in child.keys()
