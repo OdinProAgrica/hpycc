@@ -355,17 +355,20 @@ class Connection:
             Maximum time, in seconds, to sleep between attempts.
             The true sleep time is a random int between 0 and
             `max_sleep`.
-        min_sleep: int, optional
+        min_sleep: int
             Maximum time, in seconds, to sleep between attempts.
             The true sleep time is a random int between 'min_sleep' and
             `max_sleep`.
-        temp_file: str, optional
+        temp_file: str
             The file to write results to, see `low_mem` in `hpycc.get.get_thor_file`
             for the logic behind this. It saves RAM at the cost of speed.
+        cols: list
+            Column names for output. Required to ensure column order is maintained over
+            chunks.
 
         Returns
         -------
-        result_response: list of dicts
+        result_response: pd.DataFrame, str
             Rows of logical file as list of dicts. In the form
             [{"col1": 1, "col2": 2}, {"col1": 1, "col2": 2}, ...].
 
