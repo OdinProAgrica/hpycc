@@ -41,6 +41,7 @@ def check_ecl_cmd(cmd='ecl'):
         warn("ecl is not on the system path! You may continue but functionality will be limited"
              "to get and save_thor_file and deleting workunits. All other tasks will likely fail")
 
+
 class Connection:
     def __init__(self, username, server="localhost", port=8010, repo=None,
                  password="password", legacy=False, test_conn=True):
@@ -329,7 +330,7 @@ class Connection:
 
     def get_logical_file_chunk(self, logical_file, start_row, n_rows,
                                max_attempts, max_sleep, min_sleep,
-                               temp_file):
+                               temp_file, cols):
         """
         Return a chunk of a logical file from a HPCC instance.
 
@@ -381,7 +382,7 @@ class Connection:
         except KeyError:
             raise KeyError("json is : {}".format(resp))
 
-        resp = pd.DataFrame((item for item in resp))
+        resp = pd.DataFrame((item for item in resp))[cols]
 
         if temp_file:
             lock.acquire()
