@@ -387,7 +387,7 @@ class Connection:
 
         if temp_file:
             lock.acquire()
-            resp.to_csv(temp_file, mode='a', index=False)
+            resp.to_csv(temp_file, mode='a', index=False, header=False)
             lock.release()
             resp = 'Completed Successfully'
 
