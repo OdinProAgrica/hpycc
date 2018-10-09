@@ -141,10 +141,7 @@ def parse_wuid_from_xml(result):
     return wuid.group(0)
 
 
-Schema = namedtuple("Schema", ["name", "is_a_set", "type"])
-
-
-def parse_schema_from_xml(xml):
+def parse_schema_from_xml(xml, dtype):
     """
     Parse an ECL schema into python types.
 
@@ -156,19 +153,37 @@ def parse_schema_from_xml(xml):
 
     Returns
     -------
+    dict
+        dict of column stats, in the form {name: Str, type: Str, is_a_set: Bool}.
     list
-        List of namedtuples in form [(name, is_set, type)].
+        Column names in order of occurrence.
 
     """
     x = xml.replace("\n", "")
     xml = ElementTree.fromstring(x)
     schema = xml[0][0][0][0][0][0]
 
-    return (Schema(
-        child.attrib["name"],
-        "type" not in child.keys(),
-        get_python_type_from_ecl_type(child)
-    ) for child in schema)
+    schema_out = {}
+    cols = []
+    for child in schema:
+        name = child.attrib["name"]
+        is_set = "type" not in child.keys()
+
+        if dtype and not isinstance(dtype, dict):
+            typ = dtype
+        elif dtype and isinstance(dtype, dict) and name in dtype.keys():
+            typ = dtype[name]
+        else:
+            typ = get_python_type_from_ecl_type(child)
+
+        cols.append(name)
+        schema_out[name] = {'name': name, 'type': typ, 'is_a_set': is_set}
+
+    # Check that no weird columns have been passed
+    if isinstance(dtype, dict) and any([dtype_col not in cols for dtype_col in dtype.keys()]):
+        raise KeyError('Not all dtype columns exist in the logical file!')
+
+    return schema_out, cols
 
 
 def get_python_type_from_ecl_type(child):
@@ -197,4 +212,4 @@ def get_python_type_from_ecl_type(child):
 
     c = max([z.attrib.get("type", "") for z in child.iter()]).lower()
     typed = re.sub("[0-9_]|(xs:)", "", c)
-    return translated_type.get(typed, str)
+    return translated_type.get(typed, str)  # Return type, default to string.
