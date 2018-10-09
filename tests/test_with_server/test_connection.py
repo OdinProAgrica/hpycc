@@ -257,16 +257,16 @@ class TestRunURLRequestWithServer(unittest.TestCase):
     def test_run_url_request_returns_response(self):
         conn = hpycc.Connection("user", test_conn=False)
         result = conn.run_url_request("http://localhost:8010", max_attempts=1,
-                                      max_sleep=0)
+                                      max_sleep=0, min_sleep=0)
         self.assertIsInstance(result, requests.Response)
 
 
 class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
-    def test_get_logical_file_chunk_returns_correct_json(self):
-        expected_result = [
-            {'a': '1', 'b': 'a'},
-            {'a': '2', 'b': 'b'},
-        ]
+    def test_get_logical_file_chunk_returns_correct_df(self):
+        cols = ['__fileposition__', 'a', 'b']
+        expected_result = pd.DataFrame(
+            {'a': ['1', '2'], 'b': ['a', 'b']},
+        )
         conn = hpycc.Connection("user")
         df = pd.DataFrame({"a": [1, 2, 3], "b": ["a", "b", "c"]})
         with TemporaryDirectory() as d:
@@ -276,15 +276,38 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
             hpycc.spray_file(conn, p, lf_name, chunk_size=3, delete_workunit=False)
 
         result = conn.get_logical_file_chunk(
-            "thor::{}".format(lf_name), 0, 2, 3, 2)
-        for i in result:
-            i.pop("__fileposition__")
-        self.assertEqual(expected_result, result)
+            "thor::{}".format(lf_name), 0, 2, 3, 2, 0, None, cols)
+        result = result.drop("__fileposition__", axis=1)
+
+        pd.testing.assert_frame_equal(expected_result, result)
+
+    def test_get_logical_file_chunk_lowmem_mode(self):
+        cols = ['__fileposition__', 'a', 'b']
+        expected_result = pd.DataFrame(
+            {'a': [1, 2], 'b': ['a', 'b']},  # Read-in from file will cast a to int.
+        )
+        conn = hpycc.Connection("user")
+        df = pd.DataFrame({"a": [1, 2, 3], "b": ["a", "b", "c"]})
+
+        with TemporaryDirectory() as td:
+            p = os.path.join(td, "data.csv")
+            df.to_csv(p, index=False)
+            lf_name = "test_get_logical_file_chunk_returns_correct_json"
+            hpycc.spray_file(conn, p, lf_name, chunk_size=3, delete_workunit=False)
+            test_file = os.path.join(td, "test.csv")
+
+            result_report = conn.get_logical_file_chunk(
+                "thor::{}".format(lf_name), 0, 2, 3, 2, 0, test_file, cols)
+            result = pd.read_csv(test_file).drop("__fileposition__", axis=1)
+
+        self.assertEquals('Completed Successfully', result_report)
+        pd.testing.assert_frame_equal(expected_result, result)
 
     def test_get_logical_file_chunk_is_zero_indexed(self):
-        expected_result = [
-            {'__fileposition__': '0', 'a': '1', 'b': 'a'}
-        ]
+        cols = ['__fileposition__', 'a', 'b']
+        expected_result = pd.DataFrame(
+            {'__fileposition__': ['0'], 'a': ['1'], 'b': ['a']}
+        )
         conn = hpycc.Connection("user")
         df = pd.DataFrame({"a": [1, 2, 3], "b": ["a", "b", "c"]})
         with TemporaryDirectory() as d:
@@ -292,10 +315,10 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
             df.to_csv(p, index=False)
             hpycc.spray_file(conn, p, "data", chunk_size=3, delete_workunit=False)
 
-        result = conn.get_logical_file_chunk("thor::data", 0, 1, 3, 0)
-        self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], dict)
-        self.assertEqual(result, expected_result)
+        result = conn.get_logical_file_chunk("thor::data", 0, 1, 3, 0, 0, None, cols)
+
+        self.assertIsInstance(result, pd.DataFrame)
+        pd.testing.assert_frame_equal(result, expected_result)
 
 
 class TestConnectionRunECLStringWithServer(unittest.TestCase):
