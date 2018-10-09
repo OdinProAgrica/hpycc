@@ -19,9 +19,9 @@ def tearDownModule():
 
 
 def check_file_exists(conn, file_name):
-    res = conn.run_ecl_string("IMPORT std; STD.File.FileExists('%s');" % file_name, syntax_check=False)
-    x = re.search('<Row><Result_1>([a-z]+)</Result_1></Row>', str(res))
-
+    res = conn.run_ecl_string("IMPORT std; STD.File.FileExists('%s');" % file_name, syntax_check=False,
+                              delete_workunit=False, stored=None)
+    x = re.search('<Row><Result_1>([a-z]+)</Result_1></Row>', str(res)).group(1)
     return x == 'true'
 
 
