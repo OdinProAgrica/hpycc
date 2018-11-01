@@ -56,7 +56,6 @@ def _get_a_save(connection, thor_file, path_or_buf='test.csv',
                              max_workers, chunk_size, max_attempts,
                              max_sleep, dtype, **kwargs)
         df = pd.read_csv(path_or_buf) if path_or_buf else res
-
     return df
 
 
@@ -75,8 +74,6 @@ class TestGetOutputWithServer(unittest.TestCase):
         res = _save_output_from_ecl_string(self.conn, script, index=False)
         expected = pd.DataFrame({"Result_1": 'a'}, index=[0])
 
-        print(expected)
-        print(res)
         pd.testing.assert_frame_equal(expected, res)
 
     def test_save_output_returns_no_name(self):
@@ -191,6 +188,9 @@ class TestSaveThorFile(unittest.TestCase):
             "int": [1]*100,
             "__fileposition__": [i*8 for i in range(100)]
         }, dtype=np.int64)
+
+        print(expected)
+        print(res)
         pd.testing.assert_frame_equal(expected, res)
 
     def test_save_thor_file_returns_no_path(self):
