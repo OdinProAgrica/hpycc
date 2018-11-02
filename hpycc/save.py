@@ -84,7 +84,8 @@ def save_outputs(connection, script, directory=".", filenames=None,
 
     Returns
     -------
-    None
+    str
+        list of written CSVs
 
     Raises
     ------
@@ -116,10 +117,11 @@ def save_outputs(connection, script, directory=".", filenames=None,
     if prefix:
         chosen_filenames = [prefix + name for name in chosen_filenames]
 
-    for name, result in zip(chosen_filenames, results.items()):
-        path = os.path.join(directory, name)
+    paths = [os.path.join(directory, name) for name in chosen_filenames]
+    for path, result in zip(paths, results.items()):
         result[1].to_csv(path, **kwargs)
 
+    return chosen_filenames
 
 
 def save_thor_file(connection, thor_file, path_or_buf=None,
