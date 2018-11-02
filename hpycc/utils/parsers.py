@@ -1,4 +1,3 @@
-from collections import namedtuple
 import re
 from xml.etree import ElementTree
 
@@ -184,7 +183,7 @@ def parse_schema_from_xml(xml, dtype):
         cols.append('__fileposition__')
     # Check that no weird columns have been passed
     if isinstance(dtype, dict) and any([dtype_col not in cols for dtype_col in dtype.keys()]):
-        raise KeyError('Not all dtype columns exist in the logical file!')
+        raise KeyError('Not all dtype columns exist in the logical file!\nFound: %s\nGiven: %s' % (cols, dtype))
 
     return schema_out, cols
 
