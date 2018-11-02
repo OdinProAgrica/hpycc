@@ -256,8 +256,17 @@ def get_logical_file(*args, **kwargs):
                       "instead.")
 
 
-def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None, max_attempts=3, max_sleep=60, min_sleep=50,
-                  dtype=None, low_mem=True):
+def fix_x(x):
+
+    if x:
+        x = x.replace("'", '"').replace('True', 'true').replace('False', 'false')
+        return json.loads(x)
+    else:
+        return None
+
+
+def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None, max_attempts=3, max_sleep=60,
+                  min_sleep=50, dtype=None, low_mem=False, temp_dir=None):
     """
     Return a thor file as a pandas.DataFrame.
 
@@ -353,8 +362,7 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None, max_at
     schema_str = wuresultresponse["Result"]["XmlSchema"]["xml"]
 
     # get the schema as named tuples of (name, is_set, type)
-    schema = parse_schema_from_xml(schema_str)
-    cols = [c.name for c in schema]
+    schema, cols = parse_schema_from_xml(schema_str, dtype)
     num_rows = wuresultresponse["Total"]
 
     if chunk_size is None:  # Automagically optimise. TODO: we could use width too.
@@ -390,25 +398,21 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None, max_at
     else:
         df = pd.concat(results)
 
-    # print('df created: %s' % df.head())
-    # dtype is a dict
-    # we replace all those in the dict, then those not specified with schema
     if not isinstance(dtype, dict) and dtype:
         return df.astype(dtype)
 
-    schema_dict = {i.name: i for i in schema}
-
-    if dtype:
-        i = {col: Schema(col, False, dtype[col]) for col in dtype}
-        schema_dict.update(i)
-
-    for col in schema_dict.keys():
-        c = schema_dict[col]
-        if c.is_a_set:  # TODO: Nested DF are also caught here. Open issue to fix
-            df[c.name] = df[c.name].map(lambda x: [c.type(i) for i in x["Item"]])
+    for col in cols:
+        c = schema[col]
+        nam = col
+        typ = c['type']
+        if c['is_a_set'] and not low_mem:  # TODO: Nested DF are also caught here. Open issue to fix
+            df[nam] = df[nam].map(lambda x: [typ(i) for i in x["Item"]])
+        elif c['is_a_set'] and low_mem:  # low_mem coerces the set to string.
+            df[nam] = df[nam].map(lambda x: [typ(i) for i in fix_x(x)['Item']])
         else:
             try:
-                df[c.name] = df[c.name].astype(c.type)
+                df[nam] = df[nam].astype(typ)
             except OverflowError:  # An int that is horrifically long cannot be converted properly. Use float instead
-                df[c.name] = df[c.name].astype('float')
+                df[nam] = df[nam].astype('float')
     return df
+
