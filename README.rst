@@ -46,35 +46,114 @@ and getting the results is not. Therefore if your file is quite big you may be b
 results of a script using run_script_internal() with a thor file output then downloading the file with
 get_file_internal().
 
-get_output(script, server...) & save_output(script, server, path...)
+connection(username, server="localhost", port=8010, repo=None, password="password", legacy=False, test_conn=True)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Create a connection to a new HPCC instance. This is then passed to any interface functions.
+
+get_output(connection, script, ...) & save_output(connection, script, path, ...)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Run a given ECL script and either return the first result as a pandas dataframe or save it to file.
 
-get_outputs(script, server...) & save_outputs(script, server...)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+get_outputs(connection, script, ...) & save_outputs(connection, script, server, dir, ...)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Run a given ECL script and return all results as a dict of pandas dataframes or save them to files.
 
-get_file_internal(logical_file, server...) & save_file(logical_file, path, server...)
+get_thor_file(connection, logical_file, path, ...) & save_thor_file(connection, logical_file, path, ...)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Get a logical file and either return as a pandas dataframe or save it to file.
 
-run_script_internal(script, server...)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Run a given ECL script. 10 rows will be returned but they will be dumped, no output is given. 
+run_script(connection, script, ...)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Run a given ECL script. 10 rows will be returned but they will be dumped, no output is given.
 
-Frequently Used Arguments
-^^^^^^^^^^^^^^^^^^^^^^^^^
-See function documentation for full list but those of note include:
+spray_file(connection, source_file, logical_file, ...)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Spray a csv into HPCC
 
-* Specifying a local ECL repository for scripts (repo=...)
-* Allowing files to be overridden when saving (refresh=...)
-* Altering the default HPCC port (port=...)
-* Adding usernames (username=...) and passwords (password=...)
-* Suppressing all but essential messages (silent=...)
+Other kwargs
+^^^^^^^^^^^^
+See function documentation for full list of parameters.
 
 Examples 
 --------
-TODO but check the tests directory for some example ECL scripts and calls. 
+import hpycc
+import pandas as pd
+from hpycc import dockerutils
+from os import remove
+
+# Start an HPCC docker image for testing
+a = dockerutils.start_hpcc_container()
+dockerutils.start_hpcc(a)
+
+# Setup stuff
+username = 'HPCC_dev'
+f = 'test.csv'
+f_hpcc_1 = '~temp::testfile1'
+f_hpcc_2 = '~temp::testfile2'
+ecl_script = 'ecl_script.ecl'
+
+
+# Let's create a connection object so we can interface with HPCC. Checkout our test utilities for how to spin this
+# up with Docker
+conn = hpycc.Connection(username, server="localhost")
+try:
+   # So, let's spray up some data:
+   pd.DataFrame({'col1': [1, 2, 3, 4], 'col2': ['a', 'b', 'c', 'd']}).to_csv(f, index=False)
+   hpycc.spray_file(conn, f, f_hpcc_1, expire=7)
+
+   # Lovely, we can now extract that as a Thor file:
+   df = hpycc.get_thor_file(conn, f_hpcc_1)
+   print(df)
+   # Note __fileposition__ column. This will be drop-able in future versions.
+
+   #################################
+   #   col1 col2  \__fileposition__#
+   # 0    1    a                 0 #
+   # 1    3    c                20 #
+   # 2    2    b                10 #
+   # 3    4    d                30 #
+   #################################
+
+   # If preferred data can also be extracted using an ECL script.
+   with open(ecl_script, 'w') as f:
+      f.writelines("DATASET('%s', {STRING col1; STRING col2;}, THOR);" % f_hpcc_1)
+      # Note, all columns are currently string-ified by default
+   df = hpycc.get_output(conn, ecl_script)
+   print(df)
+
+   ################
+   #   col1 col2  #
+   # 0    1    a  #
+   # 1    3    c  #
+   # 2    2    b  #
+   # 3    4    d  #
+   ############## #
+
+
+   # get_thor_file() is optimised for large files, get_output is not. max_workers, chunk_size and low_mem can all
+   # be used to download data quickly and efficiently. To run a script and download a large result you should therefore
+   # save a thor file and grab that.
+
+   with open(ecl_script, 'w') as f:
+      f.writelines("a := DATASET('%s', {STRING col1; STRING col2;}, THOR);"
+                   "OUTPUT(a, , '%s');" % (f_hpcc_1, f_hpcc_2))
+   hpycc.run_script(conn, ecl_script)
+   df = hpycc.get_thor_file(conn, f_hpcc_2, max_workers=3, chunk_size=1, low_mem=True)
+   print(df)
+
+   #################################
+   #   col1 col2  \__fileposition__#
+   # 0    1    a                 0 #
+   # 1    3    c                20 #
+   # 2    2    b                10 #
+   # 3    4    d                30 #
+   #################################
+
+finally:
+   # Shutdown our docker container
+   dockerutils.stop_hpcc_container()
+   remove(ecl_script)
+   remove(f)
 
 Issues, Bugs, Comments? 
 -----------------------
