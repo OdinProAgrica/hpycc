@@ -45,27 +45,31 @@ class TestRunWithServer(unittest.TestCase):
 
     def test_run_script_deletes_workunit(self):
         conn = hpycc.Connection("user", test_conn=False)
+        check_wu_ecl = "ecl getwuid -u user -pw 1234 -s localhost -n test_run_script_deletes_workunit"
         good_script = "#WORKUNIT('name','test_run_script_deletes_workunit'); OUTPUT(2);"
+
         with TemporaryDirectory() as d:
             p = os.path.join(d, "test.ecl")
             with open(p, "w+") as file:
                 file.write(good_script)
             hpycc.run_script(conn, p)
-        res = conn._run_command(
-            "ecl getwuid -n test_run_script_deletes_workunit")
+        res = conn._run_command(check_wu_ecl)
+        print(res)
+
         self.assertEqual("", res.stdout)
 
     def test_run_script_does_not_delete_workunit(self):
         conn = hpycc.Connection("user", test_conn=False)
+        check_wu_ecl = "ecl getwuid -u user -pw 1234 -s localhost -n test_run_script_deletes_workunit"
         good_script = ("#WORKUNIT('name','test_run_script_deletes_workunit');"
                        "OUTPUT(2);")
+
         with TemporaryDirectory() as d:
             p = os.path.join(d, "test.ecl")
             with open(p, "w+") as file:
                 file.write(good_script)
             hpycc.run_script(conn, p, delete_workunit=False)
-        res = conn._run_command(
-            "ecl getwuid -n test_run_script_deletes_workunit")
+        res = conn._run_command(check_wu_ecl)
         self.assertRegex(res.stdout, "W[0-9]{8}-[0-9]{6}")
 
     def test_run_script_returns_true(self):

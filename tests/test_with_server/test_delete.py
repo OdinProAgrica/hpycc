@@ -31,15 +31,23 @@ class TestDeleteWorkunitWithServer(unittest.TestCase):
 
     def test_delete_workunit_actually_deletes_workunit(self):
         string = "OUTPUT(2);"
-        result = self.conn.run_ecl_string(string, syntax_check=True,
-                                          delete_workunit=False, stored={})
+        result = self.conn.run_ecl_string(string, syntax_check=True, delete_workunit=False, stored={})
         result = result.stdout.replace("\r\n", "")
+
         wuid = hpycc.utils.parsers.parse_wuid_from_xml(result)
+        before = self.conn.run_ecl_string("IMPORT STD; STD.System.Workunit.WorkunitExists('{}')".format(wuid),
+                                          syntax_check=True, delete_workunit=False, stored={})
+        before = re.findall('<Result_1>([a-z]+)<\/Result_1>', str(before))[0]
+
         res = hpycc.delete_workunit(self.conn, wuid)
+
+        after = self.conn.run_ecl_string("IMPORT STD; STD.System.Workunit.WorkunitExists('{}')".format(wuid),
+                                         syntax_check=True, delete_workunit=False, stored={})
+        after = re.findall('<Result_1>([a-z]+)<\/Result_1>', str(after))[0]
+
         self.assertTrue(res)
-        a = self.conn._run_command("ecl getname --wuid {}".format(wuid))
-        self.assertEqual("", a.stdout)
-        self.assertEqual("", a.stderr)
+        self.assertEqual(before, 'true')
+        self.assertEqual(after, 'false')
 
     def test_delete_workunit_fails_on_nonexistent_workunit(self):
         wuid = 'IReallyHopeThisIsNotARealWorkunitID'
