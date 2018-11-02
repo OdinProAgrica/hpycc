@@ -272,7 +272,7 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
         with TemporaryDirectory() as d:
             p = os.path.join(d, "data.csv")
             df.to_csv(p, index=False)
-            lf_name = "test_get_logical_file_chunk_returns_correct_json"
+            lf_name = "test_get_logical_file_chunk_returns_correct_json_1"
             hpycc.spray_file(conn, p, lf_name, chunk_size=3, delete_workunit=False)
 
         result = conn.get_logical_file_chunk(
@@ -292,19 +292,21 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
         with TemporaryDirectory() as td:
             p = os.path.join(td, "data.csv")
             df.to_csv(p, index=False)
-            lf_name = "test_get_logical_file_chunk_returns_correct_json"
+            lf_name = "test_get_logical_file_chunk_returns_correct_json_2"
             hpycc.spray_file(conn, p, lf_name, chunk_size=3, delete_workunit=False)
             test_file = os.path.join(td, "test.csv")
 
-            result_report = conn.get_logical_file_chunk(
-                "thor::{}".format(lf_name), 0, 2, 3, 2, 0, test_file, cols)
-            result = pd.read_csv(test_file).drop("__fileposition__", axis=1)
+            result_report = conn.get_logical_file_chunk("thor::{}".format(lf_name), 0, 2, 3, 2, 0, test_file, cols)
+            result = pd.read_csv(test_file, header=None)
+            # result.columns = cols
+            result = result.drop("__fileposition__", axis=1)
 
         self.assertEquals('Completed Successfully', result_report)
         pd.testing.assert_frame_equal(expected_result, result)
 
     def test_get_logical_file_chunk_is_zero_indexed(self):
         cols = ['__fileposition__', 'a', 'b']
+
         expected_result = pd.DataFrame(
             {'__fileposition__': ['0'], 'a': ['1'], 'b': ['a']}
         )
