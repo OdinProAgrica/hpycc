@@ -3,19 +3,19 @@ import unittest
 import hpycc
 import hpycc.utils.parsers
 from hpycc.delete import delete_logical_file
-from tests.test_helpers import hpcc_functions
+from hpycc import dockerutils
 import re
 
 
 # noinspection PyPep8Naming
 def setUpModule():
-    a = hpcc_functions.start_hpcc_container()
-    hpcc_functions.start_hpcc(a)
+    a = dockerutils.start_hpcc_container()
+    dockerutils.start_hpcc(a)
 
 
 # noinspection PyPep8Naming
 def tearDownModule():
-    hpcc_functions.stop_hpcc_container()
+    dockerutils.stop_hpcc_container()
 
 
 def check_file_exists(conn, file_name):

@@ -3,23 +3,21 @@ from tempfile import TemporaryDirectory
 import unittest
 
 import pandas as pd
-import numpy as np
 import hpycc
-from tests.test_helpers import hpcc_functions
-
+from hpycc import dockerutils
 from hpycc.spray import concatenate_logical_files, spray_file
 from hpycc.get import get_thor_file
 
 
 # noinspection PyPep8Naming
 def setUpModule():
-    a = hpcc_functions.start_hpcc_container()
-    hpcc_functions.start_hpcc(a)
+    a = dockerutils.start_hpcc_container()
+    dockerutils.start_hpcc(a)
 
 
 # noinspection PyPep8Naming
 def tearDownModule():
-    hpcc_functions.stop_hpcc_container()
+    dockerutils.stop_hpcc_container()
 
 
 CONCAT_SCRIPT_BASE = "\n".join([
