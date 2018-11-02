@@ -1,3 +1,8 @@
+"""
+Functions to create and control HPCC docker images. Requires Docker to
+be installed and running!!!!!!!
+"""
+
 import os
 import tarfile
 import time
@@ -18,7 +23,7 @@ KILL_EXCEPTIONS = (ValueError, FileNotFoundError)
 def start_hpcc_container(image_to_pull='hpccsystems/platform-ce', containter_name="hpycc_tests"):
     """
     Bootup an HPCC container using docker. Will attempt to kill any other containers
-    with the same name!
+    with the same name. Requires Docker to be installed and running!!!!!!!
 
 
     Parameters
@@ -91,7 +96,7 @@ def password_hpcc(container, env_file=ENV_FILEPATH, pass_file=PASS_FILEPATH ):
 
 def start_hpcc(container):
     """
-    Start HPCC server on the container (not on by default. Strangely.)
+    Start HPCC server on the container (not on by default. Strangely.).
 
     Parameters
     ----------
