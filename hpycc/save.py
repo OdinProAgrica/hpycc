@@ -126,7 +126,7 @@ def save_outputs(connection, script, directory=".", filenames=None,
 
 def save_thor_file(connection, thor_file, path_or_buf=None,
                    max_workers=15, chunk_size=10000, max_attempts=3,
-                   max_sleep=10, dtype=None, low_mem=False, temp_dir=False,
+                   max_sleep=60, min_sleep=50, dtype=None, low_mem=False, temp_dir=None,
                    **kwargs):
     """
     Save a logical file to disk, see get_file() for returning a
@@ -183,7 +183,8 @@ def save_thor_file(connection, thor_file, path_or_buf=None,
 
     """
 
-    file = get.get_thor_file(connection, thor_file, max_workers, chunk_size, max_attempts, max_sleep, dtype,
-                             low_mem, temp_dir)
+    file = get.get_thor_file(connection, thor_file, max_workers=max_workers, chunk_size=chunk_size,
+                             max_attempts=max_attempts, max_sleep=max_sleep, min_sleep=min_sleep, dtype=dtype,
+                             low_mem=low_mem, temp_dir=temp_dir)
 
     return file.to_csv(path_or_buf, **kwargs)

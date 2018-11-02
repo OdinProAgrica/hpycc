@@ -398,7 +398,7 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None, max_at
     else:
         df = pd.concat(results)
 
-    if not isinstance(dtype, dict) and dtype:
+    if not isinstance(dtype, dict) and dtype is not None:
         return df.astype(dtype)
 
     for col in cols:
