@@ -153,6 +153,7 @@ class Connection:
         stderr = result.stderr.decode('utf-8')
 
         if result.returncode:
+            print('Failed Workunit! Response:\n%s' % str(result))
             raise subprocess.SubprocessError(stderr)
 
         stdout = result.stdout.decode("utf-8")
@@ -210,8 +211,7 @@ class Connection:
         else:
             return []
 
-    def run_ecl_script(self, script, syntax_check, delete_workunit,
-                       stored):
+    def run_ecl_script(self, script, syntax_check, delete_workunit, stored):
         """
         Run an ECL script and return the stdout and stderr.
 
@@ -273,8 +273,11 @@ class Connection:
             result = self._run_command(base_cmd)
         except subprocess.SubprocessError as e:
             if delete_workunit:
-                wuid = parse_wuid_from_failed_response(e.args[0].decode())
-                delete.delete_workunit(self, wuid)
+                try:
+                    wuid = parse_wuid_from_failed_response(e.args[0].decode())
+                    delete.delete_workunit(self, wuid)
+                except AttributeError as e2:
+                    print('Job failed and unable to delete workunit, likely a connection error. Response: %s' % e2 )
             raise e
         else:
             if delete_workunit:
@@ -374,6 +377,7 @@ class Connection:
             [{"col1": 1, "col2": 2}, {"col1": 1, "col2": 2}, ...].
 
         """
+
         url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
                "&Cluster=thor&Start={}&Count={}").format(
             self.server, self.port, quote_plus(logical_file), start_row, n_rows)
