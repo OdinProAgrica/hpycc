@@ -359,9 +359,10 @@ class Connection:
             Maximum time, in seconds, to sleep between attempts.
             The true sleep time is a random int between 'min_sleep' and
             `max_sleep`.
-        temp_file: str
+        temp_file: str, None
             The file to write results to, see `low_mem` in `hpycc.get.get_thor_file`
-            for the logic behind this. It saves RAM at the cost of speed.
+            for the logic behind this. If None then stores everything in memory.
+            Basically if present then we save RAM at the cost of speed.
         cols: list
             Column names for output. Required to ensure column order is maintained over
             chunks.
