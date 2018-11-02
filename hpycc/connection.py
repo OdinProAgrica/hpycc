@@ -392,8 +392,8 @@ class Connection:
 
         try:
             resp = resp["WUResultResponse"]["Result"]["Row"]
-        except KeyError:
-            raise KeyError("json is : {}".format(resp))
+        except (KeyError, TypeError):
+            raise KeyError("json does not contain results of a WU:\n{}".format(resp))
 
         resp = pd.DataFrame((item for item in resp))[cols]
 
