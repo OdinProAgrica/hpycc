@@ -150,6 +150,8 @@ def parse_schema_from_xml(xml, dtype):
     xml : str
         xml string returned by ecl run. This is located in the json
         as ["WUResultResponse]["Result"]["XmlSchema"]["xml"].
+    dtype : None, List
+        data types to be parsed from ecl. If None, these are inferred.
 
     Returns
     -------
@@ -164,7 +166,7 @@ def parse_schema_from_xml(xml, dtype):
     schema = xml[0][0][0][0][0][0]
 
     schema_out = {}
-    cols = ['__fileposition__']
+    cols = []
     for child in schema:
         name = child.attrib["name"]
         is_set = "type" not in child.keys()
@@ -177,8 +179,9 @@ def parse_schema_from_xml(xml, dtype):
             typ = get_python_type_from_ecl_type(child)
 
         cols.append(name)
-        schema_out[name] = {'name': name, 'type': typ, 'is_a_set': is_set}
-
+        schema_out[name] = {'type': typ, 'is_a_set': is_set}
+    if '__fileposition__' not in cols:
+        cols.append('__fileposition__')
     # Check that no weird columns have been passed
     if isinstance(dtype, dict) and any([dtype_col not in cols for dtype_col in dtype.keys()]):
         raise KeyError('Not all dtype columns exist in the logical file!')
