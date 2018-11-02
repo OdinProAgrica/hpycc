@@ -59,8 +59,7 @@ class TestDeleteLogicalFile(unittest.TestCase):
 
     def test_delete_logical_file_deletes(self):
         string = "a := DATASET([{1}], {INTEGER int;}); OUTPUT(a,,'~test_delete_logical_file_deletes1');"
-        self.conn.run_ecl_string(string, syntax_check=True,
-                                     delete_workunit=True, stored={})
+        self.conn.run_ecl_string(string, syntax_check=True, delete_workunit=True, stored={})
 
         res1 = check_file_exists(self.conn, '~test_delete_logical_file_deletes1')
         delete_logical_file(self.conn, '~test_delete_logical_file_deletes1')

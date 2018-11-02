@@ -119,25 +119,28 @@ class TestParseSchemaFromXML(unittest.TestCase):
         for t in types:
             col = self.column_schema.format(t[0])
             schema = self.bare_schema.format(col)
-            res = [i for i in parse_schema_from_xml(schema)][0]
-            self.assertEqual("int", res.name)
-            self.assertFalse(res.is_set)
-            self.assertEqual(res.type, t[1])
+            res = [i for i in parse_schema_from_xml(schema, None)][0]
+            self.assertIsNotNone(res['int'])
+            self.assertFalse(res['int']['is_a_set'])
+            self.assertEqual(res['int']['type'], t[1])
 
     def test_parse_schema_from_xml_returns_file_position(self):
         col = self.column_schema.format("data16")
         schema = self.bare_schema.format(col)
-        res = [i for i in parse_schema_from_xml(schema)][1]
-        self.assertEqual(res.name, "__fileposition__")
-        self.assertFalse(res.is_set)
-        self.assertEqual(res.type, int)
+        res, cols = parse_schema_from_xml(schema, None)
+        self.assertFalse(res['__fileposition__']['is_a_set'])
+        self.assertEqual(res['__fileposition__']['type'], int)
+        self.assertEqual(['int', '__fileposition__'], cols)
+        self.assertIsNotNone(res['__fileposition__'])
 
     def test_parse_schema_from_xml_returns_all_columns(self):
         cols = [self.column_schema.format("string")] * 100
         joined = "\n".join(cols)
         schema = self.bare_schema.format(joined)
-        res = [i for i in parse_schema_from_xml(schema)][:-1]
-        self.assertEqual(100, len(res))
+
+        # res, cols = [i for i in parse_schema_from_xml(schema, None)][:-1]
+        res, cols = parse_schema_from_xml(schema, None)
+        self.assertEqual(101, len(cols))  # add file position
 
     def test_parse_schema_from_xml_parses_set_types_correctly(self):
         types = [
@@ -163,26 +166,27 @@ class TestParseSchemaFromXML(unittest.TestCase):
         for t in types:
             col = self.set_schema.format(t[0])
             schema = self.bare_schema.format(col)
-            res = [i for i in parse_schema_from_xml(schema)][0]
-            self.assertEqual("set_int", res.name)
-            self.assertTrue(res.is_set)
-            self.assertEqual(res.type, t[1])
+            res = [i for i in parse_schema_from_xml(schema, None)][0]
+            self.assertIsNotNone(res['set_int'])
+            self.assertTrue(res['set_int']['is_a_set'])
+            self.assertEqual(res['set_int']['type'], t[1])
 
     def test_parse_schema_from_xml_parses_sets_and_cols(self):
         col = self.column_schema.format("xs:string")
         s = self.set_schema.format("xs:double")
         sc = "\n".join([col, s])
         schema = self.bare_schema.format(sc)
-        res = sorted(parse_schema_from_xml(schema), key=lambda x: x.name)
-        expected = [
-            ("__fileposition__", False, int),
-            ("int", False, str),
-            ("set_int", True, float)
-        ]
+        res, cols = parse_schema_from_xml(schema, None)
+        expected = {
+            'int': {'type': str, 'is_a_set': False},
+            'set_int': {'type': float, 'is_a_set': True},
+            '__fileposition__': {'type': int, 'is_a_set': False}
+        }
         for e, r in zip(expected, res):
             self.assertEqual(e[0], r[0])
             self.assertEqual(e[1], r[1])
             self.assertEqual(e[2], r[2])
+        self.assertEqual(cols, list(expected.keys()))
 
 
 class TestGetPythonTypeFromECLType(unittest.TestCase):

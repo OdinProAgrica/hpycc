@@ -298,7 +298,7 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
 
             result_report = conn.get_logical_file_chunk("thor::{}".format(lf_name), 0, 2, 3, 2, 0, test_file, cols)
             result = pd.read_csv(test_file, header=None)
-            # result.columns = cols
+            result.columns = cols
             result = result.drop("__fileposition__", axis=1)
 
         self.assertEquals('Completed Successfully', result_report)
