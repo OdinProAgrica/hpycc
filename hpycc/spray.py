@@ -117,7 +117,7 @@ def _stringify_rows(df, start_row, num_rows):
 
 
 def spray_file(connection, source_file, logical_file, overwrite=False,
-               expire=None, chunk_size=10000, max_workers=3,
+               expire=None, chunk_size=50000, max_workers=5,
                delete_workunit=True):
     """
     Spray a file to a HPCC logical file.
@@ -246,5 +246,4 @@ def concatenate_logical_files(connection, to_concat, logical_file, record_set,
     script += ");"
     script = script.format(read_files, logical_file)
 
-    connection.run_ecl_string(script, True, delete_workunit=delete_workunit,
-                              stored=None)
+    connection.run_ecl_string(script, True, delete_workunit=delete_workunit, stored=None)
