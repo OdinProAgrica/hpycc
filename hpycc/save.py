@@ -121,9 +121,11 @@ def save_outputs(connection, script, directory=".", filenames=None,
         result[1].to_csv(path, **kwargs)
 
 
-def save_thor_file(connection, thor_file, path_or_buf,
+
+def save_thor_file(connection, thor_file, path_or_buf=None,
                    max_workers=15, chunk_size=10000, max_attempts=3,
-                   max_sleep=10, dtype=None, **kwargs):
+                   max_sleep=10, dtype=None, low_mem=False, temp_dir=False,
+                   **kwargs):
     """
     Save a logical file to disk, see get_file() for returning a
     DataFrame.
@@ -158,6 +160,15 @@ def save_thor_file(connection, thor_file, path_or_buf,
         INSTEAD of dtype conversion. If None, or columns are missing
         from the provided dict, they will be converted to one of
         bool, str or int based on the HPCC datatype. None by default.
+    low_mem: bool, optional
+        Should the function operate in low memory mode? This writes each
+        thread's result to disk then reads in the resultant file, rather
+        than storing all results in memory and concatenating. Much more
+        memory efficient but the need for a file lock and I/O time will
+        reduce speed. Owing to the speed cost, this is False by default.
+    temp_dir: str, None
+        Optional location of temp directory, if None one is created in
+        the default location
     kwargs
         Additional parameters to be provided to
         pandas.DataFrame.to_csv().
@@ -170,6 +181,7 @@ def save_thor_file(connection, thor_file, path_or_buf,
 
     """
 
-    file = get.get_thor_file(connection, thor_file, max_workers, chunk_size, max_attempts, max_sleep, dtype)
+    file = get.get_thor_file(connection, thor_file, max_workers, chunk_size, max_attempts, max_sleep, dtype,
+                             low_mem, temp_dir)
 
     return file.to_csv(path_or_buf, **kwargs)
