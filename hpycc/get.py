@@ -304,8 +304,10 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None, max_at
         thread's result to disk then reads in the resultant file, rather
         than storing all results in memory and concatenating. Much more
         memory efficient but the need for a file lock and I/O time will
-        reduce speed.
-
+        reduce speed. Owing to the speed cost, this is False by default.
+    temp_dir: str, None
+        Optional location of temp directory, if None one is created in
+        the default location
     dtype: type name or dict of col -> type, optional
         Data type for data or columns. E.g. {‘a’: np.float64, ‘b’:
         np.int32}. If converters are specified, they will be applied
@@ -368,29 +370,27 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None, max_at
     if chunk_size is None:  # Automagically optimise. TODO: we could use width too.
         suggested_size = ceil(num_rows/max_workers)
         chunk_size = num_rows if suggested_size < 100000 else suggested_size
-        chunk_size = 275000 if suggested_size > 275000 else chunk_size
+        chunk_size = 325000 if suggested_size > 325000 else chunk_size
 
-    if low_mem:
-        temp_dir = tempfile.TemporaryDirectory()
+    if low_mem:  # Make a temp dir and a blank file to write to
+        temp_dir = tempfile.TemporaryDirectory(dir=temp_dir)
         temp_file = temp_dir.name + '\\hpycc_temp.csv'
         pd.DataFrame(columns=cols).to_csv(temp_file, mode='w', index=False)
     else:
         temp_file = None
 
-    # if there are no rows to go and get, we should return an empty dataframe
-    if not num_rows:
+    if not num_rows:  # if there are no rows to go and get, we should return an empty dataframe
         return pd.DataFrame(columns=cols)
 
     chunks = filechunker.make_chunks(num_rows, chunk_size)
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [
             executor.submit(connection.get_logical_file_chunk, thor_file, start_row,
-                            n_rows, max_attempts, max_sleep, min_sleep, temp_file)
+                            n_rows, max_attempts, max_sleep, min_sleep, temp_file, cols)
             for start_row, n_rows in chunks
         ]
 
-        finished, _ = wait(futures)
-    results = [i.result() for i in finished]  # Exception check too
+        results = [i.result() for i in futures]  # Wait and exception check too
 
     if low_mem:
         df = pd.read_csv(temp_file, encoding="latin")
