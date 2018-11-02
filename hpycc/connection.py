@@ -154,7 +154,7 @@ class Connection:
         stderr = result.stderr.decode('utf-8')
 
         if result.returncode:
-            print('Failed Workunit! Response:\n%s' % str(result))
+            print('Failed Workunit or command line call! Response:\n%s' % str(result))
             raise subprocess.SubprocessError(stderr)
 
         stdout = result.stdout.decode("utf-8")
