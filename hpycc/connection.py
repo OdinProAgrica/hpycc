@@ -24,6 +24,7 @@ import pandas as pd
 from warnings import warn
 import threading
 from urllib.parse import quote_plus
+from simplejson.errors import JSONDecodeError
 
 from hpycc.utils.parsers import parse_wuid_from_failed_response, \
     parse_wuid_from_xml
@@ -383,7 +384,11 @@ class Connection:
             self.server, self.port, quote_plus(logical_file), start_row, n_rows)
 
         resp = self.run_url_request(url, max_attempts, max_sleep, min_sleep)
-        resp = resp.json()
+
+        try:
+            resp = resp.json()
+        except JSONDecodeError:
+            print("Response unparsable: %s" % str(resp))
 
         try:
             resp = resp["WUResultResponse"]["Result"]["Row"]
