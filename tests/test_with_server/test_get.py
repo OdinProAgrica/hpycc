@@ -645,27 +645,70 @@ class TestGetThorFile(unittest.TestCase):
 
         self.assertEqual(expected, mock.call_args_list)
 
-
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
-    def test_get_thor_file_uses_default_chunk_size(self, mock):
-        file_name = "test_get_thor_file_uses_default_chunk_size"
+    def test_get_thor_file_uses_generates_chunk_size_150000row_2workers(self, mock):
+        file_name = "test_get_thor_file_uses_generates_chunk_size_150000row_2workers"
+
         mock.return_value = pd.DataFrame({'int': ['1'], '__fileposition__': ['0']})
+
         self.conn.run_ecl_string(
            "a := DATASET([{}], {{INTEGER int;}}); "
-           "OUTPUT(a,,'~{}');".format(",".join(["{1}"]*10001), file_name),
+           "OUTPUT(a,,'~{}');".format(",".join(["{1}"]*150000), file_name),
            True,
            True,
            None
         )
-        get_thor_file(connection=self.conn, thor_file=file_name)
+        get_thor_file(connection=self.conn, thor_file=file_name, max_workers=2)
         expected = [
-            unittest.mock.call(file_name, 0, 10001, 3, 60, 50, None, ['int', '__fileposition__']),
-            unittest.mock.call(file_name, 10001, 1, 3, 60, 50, None, ['int', '__fileposition__'])
+            unittest.mock.call(file_name, 0, 75000, 3, 60, 50, None, ['int', '__fileposition__']),
+            unittest.mock.call(file_name, 75000, 75000, 3, 60, 50, None, ['int', '__fileposition__'])
         ]
-        self.assertEqual(expected, mock.call_args_list)
+        self.assertEqual(expected[0], mock.call_args_list[0])
+        self.assertEqual(expected[1], mock.call_args_list[1])
 
+    @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
+    def test_get_thor_file_uses_generates_chunk_size_150000row_3workers(self, mock):
+        file_name = "test_get_thor_file_uses_generates_chunk_size_150000row_3workers"
 
+        mock.return_value = pd.DataFrame({'int': ['1'], '__fileposition__': ['0']})
 
+        self.conn.run_ecl_string(
+            "a := DATASET([{}], {{INTEGER int;}}); "
+            "OUTPUT(a,,'~{}');".format(",".join(["{1}"] * 150000), file_name),
+            True,
+            True,
+            None
+        )
+        get_thor_file(connection=self.conn, thor_file=file_name, max_workers=3)
+        expected = [
+            unittest.mock.call(file_name, 0, 50000, 3, 60, 50, None, ['int', '__fileposition__']),
+            unittest.mock.call(file_name, 50000, 50000, 3, 60, 50, None, ['int', '__fileposition__']),
+            unittest.mock.call(file_name, 100000, 50000, 3, 60, 50, None, ['int', '__fileposition__'])
+        ]
+        self.assertEqual(expected[0], mock.call_args_list[0])
+        self.assertEqual(expected[1], mock.call_args_list[1])
+        self.assertEqual(expected[2], mock.call_args_list[2])
+
+    @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
+    def test_get_thor_file_uses_generates_chunk_size_325000row_1workers(self, mock):
+        file_name = "test_get_thor_file_uses_generates_chunk_size_325000row_1workers"
+
+        mock.return_value = pd.DataFrame({'int': ['1'], '__fileposition__': ['0']})
+
+        self.conn.run_ecl_string(
+            "a := DATASET([{}], {{INTEGER int;}}); "
+            "OUTPUT(a,,'~{}');".format(",".join(["{1}"] * 350000), file_name),
+            True,
+            True,
+            None
+        )
+        get_thor_file(connection=self.conn, thor_file=file_name, max_workers=1)
+        expected = [
+            unittest.mock.call(file_name, 0, 325000, 3, 60, 50, None, ['int', '__fileposition__']),
+            unittest.mock.call(file_name, 325000, 25000, 3, 60, 50, None, ['int', '__fileposition__'])
+        ]
+        self.assertEqual(expected[0], mock.call_args_list[0])
+        self.assertEqual(expected[1], mock.call_args_list[1])
 
 
 
