@@ -20,15 +20,14 @@ import re
 import warnings
 import tempfile
 import pandas as pd
-
+import json
 from hpycc.utils import filechunker
-from hpycc.utils.parsers import parse_xml, parse_schema_from_xml, Schema
+from hpycc.utils.parsers import parse_xml, parse_schema_from_xml
 from math import ceil
 from urllib.parse import quote_plus
 
 
-def get_output(connection, script, syntax_check=True, delete_workunit=True,
-               stored=None):
+def get_output(connection, script, syntax_check=True, delete_workunit=True, stored=None):
     """
     Return the first output of an ECL script as a pandas.DataFrame.
 
@@ -112,22 +111,22 @@ def get_output(connection, script, syntax_check=True, delete_workunit=True,
 
     """
 
-    result = connection.run_ecl_script(script, syntax_check, delete_workunit,
-                                       stored)
-
+    result = connection.run_ecl_script(script, syntax_check, delete_workunit, stored)
     result = result.stdout.replace("\r\n", "")
 
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
     match = re.search(regex, result)
+    warn_msg = "The output does not appear to contain a dataset. Returning an empty DataFrame."
     try:
         match_content = match.group()
-    except AttributeError:
-        warnings.warn("The output does not appear to contain a dataset. "
-                      "Returning an empty DataFrame.")
-        return pd.DataFrame()
-    else:
         parsed = parse_xml(match_content)
-        return parsed
+    except AttributeError:
+        parsed = pd.DataFrame()
+
+    if len(parsed) == 0:
+        warnings.warn(warn_msg)
+
+    return parsed
 
 
 def get_outputs(connection, script, syntax_check=True, delete_workunit=True,
@@ -231,8 +230,7 @@ def get_outputs(connection, script, syntax_check=True, delete_workunit=True,
     }
 
     """
-    result = connection.run_ecl_script(script, syntax_check, delete_workunit,
-                                       stored)
+    result = connection.run_ecl_script(script, syntax_check, delete_workunit, stored)
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.*?)</Dataset>"
 
     result = result.stdout.replace("\r\n", "")
