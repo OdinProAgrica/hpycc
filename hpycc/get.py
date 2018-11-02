@@ -369,8 +369,8 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None, max_at
 
     if chunk_size is None:  # Automagically optimise. TODO: we could use width too.
         suggested_size = ceil(num_rows/max_workers)
-        chunk_size = num_rows if suggested_size < 100000 else suggested_size
-        chunk_size = 325000 if suggested_size > 325000 else chunk_size
+        chunk_size = num_rows if suggested_size < 10000 else suggested_size  # Don't chunk small stuff.
+        chunk_size = 325000 if suggested_size > 325000 else chunk_size  # More chunks than workers for big stuff.
 
     if low_mem:  # Make a temp dir and a blank file to write to
         temp_dir = tempfile.TemporaryDirectory(dir=temp_dir)
