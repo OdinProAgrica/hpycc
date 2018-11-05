@@ -22,7 +22,7 @@ def delete_logical_file(connection, logical_file, delete_workunit=True):
     connection.run_ecl_string(script, True, delete_workunit=delete_workunit,
                               stored={})
 
-
+# TODO why do we need minsleep?
 def delete_workunit(connection, wuid, max_attempts=3, max_sleep=15, min_sleep=5):
     """
     Delete a workunit
