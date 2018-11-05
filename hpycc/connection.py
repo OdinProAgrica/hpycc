@@ -24,7 +24,7 @@ import pandas as pd
 from warnings import warn
 import threading
 from urllib.parse import quote_plus
-from simplejson.errors import JSONDecodeError
+from json import JSONDecodeError
 
 from hpycc.utils.parsers import parse_wuid_from_failed_response, \
     parse_wuid_from_xml
@@ -39,8 +39,9 @@ def check_ecl_cmd(cmd='ecl'):
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             stdin=subprocess.PIPE, shell=False)
     except FileNotFoundError:
-        warn("ecl is not on the system path! You may continue but functionality will be limited"
-             "to get and save_thor_file and deleting workunits. All other tasks will likely fail")
+        warn("ecl is not on the system path! You may continue but "
+             "functionality will be limited to get and save_thor_file and "
+             "deleting workunits. All other tasks will likely fail.")
 
 
 class Connection:
@@ -60,7 +61,7 @@ class Connection:
             The username to provide to HPCC.
         server : str, optional
             The ip address of the HPCC instance in the form
-            `XX.XX.XX.XX`. Note that neither `http://` nor the port
+            `XX.XX.XX.XX`. Neither `http://` nor the port
             number should be included. 'localhost' by default.
         port : int, optional
             The port number ECL Watch is running on on the HPCC
@@ -154,8 +155,9 @@ class Connection:
         stderr = result.stderr.decode('utf-8')
 
         if result.returncode:
-            print('Failed Workunit or command line call! Response:\n%s' % str(result))
-            raise subprocess.SubprocessError(stderr)
+            msg = 'Failed Workunit or command line call! Response: {}'.format(
+                result)
+            raise subprocess.SubprocessError(msg)
 
         stdout = result.stdout.decode("utf-8")
 
@@ -272,6 +274,7 @@ class Connection:
 
         try:
             result = self._run_command(base_cmd)
+            # TODO dont like this nested try except
         except subprocess.SubprocessError as e:
             if delete_workunit:
                 try:
@@ -378,6 +381,12 @@ class Connection:
             [{"col1": 1, "col2": 2}, {"col1": 1, "col2": 2}, ...].
 
         """
+        # TODO lots of things about the docstring. DOn't make me look
+        # somewhere else for low mem. dont like that we need cols, dont like we
+        # need to specify temp file and min_sleep. should also just be an
+        # internal function
+
+        # TODO quote plus should be better named
 
         url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
                "&Cluster=thor&Start={}&Count={}").format(
@@ -385,6 +394,7 @@ class Connection:
 
         resp = self.run_url_request(url, max_attempts, max_sleep, min_sleep)
 
+        # TODO do we need this, just let it fail
         try:
             resp = resp.json()
         except JSONDecodeError:
@@ -392,11 +402,13 @@ class Connection:
 
         try:
             resp = resp["WUResultResponse"]["Result"]["Row"]
+        # TODO don't mask exceptions
         except (KeyError, TypeError):
             raise KeyError("json does not contain results of a WU:\n{}".format(resp))
 
         resp = pd.DataFrame((item for item in resp))[cols]
 
+        # TODO I don;t like the temp_file, lock thing. can we use a temp folder somewhere else? it shouldnt be this functions job
         if temp_file:
             lock.acquire()
             resp.to_csv(temp_file, mode='a', index=False, header=False)
