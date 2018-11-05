@@ -3,6 +3,7 @@ Functions to create and control HPCC docker images. Requires Docker to
 be installed and running!!!!!!!
 """
 
+# TODO this file should be moved
 import os
 import tarfile
 import time
@@ -14,12 +15,15 @@ import pkg_resources
 from time import sleep
 
 # always use slash
+# TODO not sure what this does. not sure the setupfiles should live where do too.
 ENV_FILEPATH = pkg_resources.resource_filename(__name__, 'dockersetupfiles/environment.xml')
 PASS_FILEPATH = pkg_resources.resource_filename(__name__, 'dockersetupfiles/.htpasswd')
 PASS_PLAINTEXT_FILEPATH = pkg_resources.resource_filename(__name__, 'dockersetupfiles/plaintext_passwords.txt')
 KILL_EXCEPTIONS = (ValueError, FileNotFoundError)
 
 
+# TODO this starts any container
+# TODO there should also be a pull function
 def start_hpcc_container(image_to_pull='hpccsystems/platform-ce', containter_name="hpycc_tests"):
     """
     Bootup an HPCC container using docker. Will attempt to kill any other containers
@@ -78,6 +82,7 @@ def password_hpcc(container, env_file=ENV_FILEPATH, pass_file=PASS_FILEPATH ):
     None
 
     """
+    # TODO nope. not having this
     if pathlib.Path.cwd().name == "tests":
         p = pathlib.Path() / 'test_helpers'
     else:
@@ -193,6 +198,7 @@ def stop_hpcc_container(container_name="hpycc_tests"):
 
 
 def get_default_userpass():
+    # TODO cna we just make a password from a dict?
     """
     Return the default user:password that is created by `password_hpcc`.
 
