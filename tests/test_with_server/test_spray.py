@@ -4,20 +4,20 @@ import unittest
 
 import pandas as pd
 import hpycc
-from hpycc import dockerutils
+from hpycc.utils import docker
 from hpycc.spray import concatenate_logical_files, spray_file
 from hpycc.get import get_thor_file
 
 
 # noinspection PyPep8Naming
 def setUpModule():
-    a = dockerutils.start_hpcc_container()
-    dockerutils.start_hpcc(a)
+    a = docker.start_container()
+    docker.start_hpcc(a)
 
 
 # noinspection PyPep8Naming
 def tearDownModule():
-    dockerutils.stop_hpcc_container()
+    docker.stop_hpcc_container()
 
 
 CONCAT_SCRIPT_BASE = "\n".join([
