@@ -1,8 +1,7 @@
 import os
 
-import hpycc.get
 import hpycc.utils.parsers
-from hpycc import get_output, get
+from hpycc import get_output, get_thor_file
 
 
 def save_output(connection, script, path_or_buf=None, syntax_check=True,
@@ -65,8 +64,7 @@ def save_outputs(connection, script, directory=".", filenames=None,
     filenames : list or None, optional
         File names to save results as. If None, files will
         be named as their output name assigned by the ECL script.
-        An IndexError will be raised if this is a different length
-        to the number of outputs. None by default.
+        None by default.
     prefix : str or None, optional
         Prefix to prepend to all file names. None by default.
     syntax_check : bool, optional
@@ -93,6 +91,8 @@ def save_outputs(connection, script, directory=".", filenames=None,
         If `filenames` is of different length to the number of
         outputs.
     """
+    # TODO don;t like this returning the list.
+    # todo should we combine directory and filenames?
     results = hpycc.get_outputs(
         connection, script, syntax_check, delete_workunit, stored)
 
@@ -182,9 +182,11 @@ def save_thor_file(connection, thor_file, path_or_buf=None,
         representation of the output csv.
 
     """
+    # TODO all the low_mem stuff applies to this as get
 
-    file = get.get_thor_file(connection, thor_file, max_workers=max_workers, chunk_size=chunk_size,
-                             max_attempts=max_attempts, max_sleep=max_sleep, min_sleep=min_sleep, dtype=dtype,
-                             low_mem=low_mem, temp_dir=temp_dir)
+    file = get_thor_file(
+        connection, thor_file, max_workers=max_workers, chunk_size=chunk_size,
+        max_attempts=max_attempts, max_sleep=max_sleep, min_sleep=min_sleep,
+        dtype=dtype, low_mem=low_mem, temp_dir=temp_dir)
 
     return file.to_csv(path_or_buf, **kwargs)

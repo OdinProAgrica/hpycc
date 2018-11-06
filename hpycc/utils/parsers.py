@@ -160,6 +160,8 @@ def parse_schema_from_xml(xml, dtype):
         Column names in order of occurrence.
 
     """
+    # TODO return a tuple. it is ordered.
+    # TODO dtype should just be none and accept an iterable.
     x = xml.replace("\n", "")
     xml = ElementTree.fromstring(x)
     schema = xml[0][0][0][0][0][0]
@@ -167,6 +169,7 @@ def parse_schema_from_xml(xml, dtype):
     schema_out = {}
     cols = []
     for child in schema:
+    # TODO can we have a function which does this parsing instead?
         name = child.attrib["name"]
         is_set = "type" not in child.keys()
 
@@ -179,9 +182,11 @@ def parse_schema_from_xml(xml, dtype):
 
         cols.append(name)
         schema_out[name] = {'type': typ, 'is_a_set': is_set}
+    # TODO why do we need to do the below
     if '__fileposition__' not in cols:
         cols.append('__fileposition__')
     # Check that no weird columns have been passed
+    # TODO dtype can be a dict?!
     if isinstance(dtype, dict) and any([dtype_col not in cols for dtype_col in dtype.keys()]):
         raise KeyError('Not all dtype columns exist in the logical file!\nFound: %s\nGiven: %s' % (cols, dtype))
 

@@ -27,7 +27,8 @@ from math import ceil
 from urllib.parse import quote_plus
 
 
-def get_output(connection, script, syntax_check=True, delete_workunit=True, stored=None):
+def get_output(connection, script, syntax_check=True, delete_workunit=True,
+               stored=None):
     """
     Return the first output of an ECL script as a pandas.DataFrame.
 
@@ -111,7 +112,8 @@ def get_output(connection, script, syntax_check=True, delete_workunit=True, stor
 
     """
 
-    result = connection.run_ecl_script(script, syntax_check, delete_workunit, stored)
+    result = connection.run_ecl_script(script, syntax_check, delete_workunit,
+                                       stored)
     result = result.stdout.replace("\r\n", "")
 
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
@@ -122,6 +124,7 @@ def get_output(connection, script, syntax_check=True, delete_workunit=True, stor
         parsed = parse_xml(match_content)
     except AttributeError:
         parsed = pd.DataFrame()
+    # TODO why do this len check? It should be caught by the try except
 
     if len(parsed) == 0:
         warnings.warn(warn_msg)
@@ -230,7 +233,8 @@ def get_outputs(connection, script, syntax_check=True, delete_workunit=True,
     }
 
     """
-    result = connection.run_ecl_script(script, syntax_check, delete_workunit, stored)
+    result = connection.run_ecl_script(script, syntax_check, delete_workunit,
+                                       stored)
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.*?)</Dataset>"
 
     result = result.stdout.replace("\r\n", "")
@@ -255,7 +259,8 @@ def get_logical_file(*args, **kwargs):
     raise ImportError("This function has been deprecated, use get_thor_file "
                       "instead.")
 
-
+# TODO is this just parsing a json correctly? also - replacing single quotes
+# seems like it is going to break things
 def fix_x(x):
 
     if x:
@@ -351,6 +356,10 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None, max_at
     2     '3'
 
     """
+    # TODO I think we can do this better with a temporary directory and temp
+    # files.
+    # TODO don't like the new chunksize. what if someone wants to go over 400000
+    # todo why min sleep?
 
     url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
            "&Cluster=thor&Start={}&Count={}").format(
@@ -391,6 +400,9 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None, max_at
         ]
 
         results = [i.result() for i in futures]  # Wait and exception check too
+    # TODO we can use as finished here. plus just get the first chunk normally
+    # and make the csv. or append as we go. but that is handled in the get_
+    # chunk bit. which it shouldn't be. could we write to lots of small files?
 
     if low_mem:
         df = pd.read_csv(temp_file, encoding="latin")
@@ -400,6 +412,8 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None, max_at
 
     if not isinstance(dtype, dict) and dtype is not None:
         return df.astype(dtype)
+
+    # todo - this seems like a hack. can we specifiy dtypes on csv read?
 
     for col in cols:
         c = schema[col]
