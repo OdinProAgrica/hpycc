@@ -437,16 +437,14 @@ class TestConnectionRunURLRequest(unittest.TestCase):
 class TestConnectionTestConnectionWithAuth(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        a = docker.start_container()
-        docker.password_hpcc(a)
-        docker.start_hpcc(a)
+        docker.HPCCContainer(tag="6.4.26-1", users=("test1", "1234"))
 
         cls.error_string = ("401 Client Error: Unauthorized for url: "
                             "http://localhost:8010/")
 
     @classmethod
     def tearDownClass(cls):
-        docker.stop_hpcc_container()
+        docker.HPCCContainer(pull=False, start=False).stop_container()
 
     def test_test_connection_passes_with_correct_auth(self):
         conn = hpycc.connection.Connection(username="test1", password="1234")

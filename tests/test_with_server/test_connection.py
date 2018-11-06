@@ -300,7 +300,7 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
             result.columns = cols
             result = result.drop("__fileposition__", axis=1)
 
-        self.assertEquals('Completed Successfully', result_report)
+        self.assertEqual('Completed Successfully', result_report)
         pd.testing.assert_frame_equal(expected_result, result)
 
     def test_get_logical_file_chunk_is_zero_indexed(self):
