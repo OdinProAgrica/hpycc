@@ -11,13 +11,12 @@ from hpycc.get import get_thor_file
 
 # noinspection PyPep8Naming
 def setUpModule():
-    a = docker.start_container()
-    docker.start_hpcc(a)
+    docker.HPCCContainer(tag="6.4.26-1")
 
 
 # noinspection PyPep8Naming
 def tearDownModule():
-    docker.stop_hpcc_container()
+    docker.HPCCContainer(pull=False, start=False).stop_container()
 
 
 CONCAT_SCRIPT_BASE = "\n".join([
