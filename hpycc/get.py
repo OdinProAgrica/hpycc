@@ -17,12 +17,9 @@ __all__ = ["get_output", "get_outputs", "get_thor_file", "get_logical_file"]
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import re
-import os
 import warnings
-import tempfile
 import pandas as pd
 import json
-from collections import OrderedDict
 from hpycc.utils import filechunker
 from hpycc.utils.parsers import parse_xml, parse_schema_from_xml
 from math import ceil
@@ -288,14 +285,11 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_
         Name of thor file to be downloaded.
     max_workers: int, optional
         Number of concurrent threads to use when downloading file.
-        Warning: too many may cause either your machine or
-        your cluster to crash! 10 by default.
+        Warning: too many may cause instability! 10 by default.
     chunk_size: int, optional
-        Size of chunks to use when downloading file. If not provided
-        this is number of rows / number of workers, bounded
-        to a minimum of 100,000 and maximum of 400,000.
-        If provided here then no limits are enforced, fill
-        yer boots.
+        Size of chunks to use when downloading file. If auto
+        this is rows / workers (bounded between 100,000 and
+        400,000). If give then no limits are enforced.
     max_attempts: int, optional
         Maximum number of times a chunk should attempt to be
         downloaded in the case of an exception being raised.
@@ -384,15 +378,12 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_
             for start_row, n_rows in chunks
         ]
 
-    # Parse results into a master dict
-    # use a generator and it means we can avoid a for loop and keep things out of memory
-    results = (i.result() for i in futures)
-    # unnest things first
-    flat_list = (item for sublist in results for item in sublist)
-    # now we can do one for loop
-    results = {k: [dic[k] for dic in flat_list] for k in schema.keys()}
-    print(results)
-    results = pd.DataFrame(results)[list(schema.keys())]
+    results = {key: [] for key in schema.keys()}
+    for result in as_completed(futures):
+        result = result.result()
+        [results[k].extend(result[k]) for k in results.keys()]
+        del result
+    results = pd.DataFrame(results)
 
     for col in schema.keys():
         c = schema[col]
