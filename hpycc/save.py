@@ -45,8 +45,8 @@ def save_output(connection, script, path_or_buf=None, syntax_check=True,
     return result.to_csv(path_or_buf=path_or_buf, **kwargs)
 
 
-def save_outputs(connection, script, directory=".", file_names=None,
-                 prefix=None, syntax_check=True, delete_workunit=True,
+def save_outputs(connection, script, directory=".", overwrite=True,
+                 prefix='', syntax_check=True, delete_workunit=True,
                  stored=None, **kwargs):
     """
     Save all outputs of an ECL script as csvs. See get_outputs()
@@ -61,12 +61,10 @@ def save_outputs(connection, script, directory=".", file_names=None,
          Path of script to execute.
     directory : str, optional
         Directory to save output files in. "." by default.
-    file_names : list or None, optional
-        File names to save results as. If None, files will
-        be named as their output name assigned by the ECL script.
-        None by default. Note that save _directory_ is given by
-        `directory`, you shouldn't pass the full path here.
-    prefix : str or None, optional
+    overwrite : bool
+        Should files be overwritten if they already exist? True by
+        default. Because you should know better.
+    prefix : str, optional
         Prefix to prepend to all file names. None by default.
     syntax_check : bool, optional
         Should the script be syntax checked before execution. True by
@@ -92,37 +90,17 @@ def save_outputs(connection, script, directory=".", file_names=None,
         If `filenames` is of different length to the number of
         outputs.
     """
-    # TODO don;t like this returning the list.
-    # todo should we combine directory and file_names?
     results = hpycc.get_outputs(
         connection, script, syntax_check, delete_workunit, stored)
 
-    parsed_filenames = ["{}.csv".format(res) for res in results]
+    paths = [os.path.join(directory, prefix + res + ".csv") for res in results]
+    if not overwrite and any([os.path.isfile(f) for f in paths]):
+        raise FileExistsError("Target file already exists and overwrite is False. Aborting.")
 
-    # if file_names was none, use parsed file_names
-    # if file_names is given and it is the wrong length - raise
-    # if file_names is given and right length - use it
-
-    if not file_names:
-        chosen_filenames = parsed_filenames
-    elif len(file_names) == len(parsed_filenames):
-        chosen_filenames = file_names
-    else:
-        msg = (
-            "{0} file_names were specified. Only {1} outputs were returned. "
-            "File names should either be of length {1} or None").format(
-            len(file_names), len(parsed_filenames)
-        )
-        raise IndexError(msg)
-
-    if prefix:
-        chosen_filenames = [prefix + name for name in chosen_filenames]
-
-    paths = [os.path.join(directory, name) for name in chosen_filenames]
     for path, result in zip(paths, results.items()):
         result[1].to_csv(path, **kwargs)
 
-    return chosen_filenames
+    return paths
 
 
 def save_thor_file(connection, thor_file, path_or_buf=None,
