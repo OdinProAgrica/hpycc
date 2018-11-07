@@ -23,7 +23,7 @@ import json
 from hpycc.utils import filechunker
 from hpycc.utils.parsers import parse_xml, parse_schema_from_xml
 from math import ceil
-from urllib.parse import quote_plus
+from json import JSONDecodeError
 
 
 def get_output(connection, script, syntax_check=True, delete_workunit=True,
@@ -347,16 +347,13 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_
     """
     # todo why min sleep?
 
-    url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
-           "&Cluster=thor&Start={}&Count={}").format(
-        connection.server, connection.port, quote_plus(thor_file), 0, 1)
-    r = connection.run_url_request(url, max_attempts, max_sleep, min_sleep)
-    rj = r.json()
+    resp = connection.get_chunk_from_hpcc(thor_file, 0, 1, max_attempts, max_sleep, min_sleep)
+    resp = resp.json()
     try:
-        wuresultresponse = rj["WUResultResponse"]
-    except KeyError:
-        raise KeyError("json: {}".format(rj))
-    schema_str = wuresultresponse["Result"]["XmlSchema"]["xml"]
+        wuresultresponse = resp["WUResultResponse"]
+        schema_str = wuresultresponse["Result"]["XmlSchema"]["xml"]
+    except (KeyError, TypeError, JSONDecodeError) as exc:
+        raise exc("Can't find schema in returned json: {}".format(resp))
 
     # get the schema as named tuples of (name, is_set, type)
     schema = parse_schema_from_xml(schema_str, dtype)

@@ -20,7 +20,6 @@ from requests.exceptions import HTTPError, RetryError
 import subprocess
 from tempfile import TemporaryDirectory
 from time import sleep
-import pandas as pd
 from warnings import warn
 import threading
 from urllib.parse import quote_plus
@@ -344,6 +343,13 @@ class Connection:
                 if attempts == max_attempts:
                     raise RetryError(e)
 
+    def get_chunk_from_hpcc(self, logical_file, start_row, n_rows, max_attempts, max_sleep, min_sleep):
+        url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
+               "&Cluster=thor&Start={}&Count={}").format(
+            self.server, self.port, _make_thorname_html(logical_file), start_row, n_rows)
+
+        return self.run_url_request(url, max_attempts, max_sleep, min_sleep)
+
     def get_logical_file_chunk(self, logical_file, start_row, n_rows,
                                max_attempts, max_sleep, min_sleep):
         """
@@ -390,11 +396,7 @@ class Connection:
         # need to specify temp file and min_sleep.
         # TODO: This should be an internal function.
 
-        url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
-               "&Cluster=thor&Start={}&Count={}").format(
-            self.server, self.port, _make_thorname_html(logical_file), start_row, n_rows)
-
-        resp = self.run_url_request(url, max_attempts, max_sleep, min_sleep)
+        resp = get_chunk_from_hpcc(logical_file, start_row, n_rows, max_attempts, max_sleep, min_sleep)
 
         try:
             resp = resp.json()
