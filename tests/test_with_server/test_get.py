@@ -709,8 +709,6 @@ class TestGetThorFile(unittest.TestCase):
         self.assertEqual(expected[0], mock.call_args_list[0])
         self.assertEqual(expected[1], mock.call_args_list[1])
 
-
-
     def test_get_thor_file_works_when_chunksize_is_zero(self):
         file_name = "test_get_thor_file_works_when_chunksize_is_zero"
         self.conn.run_ecl_string(

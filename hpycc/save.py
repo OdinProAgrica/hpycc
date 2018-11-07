@@ -45,7 +45,7 @@ def save_output(connection, script, path_or_buf=None, syntax_check=True,
     return result.to_csv(path_or_buf=path_or_buf, **kwargs)
 
 
-def save_outputs(connection, script, directory=".", filenames=None,
+def save_outputs(connection, script, directory=".", file_names=None,
                  prefix=None, syntax_check=True, delete_workunit=True,
                  stored=None, **kwargs):
     """
@@ -61,10 +61,11 @@ def save_outputs(connection, script, directory=".", filenames=None,
          Path of script to execute.
     directory : str, optional
         Directory to save output files in. "." by default.
-    filenames : list or None, optional
+    file_names : list or None, optional
         File names to save results as. If None, files will
         be named as their output name assigned by the ECL script.
-        None by default.
+        None by default. Note that save _directory_ is given by
+        `directory`, you shouldn't pass the full path here.
     prefix : str or None, optional
         Prefix to prepend to all file names. None by default.
     syntax_check : bool, optional
@@ -92,25 +93,25 @@ def save_outputs(connection, script, directory=".", filenames=None,
         outputs.
     """
     # TODO don;t like this returning the list.
-    # todo should we combine directory and filenames?
+    # todo should we combine directory and file_names?
     results = hpycc.get_outputs(
         connection, script, syntax_check, delete_workunit, stored)
 
     parsed_filenames = ["{}.csv".format(res) for res in results]
 
-    # if filenames was none, use parsed filenames
-    # if filenames is given and it is the wrong length - raise
-    # if filenames is given adn right length - use it
+    # if file_names was none, use parsed file_names
+    # if file_names is given and it is the wrong length - raise
+    # if file_names is given and right length - use it
 
-    if not filenames:
+    if not file_names:
         chosen_filenames = parsed_filenames
-    elif len(filenames) == len(parsed_filenames):
-        chosen_filenames = filenames
+    elif len(file_names) == len(parsed_filenames):
+        chosen_filenames = file_names
     else:
         msg = (
-            "{0} filenames were specified. Only {1} outputs were returned. "
-            "Filenames should either be of length {1} or None").format(
-            len(filenames), len(parsed_filenames)
+            "{0} file_names were specified. Only {1} outputs were returned. "
+            "File names should either be of length {1} or None").format(
+            len(file_names), len(parsed_filenames)
         )
         raise IndexError(msg)
 

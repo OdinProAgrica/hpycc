@@ -77,10 +77,10 @@ class TestDeleteLogicalFile(unittest.TestCase):
     def test_delete_logical_file_doesnt_delete_other_files(self):
         string = "a := DATASET([{1}], {INTEGER int;}); OUTPUT(a,,'~test_delete_logical_file_doesnt_delete1');"
         self.conn.run_ecl_string(string, syntax_check=True,
-                                     delete_workunit=True, stored={})
+                                 delete_workunit=True, stored={})
         string = "a := DATASET([{1}], {INTEGER int;}); OUTPUT(a,,'~test_delete_logical_file_doesnt_delete2');"
         self.conn.run_ecl_string(string, syntax_check=True,
-                                     delete_workunit=True, stored={})
+                                 delete_workunit=True, stored={})
 
         res1 = check_file_exists(self.conn, '~test_delete_logical_file_doesnt_delete1')
         res2 = check_file_exists(self.conn, '~test_delete_logical_file_doesnt_delete2')

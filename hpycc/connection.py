@@ -33,6 +33,13 @@ from hpycc import delete
 lock = threading.Lock()
 
 
+def _make_thorname_html(logical_file):
+    """
+    quote_plus in urllib is so badly named I made this function.
+    """
+    quote_plus(logical_file)
+
+
 def check_ecl_cmd(cmd='ecl'):
     try:
         subprocess.run(
@@ -274,15 +281,11 @@ class Connection:
 
         try:
             result = self._run_command(base_cmd)
-            # TODO dont like this nested try except
         except subprocess.SubprocessError as e:
             if delete_workunit:
-                try:
-                    wuid = parse_wuid_from_failed_response(e.args[0].decode())
-                    delete.delete_workunit(self, wuid)
-                except AttributeError as e2:
-                    print('Job failed and unable to delete workunit, likely a connection error. Response: %s' % e2 )
-            raise e
+                wuid = parse_wuid_from_failed_response(e.args[0].decode())
+                delete.delete_workunit(self, wuid)
+            raise
         else:
             if delete_workunit:
                 wuid = parse_wuid_from_xml(result.stdout)
@@ -309,6 +312,10 @@ class Connection:
         max_sleep: int
             Maximum time, in seconds, to sleep between attempts.
             The true sleep time is a random int between 0 and
+            `max_sleep`.
+        min_sleep: int, optional
+            Maximum time, in seconds, to sleep between attempts.
+            The true sleep time is a random int between 'min_sleep' and
             `max_sleep`.
 
         Returns
@@ -367,9 +374,9 @@ class Connection:
             The true sleep time is a random int between 'min_sleep' and
             `max_sleep`.
         temp_file: str, None
-            The file to write results to, see `low_mem` in `hpycc.get.get_thor_file`
-            for the logic behind this. If None then stores everything in memory.
-            Basically if present then we save RAM at the cost of speed.
+            If `hpycc.get.get_thor_file` is in 'low_mem' mode then this will be the
+            temporary file to write results to. If None then stores everything in
+            memory. Basically, if present then we save RAM at the cost of speed.
         cols: list
             Column names for output. Required to ensure column order is maintained over
             chunks.
@@ -381,30 +388,22 @@ class Connection:
             [{"col1": 1, "col2": 2}, {"col1": 1, "col2": 2}, ...].
 
         """
-        # TODO lots of things about the docstring. DOn't make me look
-        # somewhere else for low mem. dont like that we need cols, dont like we
-        # need to specify temp file and min_sleep. should also just be an
-        # internal function
-
-        # TODO quote plus should be better named
+        # TODO lots of things about the docstring. Don't like that we need cols, don't like we
+        # need to specify temp file and min_sleep.
+        # TODO: This should be an internal function.
 
         url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
                "&Cluster=thor&Start={}&Count={}").format(
-            self.server, self.port, quote_plus(logical_file), start_row, n_rows)
+            self.server, self.port, _make_thorname_html(logical_file), start_row, n_rows)
 
         resp = self.run_url_request(url, max_attempts, max_sleep, min_sleep)
 
-        # TODO do we need this, just let it fail
         try:
             resp = resp.json()
-        except JSONDecodeError:
-            print("Response unparsable: %s" % str(resp))
-
-        try:
             resp = resp["WUResultResponse"]["Result"]["Row"]
-        # TODO don't mask exceptions
-        except (KeyError, TypeError):
-            raise KeyError("json does not contain results of a WU:\n{}".format(resp))
+        except (KeyError, TypeError, JSONDecodeError):
+            print("json can't be parsed as a WU:\n{}".format(resp))
+            raise
 
         resp = pd.DataFrame((item for item in resp))[cols]
 

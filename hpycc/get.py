@@ -15,7 +15,7 @@ Functions
 """
 __all__ = ["get_output", "get_outputs", "get_thor_file", "get_logical_file"]
 
-from concurrent.futures import ThreadPoolExecutor, wait
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import re
 import warnings
 import tempfile
@@ -289,9 +289,11 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None, max_at
         Warning: too many may cause either your machine or
         your cluster to crash! 20 by default.
     chunk_size: int, optional
-        Size of chunks to use when downloading file. By
-        default this is number of rows / number of workers,
-        bounded to a minimum of 100,000 and maximum of 400,000.
+        Size of chunks to use when downloading file. If not provided
+        this is number of rows / number of workers, bounded
+        to a minimum of 100,000 and maximum of 400,000.
+        If provided here then no limits are enforced, fill
+        yer boots.
     max_attempts: int, optional
         Maximum number of times a chunk should attempt to be
         downloaded in the case of an exception being raised.
@@ -358,7 +360,6 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None, max_at
     """
     # TODO I think we can do this better with a temporary directory and temp
     # files.
-    # TODO don't like the new chunksize. what if someone wants to go over 400000
     # todo why min sleep?
 
     url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
@@ -399,8 +400,8 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None, max_at
             for start_row, n_rows in chunks
         ]
 
-        results = [i.result() for i in futures]  # Wait and exception check too
-    # TODO we can use as finished here. plus just get the first chunk normally
+        results = as_completed(futures)  # Wait and exception check too
+    # TODO plus just get the first chunk normally
     # and make the csv. or append as we go. but that is handled in the get_
     # chunk bit. which it shouldn't be. could we write to lots of small files?
 
