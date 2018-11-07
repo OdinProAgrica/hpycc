@@ -261,12 +261,12 @@ class TestRunURLRequestWithServer(unittest.TestCase):
 
 
 class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
-    def test_get_logical_file_chunk_returns_correct_df(self):
+    def test_get_logical_file_chunk_returns_correct_dict(self):
         expected_result = pd.DataFrame(
             {'a': ['1', '2'], 'b': ['a', 'b']},
         )
         conn = hpycc.Connection("user")
-        df = pd.DataFrame({"a": [1, 2, 3], "b": ["a", "b", "c"]})
+        df = {"a": [1, 2, 3], "b": ["a", "b", "c"]}
         with TemporaryDirectory() as d:
             p = os.path.join(d, "data.csv")
             df.to_csv(p, index=False)
@@ -275,12 +275,12 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
 
         result = conn.get_logical_file_chunk(
             "thor::{}".format(lf_name), 0, 2, 3, 2, 0)
-        result = result.drop("__fileposition__", axis=1)
+        _ = result.pop("__fileposition__")
 
         self.assertEqual(expected_result, result)
 
     def test_get_logical_file_chunk_is_zero_indexed(self):
-        expected_result = [{'__fileposition__': ['0'], 'a': ['1'], 'b': ['a']}]
+        expected_result = [{'a': ['1'], 'b': ['a'], '__fileposition__': ['0']}]
 
         conn = hpycc.Connection("user")
         df = pd.DataFrame({"a": [1, 2, 3], "b": ["a", "b", "c"]})

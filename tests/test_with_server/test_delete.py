@@ -18,10 +18,10 @@ def tearDownModule():
 
 
 def check_file_exists(conn, file_name):
-    res = conn.run_ecl_string("IMPORT std; STD.File.FileExists('%s');" % file_name, syntax_check=False,
-                              delete_workunit=False, stored=None)
-    x = re.search('<Row><Result_1>([a-z]+)</Result_1></Row>', str(res)).group(1)
-    return x == 'true'
+    res = conn.run_ecl_string("IMPORT std; STD.File.FileExists('%s');" % file_name, False, False, None)
+    x = re.findall('<Row><Result_1>([a-z]+)</Result_1></Row>', str(res))
+
+    return x[0] == 'true'
 
 
 class TestDeleteWorkunitWithServer(unittest.TestCase):
@@ -72,7 +72,8 @@ class TestDeleteLogicalFile(unittest.TestCase):
         delete_logical_file(self.conn, '~test_delete_logical_file_deletes1')
         res2 = check_file_exists(self.conn, '~test_delete_logical_file_deletes1')
 
-        assert res1 and not res2
+        self.assertTrue(res1)
+        self.assertFalse(res2)
 
     def test_delete_logical_file_doesnt_delete_other_files(self):
         string = "a := DATASET([{1}], {INTEGER int;}); OUTPUT(a,,'~test_delete_logical_file_doesnt_delete1');"

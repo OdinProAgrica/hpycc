@@ -424,9 +424,11 @@ class TestGetThorFile(unittest.TestCase):
             True,
             None
         )
-        res = get_thor_file(connection=self.conn, thor_file=file_name)
-        expected = pd.DataFrame({"int": [1], "__fileposition__": [0]}, dtype=np.int32)
-
+        res = get_thor_file(
+            connection=self.conn,
+            thor_file="test_get_thor_file_returns_single_row_dataset")
+        expected = pd.DataFrame({"int": [1], "__fileposition__": 0},
+                                dtype=np.int32)
         pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
 
     def test_get_thor_file_returns_100_row_dataset(self):
@@ -456,8 +458,10 @@ class TestGetThorFile(unittest.TestCase):
             True,
             None
         )
-        res = get_thor_file(connection=self.conn, thor_file=file_name, chunk_size=2)
-        expected = pd.DataFrame({"int": [1], "__fileposition__": 0}, dtype=np.int32)
+        res = get_thor_file(
+            connection=self.conn, thor_file=file_name, chunk_size=2)
+        expected = pd.DataFrame({"int": [1], "__fileposition__": 0},
+                                dtype=np.int32)
         pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
 
     def test_get_thor_file_works_when_num_rows_equal_to_chunksize(self):
@@ -469,10 +473,11 @@ class TestGetThorFile(unittest.TestCase):
             True,
             None
         )
-        res = get_thor_file(connection=self.conn, thor_file=file_name, chunk_size=2).sort_index(axis=1)
-        expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]}, dtype=np.int32).sort_index(axis=1)
-
-        pd.testing.assert_frame_equal(expected, res)
+        res = get_thor_file(
+            connection=self.conn, thor_file=file_name, chunk_size=2)
+        expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]},
+                                dtype=np.int32)
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
 
     def test_get_thor_file_works_when_num_rows_greater_than_chunksize(self):
         file_name = ("test_get_thor_file_works_when_num_rows_greater_than_"
@@ -487,8 +492,8 @@ class TestGetThorFile(unittest.TestCase):
         res = get_thor_file(connection=self.conn, thor_file=file_name, chunk_size=1).sort_index(axis=1)
         expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]}, dtype=np.int32).sort_index(axis=1)
         res = res.sort_values("__fileposition__").reset_index(drop=True)
-
-        pd.testing.assert_frame_equal(expected, res, check_dtype=False)
+        pd.testing.assert_frame_equal(
+            expected.sort_index(axis=1), res.sort_index(axis=1), check_dtype=False)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_get_thor_file_chunks_when_num_rows_less_than_chunksize(self, mock):

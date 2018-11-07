@@ -68,7 +68,7 @@ def _save_outputs_from_ecl_string(
         return res
 
 
-def get_a_save(connection, thor_file, path_or_buf,
+def _get_a_save(connection, thor_file, path_or_buf,
                max_workers=15, chunk_size=10000, max_attempts=3,
                max_sleep=10, dtype=None, **kwargs):
     save_thor_file(connection, thor_file, path_or_buf,
@@ -474,25 +474,11 @@ class TestGetThorFile(unittest.TestCase):
             True,
             None
         )
-        res = save_thor_file(connection=self.conn, thor_file="test_save_thor_file_returns_single_row_dataset")
-        expected = pd.DataFrame({"int": 1, "__fileposition__": 0},
-                                dtype=np.int32)
-        self.assertEqual(expected.to_csv(), res)
 
-    def test_save_thor_file_returns_single_row_dataset_low_mem(self):
-        file_name = "test_save_thor_file_returns_single_row_dataset_low_mem"
-        self.conn.run_ecl_string(
-            "a := DATASET([{1}], {INTEGER int;}); "
-            "OUTPUT(a,,'~%s');" % file_name
-            ,
-            True,
-            True,
-            None
-        )
-        res = save_thor_file(connection=self.conn, thor_file=file_name, low_mem=True)
-        expected = pd.DataFrame({"int": 1, "__fileposition__": 0},
-                                dtype=np.int32)
-        self.assertEqual(expected.to_csv(), res)
+        res = _get_a_save(connection=self.conn, thor_file="test_save_thor_file_returns_single_row_dataset", index=False)
+        expected = pd.DataFrame({"int": [1], "__fileposition__": 0},
+                                dtype=np.int64)
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
 
     def test_save_thor_file_returns_100_row_dataset(self):
         lots_of_1s = "[" + ",".join(["{1}"] * 100) + "]"
@@ -506,10 +492,10 @@ class TestGetThorFile(unittest.TestCase):
         )
         res = save_thor_file(connection=self.conn, thor_file="test_save_thor_file_returns_100_row_dataset")
         expected = pd.DataFrame({
-            "int": [1] * 100,
-            "__fileposition__": [i * 8 for i in range(100)]
-        }, dtype=np.int32)
-        self.assertEqual(expected.to_csv(), res)
+            "int": [1]*100,
+            "__fileposition__": [i*8 for i in range(100)]
+        }, dtype=np.int64)
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
 
     def test_save_thor_file_returns_100_row_dataset_low_mem(self):
         file_name = "test_save_thor_file_returns_100_row_dataset_low_mem"
@@ -525,10 +511,11 @@ class TestGetThorFile(unittest.TestCase):
         )
         res = save_thor_file(connection=self.conn, thor_file=file_name, low_mem=True)
         expected = pd.DataFrame({
-            "int": [1] * 100,
-            "__fileposition__": [i * 8 for i in range(100)]
-        }, dtype=np.int32)
-        self.assertEqual(expected.to_csv(), res)
+            "int": [1]*10,
+            "__fileposition__": [i*8 for i in range(10)]
+        }, dtype=np.int64).sort_index(axis=1).to_csv(index=False)
+
+        self.assertEqual(expected, res)
 
     def test_save_thor_file_works_when_num_rows_less_than_chunksize(self):
         file_name = ("test_save_thor_file_works_when_num_rows_less_than_"
@@ -1046,7 +1033,6 @@ class TestGetThorFile(unittest.TestCase):
 
         with self.assertRaises(KeyError):
             res = save_thor_file(self.conn, file_name, dtype={"bool": bool, "int": str, "made_up": str})
-
 
     def test_save_thor_file_returns_a_set(self):
         file_name = "test_save_thor_file_returns_a_set"
