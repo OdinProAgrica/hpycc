@@ -329,6 +329,8 @@ class Connection:
             If max_attempts is exceeded.
 
         """
+        if min_sleep > max_sleep:
+            raise ValueError("min_sleep cannot be greater than max_sleep")
         attempts = 0
         while attempts < max_attempts:
             try:
@@ -397,11 +399,11 @@ class Connection:
         try:
             resp = resp.json()
             resp = resp["WUResultResponse"]["Result"]["Row"]
-        except (KeyError, TypeError, JSONDecodeError):
-            print("json can't be parsed as a WU:\n{}".format(resp))
-            raise
+        except (KeyError, TypeError, JSONDecodeError) as exc:
+            msg = ("json can't be parsed as a WU:\n{}".format(resp))
+            raise exc(msg)
 
-        return resp
+        return {key: [a_dict[key] for a_dict in resp] for key in resp[0]}
 
     def run_ecl_string(self, string, syntax_check, delete_workunit, stored):
         """
