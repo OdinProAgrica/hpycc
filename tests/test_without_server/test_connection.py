@@ -346,7 +346,7 @@ class TestConnectionGetLogicalFileChunk(unittest.TestCase):
         conn = hpycc.Connection("user", server="aa", port=123, test_conn=False)
         with TemporaryDirectory() as td:
             p = os.path.join(td, "data.csv")
-            conn.get_logical_file_chunk("file", 1, 2, 1, 0, 0, p, [])
+            conn.get_logical_file_chunk("file", 1, 2, 1, 0, 0)
             mock.assert_called()
 
     @patch.object(hpycc.Connection, "run_url_request")
@@ -356,7 +356,7 @@ class TestConnectionGetLogicalFileChunk(unittest.TestCase):
         with TemporaryDirectory() as td:
             p = os.path.join(td, "data.csv")
             with self.assertRaises(KeyError):
-                conn.get_logical_file_chunk("file", 1, 2, 1, 0, 0, p, [''])
+                conn.get_logical_file_chunk("file", 1, 2, 1, 0, 0)
 
 
 class TestConnectionRunURLRequest(unittest.TestCase):

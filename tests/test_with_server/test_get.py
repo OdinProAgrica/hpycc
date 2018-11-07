@@ -493,7 +493,7 @@ class TestGetThorFile(unittest.TestCase):
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_get_thor_file_chunks_when_num_rows_less_than_chunksize(self, mock):
         file_name = "test_get_thor_file_chunks_when_num_rows_less_than_chunksize"
-        mock.return_value = [{'int': '1', '__fileposition__': '0'}]
+        mock.return_value = {'int': ['1'], '__fileposition__': ['0']}
         self.conn.run_ecl_string(
             "a := DATASET([{{1}}], {{INTEGER int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
@@ -508,7 +508,7 @@ class TestGetThorFile(unittest.TestCase):
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_get_thor_file_chunks_when_num_rows_equal_to_chunksize(self, mock):
         file_name = "test_get_thor_file_chunks_when_num_rows_equal_to_chunksize"
-        mock.return_value = [{'int': '1', '__fileposition__': '0'}]
+        mock.return_value = {'int': ['1'], '__fileposition__': ['0']}
         self.conn.run_ecl_string(
             "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
@@ -522,7 +522,7 @@ class TestGetThorFile(unittest.TestCase):
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_get_thor_file_chunks_when_num_rows_greater_than_chunksize(self, mock):
         file_name = "test_get_thor_file_chunks_when_num_rows_greater_than_chunksize"
-        mock.return_value = [{'int': '1', '__fileposition__': '0'}]
+        mock.return_value = {'int': ['1'], '__fileposition__': ['0']}
         self.conn.run_ecl_string(
            "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); OUTPUT(a,,'~{}');".format(file_name),
            True,
@@ -541,7 +541,7 @@ class TestGetThorFile(unittest.TestCase):
     def test_get_thor_file_uses_generates_chunk_size_150000row_2workers(self, mock):
         file_name = "test_get_thor_file_uses_generates_chunk_size_150000row_2workers"
 
-        mock.return_value = [{'int': '1', '__fileposition__': '0'}]
+        mock.return_value = {'int': ['1'], '__fileposition__': ['0']}
 
         self.conn.run_ecl_string(
            "a := DATASET([{}], {{INTEGER int;}}); "
@@ -562,7 +562,7 @@ class TestGetThorFile(unittest.TestCase):
     def test_get_thor_file_uses_generates_chunk_size_150000row_3workers(self, mock):
         file_name = "test_get_thor_file_uses_generates_chunk_size_150000row_3workers"
 
-        mock.return_value = [{'int': '1', '__fileposition__': '0'}]
+        mock.return_value = {'int': ['1'], '__fileposition__': ['0']}
 
         self.conn.run_ecl_string(
             "a := DATASET([{}], {{INTEGER int;}}); "
@@ -585,7 +585,7 @@ class TestGetThorFile(unittest.TestCase):
     def test_get_thor_file_uses_generates_chunk_size_325000row_1workers(self, mock):
         file_name = "test_get_thor_file_uses_generates_chunk_size_325000row_1workers"
 
-        mock.return_value = [{'int': '1', '__fileposition__': '0'}]
+        mock.return_value = {'int': ['1'], '__fileposition__': ['0']}
 
         self.conn.run_ecl_string(
             "a := DATASET([{}], {{INTEGER int;}}); "
@@ -675,7 +675,7 @@ class TestGetThorFile(unittest.TestCase):
                 expected_val = t[2]
             a = get_thor_file(connection=self.conn, thor_file=file_name, dtype=None)
             expected = pd.DataFrame(
-                {t[1]: expected_val, "__fileposition__": 0}, index=[0])
+                {t[1]: [expected_val], "__fileposition__": [0]}, index=[0])
 
             pd.testing.assert_frame_equal(expected.sort_index(axis=1), a.sort_index(axis=1), check_dtype=False)
 
@@ -736,7 +736,7 @@ class TestGetThorFile(unittest.TestCase):
                 expected_val = t[2]
             a = get_thor_file(connection=self.conn, thor_file=file_name, dtype=None)
             expected = pd.DataFrame(
-                {t[1]: [[expected_val]], "__fileposition__": 0}, index=[0])
+                {t[1]: [[expected_val]], "__fileposition__": [0]}, index=[0])
             pd.testing.assert_frame_equal(expected.sort_index(axis=1), a.sort_index(axis=1), check_dtype=False)
 
     @patch.object(hpycc.get, "ThreadPoolExecutor")
@@ -769,7 +769,7 @@ class TestGetThorFile(unittest.TestCase):
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_get_thor_file_uses_defaults(self, mock):
-        mock.return_value = [{"int": 1, "__fileposition__": 0}]
+        mock.return_value = {"int": [1], "__fileposition__": [0]}
         file_name = "test_get_thor_file_uses_defaults"
         self.conn.run_ecl_string(
             "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
@@ -783,7 +783,7 @@ class TestGetThorFile(unittest.TestCase):
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_get_thor_file_uses_max_sleep(self, mock):
-        mock.return_value =[{"int": 1, "__fileposition__": 0}]
+        mock.return_value = {"int": [1], "__fileposition__": [0]}
         file_name = "test_get_thor_file_uses_max_sleep"
         self.conn.run_ecl_string(
             "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
@@ -862,7 +862,6 @@ class TestGetThorFile(unittest.TestCase):
         )
         with self.assertRaises(KeyError):
             get_thor_file(self.conn, file_name, dtype={"bool": bool, "int": str, "made_up": str})
-
 
     def test_get_thor_file_returns_a_set(self):
         file_name = "test_get_thor_file_returns_a_set"

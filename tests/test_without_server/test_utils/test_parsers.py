@@ -119,7 +119,7 @@ class TestParseSchemaFromXML(unittest.TestCase):
         for t in types:
             col = self.column_schema.format(t[0])
             schema = self.bare_schema.format(col)
-            res = [i for i in parse_schema_from_xml(schema, None)][0]
+            res = parse_schema_from_xml(schema, None)
             self.assertIsNotNone(res['int'])
             self.assertFalse(res['int']['is_a_set'])
             self.assertEqual(res['int']['type'], t[1])
@@ -127,7 +127,7 @@ class TestParseSchemaFromXML(unittest.TestCase):
     def test_parse_schema_from_xml_returns_file_position(self):
         col = self.column_schema.format("data16")
         schema = self.bare_schema.format(col)
-        res, cols = parse_schema_from_xml(schema, None)
+        res = parse_schema_from_xml(schema, None)
         self.assertFalse(res['__fileposition__']['is_a_set'])
         self.assertEqual(res['__fileposition__']['type'], int)
         self.assertEqual(['int', '__fileposition__'], cols)
@@ -139,7 +139,7 @@ class TestParseSchemaFromXML(unittest.TestCase):
         schema = self.bare_schema.format(joined)
 
         # res, cols = [i for i in parse_schema_from_xml(schema, None)][:-1]
-        res, cols = parse_schema_from_xml(schema, None)
+        res = parse_schema_from_xml(schema, None)
         self.assertEqual(101, len(cols))  # add file position
 
     def test_parse_schema_from_xml_parses_set_types_correctly(self):
@@ -166,7 +166,7 @@ class TestParseSchemaFromXML(unittest.TestCase):
         for t in types:
             col = self.set_schema.format(t[0])
             schema = self.bare_schema.format(col)
-            res = [i for i in parse_schema_from_xml(schema, None)][0]
+            res = parse_schema_from_xml(schema, None)
             self.assertIsNotNone(res['set_int'])
             self.assertTrue(res['set_int']['is_a_set'])
             self.assertEqual(res['set_int']['type'], t[1])
@@ -176,7 +176,7 @@ class TestParseSchemaFromXML(unittest.TestCase):
         s = self.set_schema.format("xs:double")
         sc = "\n".join([col, s])
         schema = self.bare_schema.format(sc)
-        res, cols = parse_schema_from_xml(schema, None)
+        res = parse_schema_from_xml(schema, None)
         expected = {
             'int': {'type': str, 'is_a_set': False},
             'set_int': {'type': float, 'is_a_set': True},
