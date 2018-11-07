@@ -1,6 +1,6 @@
 import re
 from xml.etree import ElementTree
-
+from collections import OrderedDict
 import pandas as pd
 import numpy as np
 
@@ -149,48 +149,43 @@ def parse_schema_from_xml(xml, dtype):
     xml : str
         xml string returned by ecl run. This is located in the json
         as ["WUResultResponse]["Result"]["XmlSchema"]["xml"].
-    dtype : None, List
+    dtype : None, dict
         data types to be parsed from ecl. If None, these are inferred.
 
     Returns
     -------
-    dict
+    OrderedDict
         dict of column stats, in the form {name: Str, type: Str, is_a_set: Bool}.
     list
         Column names in order of occurrence.
 
     """
-    # TODO return a tuple. it is ordered.
-    # TODO dtype should just be none and accept an iterable.
     x = xml.replace("\n", "")
     xml = ElementTree.fromstring(x)
     schema = xml[0][0][0][0][0][0]
 
-    schema_out = {}
-    cols = []
+    schema_out = OrderedDict()
     for child in schema:
-    # TODO can we have a function which does this parsing instead?
         name = child.attrib["name"]
         is_set = "type" not in child.keys()
-
-        if dtype and not isinstance(dtype, dict):
-            typ = dtype
-        elif dtype and isinstance(dtype, dict) and name in dtype.keys():
-            typ = dtype[name]
-        else:
-            typ = get_python_type_from_ecl_type(child)
-
-        cols.append(name)
+        typ = _determine_dtype(dtype, name, child)
         schema_out[name] = {'type': typ, 'is_a_set': is_set}
-    # TODO why do we need to do the below
-    if '__fileposition__' not in cols:
-        cols.append('__fileposition__')
-    # Check that no weird columns have been passed
-    # TODO dtype can be a dict?!
-    if isinstance(dtype, dict) and any([dtype_col not in cols for dtype_col in dtype.keys()]):
-        raise KeyError('Not all dtype columns exist in the logical file!\nFound: %s\nGiven: %s' % (cols, dtype))
 
-    return schema_out, cols
+    # Check that no weird columns have been passed
+    if isinstance(dtype, dict) and any([dtype_col not in schema_out.keys() for dtype_col in dtype.keys()]):
+        raise KeyError('Not all dtype columns exist in the logical file!\nFound: %s\nGiven: %s' %
+                       (schema_out.keys(), dtype))
+
+    return schema_out
+
+
+def _determine_dtype(dtype, name, child):
+    if dtype and not isinstance(dtype, dict):
+        return dtype
+    elif dtype and isinstance(dtype, dict) and name in dtype.keys():
+        return dtype[name]
+    else:
+        return get_python_type_from_ecl_type(child)
 
 
 def get_python_type_from_ecl_type(child):
