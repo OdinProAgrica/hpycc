@@ -343,8 +343,7 @@ class Connection:
                     raise RetryError(e)
 
     def get_logical_file_chunk(self, logical_file, start_row, n_rows,
-                               max_attempts, max_sleep, min_sleep,
-                               temp_file):
+                               max_attempts, max_sleep, min_sleep):
         """
         Return a chunk of a logical file from a HPCC instance.
 
@@ -401,15 +400,6 @@ class Connection:
         except (KeyError, TypeError, JSONDecodeError):
             print("json can't be parsed as a WU:\n{}".format(resp))
             raise
-
-        # resp = pd.DataFrame((item for item in resp))
-
-        # TODO I don;t like the temp_file, lock thing. can we use a temp folder somewhere else? it shouldnt be this functions job
-        if temp_file:
-            lock.acquire()
-            resp.to_csv(temp_file, mode='a', index=False, header=False)
-            lock.release()
-            resp = 'Completed Successfully'
 
         return resp
 

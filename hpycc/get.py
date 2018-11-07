@@ -22,6 +22,7 @@ import warnings
 import tempfile
 import pandas as pd
 import json
+from collections import OrderedDict
 from hpycc.utils import filechunker
 from hpycc.utils.parsers import parse_xml, parse_schema_from_xml
 from math import ceil
@@ -397,25 +398,23 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [
             executor.submit(connection.get_logical_file_chunk, thor_file, start_row,
-                            n_rows, max_attempts, max_sleep, min_sleep, temp_file)
+                            n_rows, max_attempts, max_sleep, min_sleep)
             for start_row, n_rows in chunks
         ]
 
-        results = [i.result() for i in futures]  # Wait and exception check too
-    # TODO plus just get the first chunk normally
-    # and make the csv. or append as we go. but that is handled in the get_
-    # chunk bit. which it shouldn't be. could we write to lots of small files?
+    # Parse results into a master dict
+    results = {key: [] for key in schema.keys()}
+    for future in as_completed(futures):
+        future_result = future.result()
+        print(future_result)
+        for result_line in future_result:  # Note that it's a by row thing in HPCC return JSON
+            print(result_line)
+            for key in result_line.keys():
+                results[key] += [result_line[key]]
+        del future_result  # TODO: This may break
 
-    if low_mem:
-        df = pd.read_csv(temp_file, encoding="latin")
-        temp_dir.cleanup()
-    else:
-        df = pd.concat(results)
-
-    # if not isinstance(dtype, dict) and dtype is not None:
-    #     return df.astype(dtype)
-
-    # todo - this seems like a hack. can we specifiy dtypes on csv read?
+    print(results)
+    df = pd.DataFrame(results)[list(schema.keys())]
 
     for col in schema.keys():
         c = schema[col]

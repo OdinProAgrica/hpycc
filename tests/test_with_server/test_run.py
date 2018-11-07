@@ -30,14 +30,12 @@ class TestRunWithServer(unittest.TestCase):
 
         with TemporaryDirectory() as d:
             p = os.path.join(d, "test.ecl")
-            test_file = None  # os.path.join(d, "test.csv")
             with open(p, "w+") as file:
                 file.write(good_script)
             res = conn.run_ecl_script(p, syntax_check=True,
                                       delete_workunit=False, stored={})
             self.assertTrue(res)
-            cols = ["a", "b", "__fileposition__"]
-            res = conn.get_logical_file_chunk("thor::testrunscriptsaveslogicalfile", 0, 1, 3, 1, 0, test_file, cols)
+            res = conn.get_logical_file_chunk("thor::testrunscriptsaveslogicalfile", 0, 1, 3, 1, 0)
 
         expected = pd.DataFrame({"a": ["1"], "b": ["a"], "__fileposition__": ["0"]}, index=[0])
         pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
