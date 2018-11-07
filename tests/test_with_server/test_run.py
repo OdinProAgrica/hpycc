@@ -5,18 +5,16 @@ import unittest
 import pandas as pd
 
 import hpycc
-from tests.test_helpers import hpcc_functions
-
+from hpycc.utils import docker
 
 # noinspection PyPep8Naming
 def setUpModule():
-    a = hpcc_functions.start_hpcc_container()
-    hpcc_functions.start_hpcc(a)
+    docker.HPCCContainer(tag="6.4.26-1")
 
 
 # noinspection PyPep8Naming
 def tearDownModule():
-    hpcc_functions.stop_hpcc_container()
+    docker.HPCCContainer(pull=False, start=False).stop_container()
 
 
 class TestRunWithServer(unittest.TestCase):
