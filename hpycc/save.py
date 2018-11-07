@@ -188,6 +188,6 @@ def save_thor_file(connection, thor_file, path_or_buf=None,
     file = get_thor_file(
         connection, thor_file, max_workers=max_workers, chunk_size=chunk_size,
         max_attempts=max_attempts, max_sleep=max_sleep, min_sleep=min_sleep,
-        dtype=dtype, low_mem=low_mem, temp_dir=temp_dir)
+        dtype=dtype)
 
     return file.to_csv(path_or_buf, **kwargs)

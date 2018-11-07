@@ -273,7 +273,7 @@ def fix_x(x):
 
 
 def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_attempts=3, max_sleep=60,
-                  min_sleep=50, dtype=None, low_mem=False, temp_dir=None):
+                  min_sleep=50, dtype=None):
     """
     Return a thor file as a pandas.DataFrame.
 
@@ -308,15 +308,6 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_
         Minimum time, in seconds, to sleep between attempts.
         The true sleep time is a random int between 'min_sleep' and
         `max_sleep`.
-    low_mem: bool, optional
-        Should the function operate in low memory mode? This writes each
-        thread's result to disk then reads in the resultant file, rather
-        than storing all results in memory and concatenating. Much more
-        memory efficient but the need for a file lock and I/O time will
-        reduce speed. Owing to the speed cost, this is False by default.
-    temp_dir: str, None
-        Optional location of temp directory, if None one is created in
-        the default location
     dtype: type name or dict of col -> type, optional
         Data type for data or columns. E.g. {‘a’: np.float64, ‘b’:
         np.int32}. If converters are specified, they will be applied
@@ -360,8 +351,6 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_
     2     '3'
 
     """
-    # TODO I think we can do this better with a temporary directory and temp
-    # files.
     # todo why min sleep?
 
     url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
@@ -384,13 +373,6 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_
         chunk_size = num_rows if suggested_size < 10000 else suggested_size  # Don't chunk small stuff.
         chunk_size = 325000 if suggested_size > 325000 else chunk_size  # More chunks than workers for big stuff.
 
-    if low_mem:  # Make a temp dir and a blank file to write to
-        temp_dir = tempfile.TemporaryDirectory(dir=temp_dir)
-        temp_file = os.path.join(temp_dir.name, "hpycc_temp.csv")
-        pd.DataFrame(columns=schema.keys()).to_csv(temp_file, mode='w', index=False)
-    else:
-        temp_file = None
-
     if not num_rows:  # if there are no rows to go and get, we should return an empty dataframe
         return pd.DataFrame(columns=schema.keys())
 
@@ -411,23 +393,24 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_
             print(result_line)
             for key in result_line.keys():
                 results[key] += [result_line[key]]
-        del future_result  # TODO: This may break
+        del future_result  # Trying to be as memory efficient as possible
 
     print(results)
-    df = pd.DataFrame(results)[list(schema.keys())]
+    results = pd.DataFrame(results)[list(schema.keys())]
+
 
     for col in schema.keys():
         c = schema[col]
         nam = col
         typ = c['type']
-        if c['is_a_set'] and not low_mem:  # TODO: Nested DF are also caught here. Open issue to fix
-            df[nam] = df[nam].map(lambda x: [typ(i) for i in x["Item"]])
-        elif c['is_a_set'] and low_mem:  # low_mem coerces the set to string.
-            df[nam] = df[nam].map(lambda x: [typ(i) for i in fix_x(x)['Item']])
+        if c['is_a_set']:  # TODO: Nested DF are also caught here. Open issue to fix
+            results[nam] = results[nam].map(lambda x: [typ(i) for i in x["Item"]])
+        # elif c['is_a_set'] and low_mem:  # low_mem coerces the set to string.
+        #     df[nam] = df[nam].map(lambda x: [typ(i) for i in fix_x(x)['Item']])
         else:
             try:
-                df[nam] = df[nam].astype(typ)
+                results[nam] = results[nam].astype(typ)
             except OverflowError:  # An int that is horrifically long cannot be converted properly. Use float instead
-                df[nam] = df[nam].astype('float')
-    return df
+                results[nam] = results[nam].astype('float')
+    return results
 
