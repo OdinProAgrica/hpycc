@@ -10,17 +10,17 @@ import pandas as pd
 
 import hpycc
 from hpycc.get import get_thor_file
-from hpycc.utils import hpcc_docker
+from hpycc.utils import docker_tools
 
 
 # noinspection PyPep8Naming
 def setUpModule():
-    hpcc_docker.HPCCContainer(tag="6.4.26-1")
+    docker_tools.HPCCContainer(tag="6.4.26-1")
 
 
 # noinspection PyPep8Naming
 def tearDownModule():
-    hpcc_docker.HPCCContainer(pull=False, start=False).stop_container()
+    docker_tools.HPCCContainer(pull=False, start=False).stop_container()
 
 
 def _spray_df(conn, df, name):
@@ -415,20 +415,6 @@ class TestGetThorFile(unittest.TestCase):
 
         pd.testing.assert_frame_equal(expected, res)
 
-    def test_get_thor_file_returns_empty_dataset_low_mem(self):
-        file_name = 'test_get_thor_file_returns_empty_datasete_low_mem'
-        self.conn.run_ecl_string(
-            "a := DATASET([], {INTEGER int;}); "
-            "OUTPUT(a, ,'~%s');" % file_name,
-            True,
-            True,
-            None
-        )
-        res_low_mem = get_thor_file(connection=self.conn, thor_file=file_name, low_mem=True)
-        expected = pd.DataFrame(columns=["int", "__fileposition__"])
-
-        pd.testing.assert_frame_equal(expected, res_low_mem)
-
     def test_get_thor_file_returns_single_row_dataset(self):
         file_name = "test_get_thor_file_returns_single_row_dataset"
         self.conn.run_ecl_string(
@@ -442,20 +428,6 @@ class TestGetThorFile(unittest.TestCase):
         expected = pd.DataFrame({"int": [1], "__fileposition__": [0]}, dtype=np.int32)
 
         pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
-
-    def test_get_thor_file_returns_single_row_dataset_low_mem(self):
-        file_name = "test_get_thor_file_returns_single_row_datasete_low_mem"
-        self.conn.run_ecl_string(
-            "a := DATASET([{1}], {INTEGER int;}); "
-            "OUTPUT(a,,'~%s');" % file_name,
-            True,
-            True,
-            None
-        )
-        res_low_mem = get_thor_file(connection=self.conn, thor_file=file_name, low_mem=True)
-        expected = pd.DataFrame({"int": [1], "__fileposition__": [0]}, dtype=np.int32)
-
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res_low_mem.sort_index(axis=1))
 
     def test_get_thor_file_returns_100_row_dataset(self):
         file_name = '~test_get_thor_file_returns_100_row_dataset'
@@ -474,41 +446,6 @@ class TestGetThorFile(unittest.TestCase):
         }, dtype=np.int32)
         pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
 
-    def test_get_thor_file_returns_100_row_dataset_low_mem(self):
-        file_name = 'test_get_thor_file_returns_100_row_dataset_low_mem'
-        lots_of_1s = "[" + ",".join(["{1}"] * 100) + "]"
-        self.conn.run_ecl_string(
-            "a := DATASET({}, {{INTEGER int;}}); "
-            "OUTPUT(a,,'~{}');".format(lots_of_1s, file_name),
-            True,
-            True,
-            None
-        )
-        res_low_mem = get_thor_file(connection=self.conn, thor_file=file_name, low_mem=True)
-        expected = pd.DataFrame({
-            "__fileposition__": [i * 8 for i in range(100)],
-            "int": [1] * 100
-        }, dtype=np.int32)
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res_low_mem.sort_index(axis=1))
-
-    def test_get_thor_file_returns_100_row_dataset_low_mem_custom_tempdir(self):
-        file_name = 'test_get_thor_file_returns_100_row_dataset_low_mem_tempdir'
-        lots_of_1s = "[" + ",".join(["{1}"] * 100) + "]"
-        self.conn.run_ecl_string(
-            "a := DATASET({}, {{INTEGER int;}}); "
-            "OUTPUT(a,,'~{}');".format(lots_of_1s, file_name),
-            True,
-            True,
-            None
-        )
-        with TemporaryDirectory() as d:
-            res_low_mem = get_thor_file(connection=self.conn, thor_file=file_name, low_mem=True, temp_dir=d)
-        expected = pd.DataFrame({
-            "__fileposition__": [i * 8 for i in range(100)],
-            "int": [1] * 100
-        }, dtype=np.int32)
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res_low_mem.sort_index(axis=1))
-
     def test_get_thor_file_works_when_num_rows_less_than_chunksize(self):
         file_name = ("test_get_thor_file_works_when_num_rows_less_than_"
                      "chunksize")
@@ -523,19 +460,6 @@ class TestGetThorFile(unittest.TestCase):
         expected = pd.DataFrame({"int": [1], "__fileposition__": 0}, dtype=np.int32)
         pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
 
-    def test_get_thor_file_works_when_num_rows_less_than_chunksize_low_mem(self):
-        file_name = ("test_get_thor_file_works_when_num_rows_less_than_chunksizee_low_mem")
-        self.conn.run_ecl_string(
-            "a := DATASET([{{1}}], {{INTEGER int;}}); "
-            "OUTPUT(a,,'~{}');".format(file_name),
-            True,
-            True,
-            None
-        )
-        res_low_mem = get_thor_file(connection=self.conn, thor_file=file_name, chunk_size=2, low_mem=True)
-        expected = pd.DataFrame({"int": [1], "__fileposition__": 0}, dtype=np.int32).sort_index(axis=1)
-        pd.testing.assert_frame_equal(expected, res_low_mem.sort_index(axis=1))
-
     def test_get_thor_file_works_when_num_rows_equal_to_chunksize(self):
         file_name = "test_get_thor_file_works_when_num_rows_equal_to_chunksize"
         self.conn.run_ecl_string(
@@ -549,21 +473,6 @@ class TestGetThorFile(unittest.TestCase):
         expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]}, dtype=np.int32).sort_index(axis=1)
 
         pd.testing.assert_frame_equal(expected, res)
-
-    def test_get_thor_file_works_when_num_rows_equal_to_chunksize_low_mem(self):
-        file_name = "test_get_thor_file_works_when_num_rows_equal_to_chunksize_low_mem"
-        self.conn.run_ecl_string(
-            "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
-            "OUTPUT(a,,'~{}');".format(file_name),
-            True,
-            True,
-            None
-        )
-        res = get_thor_file(connection=self.conn, thor_file=file_name, chunk_size=2, low_mem=True)
-        expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]}, dtype=np.int32)
-
-        pd.testing.assert_frame_equal(expected, res)
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
 
     def test_get_thor_file_works_when_num_rows_greater_than_chunksize(self):
         file_name = ("test_get_thor_file_works_when_num_rows_greater_than_"
@@ -580,22 +489,6 @@ class TestGetThorFile(unittest.TestCase):
         res = res.sort_values("__fileposition__").reset_index(drop=True)
 
         pd.testing.assert_frame_equal(expected, res, check_dtype=False)
-
-    def test_get_thor_file_works_when_num_rows_greater_than_chunksize_low_mem(self):
-        file_name = ("test_get_thor_file_works_when_num_rows_greater_than_"
-                     "chunksize_low_mem")
-        self.conn.run_ecl_string(
-            "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
-            "OUTPUT(a,,'~{}');".format(file_name),
-            True,
-            True,
-            None
-        )
-        res_low_mem = get_thor_file(connection=self.conn, thor_file=file_name, chunk_size=1, low_mem=True)
-        res_low_mem = res_low_mem.sort_values("__fileposition__").reset_index(drop=True)
-        expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]}, dtype=np.int32)
-
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res_low_mem.sort_index(axis=1), check_dtype=False)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_get_thor_file_chunks_when_num_rows_less_than_chunksize(self, mock):
@@ -659,8 +552,8 @@ class TestGetThorFile(unittest.TestCase):
         )
         get_thor_file(connection=self.conn, thor_file=file_name, max_workers=2)
         expected = [
-            unittest.mock.call(file_name, 0, 75000, 3, 60, 50, None),
-            unittest.mock.call(file_name, 75000, 75000, 3, 60, 50, None)
+            unittest.mock.call(file_name, 0, 75000, 3, 60, 50),
+            unittest.mock.call(file_name, 75000, 75000, 3, 60, 50)
         ]
         self.assertEqual(expected[0], mock.call_args_list[0])
         self.assertEqual(expected[1], mock.call_args_list[1])
@@ -680,9 +573,9 @@ class TestGetThorFile(unittest.TestCase):
         )
         get_thor_file(connection=self.conn, thor_file=file_name, max_workers=3)
         expected = [
-            unittest.mock.call(file_name, 0, 50000, 3, 60, 50, None),
-            unittest.mock.call(file_name, 50000, 50000, 3, 60, 50, None),
-            unittest.mock.call(file_name, 100000, 50000, 3, 60, 50, None)
+            unittest.mock.call(file_name, 0, 50000, 3, 60, 50),
+            unittest.mock.call(file_name, 50000, 50000, 3, 60, 50),
+            unittest.mock.call(file_name, 100000, 50000, 3, 60, 50)
         ]
         self.assertEqual(expected[0], mock.call_args_list[0])
         self.assertEqual(expected[1], mock.call_args_list[1])
@@ -703,8 +596,8 @@ class TestGetThorFile(unittest.TestCase):
         )
         get_thor_file(connection=self.conn, thor_file=file_name, max_workers=1)
         expected = [
-            unittest.mock.call(file_name, 0, 325000, 3, 60, 50, None),
-            unittest.mock.call(file_name, 325000, 25000, 3, 60, 50, None)
+            unittest.mock.call(file_name, 0, 325000, 3, 60, 50),
+            unittest.mock.call(file_name, 325000, 25000, 3, 60, 50)
         ]
         self.assertEqual(expected[0], mock.call_args_list[0])
         self.assertEqual(expected[1], mock.call_args_list[1])
@@ -786,70 +679,6 @@ class TestGetThorFile(unittest.TestCase):
 
             pd.testing.assert_frame_equal(expected.sort_index(axis=1), a.sort_index(axis=1), check_dtype=False)
 
-    def test_get_thor_file_parses_column_types_correctly_low_mem(self):
-        i = 1
-        d = 1.5
-        u = "U'ABC'"
-        s = "'ABC'"
-        b = "TRUE"
-        x = "x'ABC'"
-        es = "ABC"
-        types = [("INTEGER", "int", i),
-                 ("INTEGER1", "int1", i),
-                 ("UNSIGNED INTEGER", "unsigned_int", i),
-                 ("UNSIGNED INTEGER1", "unsigned_int_1", i),
-                 ("UNSIGNED8", "is_unsigned_8", i),
-                 ("UNSIGNED", "usigned", i),
-                 ("DECIMAL10", "dec10", d, round(d)),
-                 ("DECIMAL5_3", "dec5_3", d),
-                 ("UNSIGNED DECIMAL10", "unsigned_dec10", d, round(d)),
-                 ("UNSIGNED DECIMAL5_3", "unsigned_decl5_3", d),
-                 ("UDECIMAL10", "udec10", d, round(d)),
-                 ("UDECIMAL5_3", "udec5_3", d),
-                 ("REAL", "is_real", d),
-                 ("REAL4", "is_real4", d),
-                 ("UNICODE", "ucode", u, es),
-                 ("UNICODE_de", "ucode_de", u, es),
-                 ("UNICODE3", "ucode4", u, es),
-                 ("UNICODE_de3", "ucode_de4", u, es),
-                 ("UTF8", "is_utf8", u, es),
-                 ("UTF8_de", "is_utf8_de", u, es),
-                 ("STRING", "str", s, es),
-                 ("STRING3", "str1", s, es),
-                 ("ASCII STRING", "ascii_str", s, es),
-                 ("ASCII STRING3", "ascii_str1", s, es),
-                 ("EBCDIC STRING", "ebcdic_str", s, es),
-                 ("EBCDIC STRING3", "ebcdic_str1", s, es),
-                 ("BOOLEAN", "bool", b, True),
-                 ("DATA", "is_data", x, "0ABC"),
-                 ("DATA3", "is_data_16", x, "0ABC00"),
-                 ("VARUNICODE", "varucode", u, es),
-                 ("VARUNICODE_de", "varucode_de", u, es),
-                 ("VARUNICODE3", "varucode4", u, es),
-                 ("VARUNICODE_de3", "varucode_de4", u, es),
-                 ("VARSTRING", "varstr", u, es),
-                 ("VARSTRING3", "varstr3", u, es),
-                 ("QSTRING", "qstr", s, es),
-                 ("QSTRING3", "qstr8", s, es)]
-        for t in types:
-            file_name = ("test_get_thor_file_parses_column_types"
-                         "_correctly_low_mem_{}").format(t[1])
-            self.conn.run_ecl_string(
-                "a := DATASET([{{{}}}], {{{} {};}}); "
-                "OUTPUT(a,,'~{}');".format(t[2], t[0], t[1], file_name),
-                True,
-                True,
-                None
-            )
-            try:
-                expected_val = t[3]
-            except IndexError:
-                expected_val = t[2]
-            a = get_thor_file(connection=self.conn, thor_file=file_name, dtype=None, low_mem=True)
-            expected = pd.DataFrame(
-                {t[1]: expected_val, "__fileposition__": 0}, index=[0])
-            pd.testing.assert_frame_equal(expected.sort_index(axis=1), a.sort_index(axis=1), check_dtype=False)
-
     def test_get_thor_file_parses_set_types_correctly(self):
         i = 1
         d = 1.5
@@ -907,73 +736,13 @@ class TestGetThorFile(unittest.TestCase):
                 expected_val = t[2]
             a = get_thor_file(connection=self.conn, thor_file=file_name, dtype=None)
             expected = pd.DataFrame(
-                {t[1]: [expected_val], "__fileposition__": 0}, index=[0])
-            pd.testing.assert_frame_equal(expected.sort_index(axis=1), a.sort_index(axis=1), check_dtype=False)
-
-    def test_get_thor_file_parses_set_types_correctly_low_mem(self):
-        i = 1
-        d = 1.5
-        u = "U'ABC'"
-        s = "'ABC'"
-        b = "TRUE"
-        x = "x'ABC'"
-        es = "ABC"
-        types = [("INTEGER", "int", i),
-                 ("INTEGER1", "int1", i),
-                 ("UNSIGNED INTEGER", "unsigned_int", i),
-                 ("UNSIGNED INTEGER1", "unsigned_int_1", i),
-                 ("UNSIGNED8", "is_unsigned_8", i),
-                 ("UNSIGNED", "usigned", i),
-                 ("DECIMAL10", "dec10", d, round(d)),
-                 ("DECIMAL5_3", "dec5_3", d),
-                 ("UNSIGNED DECIMAL10", "unsigned_dec10", d, round(d)),
-                 ("UNSIGNED DECIMAL5_3", "unsigned_decl5_3", d),
-                 ("UDECIMAL10", "udec10", d, round(d)),
-                 ("UDECIMAL5_3", "udec5_3", d),
-                 ("REAL", "is_real", d),
-                 ("REAL4", "is_real4", d),
-                 ("UNICODE", "ucode", u, es),
-                 ("UNICODE_de", "ucode_de", u, es),
-                 ("UNICODE3", "ucode4", u, es),
-                 ("UNICODE_de3", "ucode_de4", u, es),
-                 ("UTF8", "is_utf8", u, es),
-                 ("UTF8_de", "is_utf8_de", u, es),
-                 ("STRING", "str", s, es),
-                 ("STRING3", "str1", s, es),
-                 ("ASCII STRING", "ascii_str", s, es),
-                 ("ASCII STRING3", "ascii_str1", s, es),
-                 ("EBCDIC STRING", "ebcdic_str", s, es),
-                 ("EBCDIC STRING3", "ebcdic_str1", s, es),
-                 ("BOOLEAN", "bool", b, True),
-                 ("DATA", "is_data", x, "0ABC"),
-                 ("DATA3", "is_data_16", x, "0ABC00"),
-                 ("VARUNICODE", "varucode", u, es),
-                 ("VARUNICODE_de", "varucode_de", u, es),
-                 ("VARUNICODE3", "varucode4", u, es),
-                 ("VARUNICODE_de3", "varucode_de4", u, es),
-                 ("VARSTRING", "varstr", u, es),
-                 ("VARSTRING3", "varstr3", u, es),
-                 ("QSTRING", "qstr", s, es),
-                 ("QSTRING3", "qstr8", s, es)]
-        for t in types:
-            file_name = ("test_get_thor_file_parses_set_types_"
-                         "correctly_low_mem_{}").format(t[1])
-            s = ("a := DATASET([{{[{}]}}], {{SET OF {} {};}}); "
-                 "OUTPUT(a,,'~{}');").format(t[2], t[0], t[1], file_name)
-            self.conn.run_ecl_string(s, True, False, None)
-            try:
-                expected_val = t[3]
-            except IndexError:
-                expected_val = t[2]
-            a = get_thor_file(connection=self.conn, thor_file=file_name, dtype=None, low_mem=True)
-            expected = pd.DataFrame(
-                {t[1]: [expected_val], "__fileposition__": 0}, index=[0])
+                {t[1]: [[expected_val]], "__fileposition__": 0}, index=[0])
             pd.testing.assert_frame_equal(expected.sort_index(axis=1), a.sort_index(axis=1), check_dtype=False)
 
     @patch.object(hpycc.get, "ThreadPoolExecutor")
     def test_get_thor_file_uses_default_max_workers(self, mock):
         mock.return_value = ThreadPoolExecutor(max_workers=10)
-        file_name = "test_get_thor_file_uses_default_max_workers_low_mem"
+        file_name = "test_get_thor_file_uses_default_max_workers"
         self.conn.run_ecl_string(
             "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
@@ -987,7 +756,7 @@ class TestGetThorFile(unittest.TestCase):
     @patch.object(hpycc.get, "ThreadPoolExecutor")
     def test_get_thor_file_uses_custom_max_workers(self, mock):
         mock.return_value = ThreadPoolExecutor(max_workers=15)
-        file_name = "test_get_thor_file_uses_custom_max_workers_low_mem"
+        file_name = "test_get_thor_file_uses_custom_max_workers"
         self.conn.run_ecl_string(
             "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
@@ -1000,7 +769,7 @@ class TestGetThorFile(unittest.TestCase):
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_get_thor_file_uses_defaults(self, mock):
-        mock.return_value = pd.DataFrame({"int": 1, "__fileposition__": 0})
+        mock.return_value = [{"int": 1, "__fileposition__": 0}]
         file_name = "test_get_thor_file_uses_defaults"
         self.conn.run_ecl_string(
             "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
@@ -1014,7 +783,7 @@ class TestGetThorFile(unittest.TestCase):
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_get_thor_file_uses_max_sleep(self, mock):
-        mock.return_value = pd.DataFrame({"int": [1], "__fileposition__": [0]}, index=[0])
+        mock.return_value =[{"int": 1, "__fileposition__": 0}]
         file_name = "test_get_thor_file_uses_max_sleep"
         self.conn.run_ecl_string(
             "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
@@ -1043,20 +812,6 @@ class TestGetThorFile(unittest.TestCase):
 
         pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
 
-    def test_get_thor_file_uses_single_dtype_low_mem(self):
-        file_name = "test_get_thor_file_uses_single_dtype_low_mem"
-        self.conn.run_ecl_string(
-            "a := DATASET([{{'1'}}, {{'2'}}], {{STRING int;}}); "
-            "OUTPUT(a,,'~{}');".format(file_name),
-            True,
-            True,
-            None
-        )
-        res = get_thor_file(self.conn, file_name, dtype=int, low_mem=True)
-        expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 5]}, dtype=np.int32)
-
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
-
     def test_get_thor_file_uses_dict_of_dtypes(self):
         file_name = "test_get_thor_file_uses_dict_of_dtypes"
         self.conn.run_ecl_string(
@@ -1069,26 +824,6 @@ class TestGetThorFile(unittest.TestCase):
         )
         res = get_thor_file(self.conn, file_name, dtype={"str": int, "bool": bool, "int": str,
                                                          "__fileposition__": str})
-        expected = pd.DataFrame({
-            "int": ["1", "2"],
-            "str": [1, 2],
-            "bool": [True, False],
-            "__fileposition__": ["0", "14"]}).astype(
-            {"str": int, "bool": bool, "int": str, "__fileposition__": str})
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
-
-    def test_get_thor_file_uses_dict_of_dtypes_low_mem(self):
-        file_name = "test_get_thor_file_uses_dict_of_dtypes_low_mem"
-        self.conn.run_ecl_string(
-            "a := DATASET([{{'1', TRUE, 1}}, {{'2', FALSE, 2}}], "
-            "{{STRING str; BOOLEAN bool; INTEGER int;}}); "
-            "OUTPUT(a,,'~{}');".format(file_name),
-            True,
-            True,
-            None
-        )
-        res = get_thor_file(self.conn, file_name, dtype={"str": int, "bool": bool, "int": str,
-                                                         "__fileposition__": str}, low_mem=True)
         expected = pd.DataFrame({
             "int": ["1", "2"],
             "str": [1, 2],
@@ -1115,24 +850,6 @@ class TestGetThorFile(unittest.TestCase):
             "__fileposition__": [0, 14]})
         pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1), check_dtype=False)
 
-    def test_get_thor_file_uses_dict_of_dtypes_with_missing_cols_low_mem(self):
-        file_name = "test_get_thor_file_uses_dict_of_dtypes_with_missing__cols_low_mem"
-        self.conn.run_ecl_string(
-            "a := DATASET([{{'1', TRUE, 1}}, {{'2', FALSE, 2}}], "
-            "{{STRING str; BOOLEAN bool; INTEGER int;}}); "
-            "OUTPUT(a,,'~{}');".format(file_name),
-            True,
-            True,
-            None
-        )
-        res = get_thor_file(self.conn, file_name, dtype={"bool": bool, "int": str}, low_mem=True)
-        expected = pd.DataFrame({
-            "int": ["1", "2"],
-            "str": ["1", "2"],
-            "bool": [True, False],
-            "__fileposition__": [0, 14]})
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1), check_dtype=False)
-
     def test_get_thor_file_uses_dict_of_dtypes_with_extra_cols(self):
         file_name = "test_get_thor_file_uses_dict_of_dtypes_with_extra_cols"
         self.conn.run_ecl_string(
@@ -1146,18 +863,6 @@ class TestGetThorFile(unittest.TestCase):
         with self.assertRaises(KeyError):
             get_thor_file(self.conn, file_name, dtype={"bool": bool, "int": str, "made_up": str})
 
-    def test_get_thor_file_uses_dict_of_dtypes_with_extra_cols_low_mem(self):
-        file_name = "test_get_thor_file_uses_dict_of_dtypes_with_extra_cols_low_mem"
-        self.conn.run_ecl_string(
-            "a := DATASET([{{'1', TRUE, 1}}, {{'2', FALSE, 2}}], "
-            "{{STRING str; BOOLEAN bool; INTEGER int;}}); "
-            "OUTPUT(a,,'~{}');".format(file_name),
-            True,
-            True,
-            None
-        )
-        with self.assertRaises(KeyError):
-            get_thor_file(self.conn, file_name, dtype={"bool": bool, "int": str, "made_up": str}, low_mem=True)
 
     def test_get_thor_file_returns_a_set(self):
         file_name = "test_get_thor_file_returns_a_set"
@@ -1167,15 +872,5 @@ class TestGetThorFile(unittest.TestCase):
         res = get_thor_file(self.conn, file_name)
         expected = pd.DataFrame({"set": [[1, 2, 3]], "__fileposition__": 0},
                                 dtype=np.int32)
-        self.assertEqual(res.set.values[0], [1, 2, 3])
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
-
-    def test_get_thor_file_returns_a_set_low_mem(self):
-        file_name = "test_get_thor_file_returns_a_set_low_mem"
-        s = ("a := DATASET([{{[1, 2, 3]}}], {{SET OF INTEGER set;}}); "
-             "OUTPUT(a,,'~{}');").format(file_name)
-        self.conn.run_ecl_string(s, True, True, None)
-        res = get_thor_file(self.conn, file_name, low_mem=True)
-        expected = pd.DataFrame({"set": [[1, 2, 3]], "__fileposition__": 0}, dtype=np.int32)
         self.assertEqual(res.set.values[0], [1, 2, 3])
         pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))

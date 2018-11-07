@@ -11,17 +11,17 @@ from pandas.errors import EmptyDataError
 
 import hpycc
 from hpycc.save import save_thor_file
-from hpycc.utils import hpcc_docker
+from hpycc.utils import docker_tools
 
 
 # noinspection PyPep8Naming
 def setUpModule():
-    hpcc_docker.HPCCContainer(tag="6.4.26-1")
+    docker_tools.HPCCContainer(tag="6.4.26-1")
 
 
 # noinspection PyPep8Naming
 def tearDownModule():
-    hpcc_docker.HPCCContainer(pull=False, start=False).stop_container()
+    docker_tools.HPCCContainer(pull=False, start=False).stop_container()
 
 
 def _spray_df(conn, df, name):
@@ -311,8 +311,6 @@ class TestGetOutputsWithServer(unittest.TestCase):
         print(expected)
         print(type(res))
 
-        ## ERROR IN SAVE OUTPUTS, ONLY RETURNING FIRST RESULT, NOT ALL!!!!!!
-
         res = res["allfalse"]
         pd.testing.assert_frame_equal(expected, res)
 
@@ -477,7 +475,7 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         res = save_thor_file(connection=self.conn, thor_file="test_save_thor_file_returns_single_row_dataset")
-        expected = pd.DataFrame({"int": [1], "__fileposition__": 0},
+        expected = pd.DataFrame({"int": 1, "__fileposition__": 0},
                                 dtype=np.int32)
         self.assertEqual(expected.to_csv(), res)
 
@@ -492,7 +490,7 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         res = save_thor_file(connection=self.conn, thor_file=file_name, low_mem=True)
-        expected = pd.DataFrame({"int": [1], "__fileposition__": 0},
+        expected = pd.DataFrame({"int": 1, "__fileposition__": 0},
                                 dtype=np.int32)
         self.assertEqual(expected.to_csv(), res)
 
@@ -543,7 +541,7 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         res = save_thor_file(connection=self.conn, thor_file=file_name, chunk_size=2)
-        expected = pd.DataFrame({"int": [1], "__fileposition__": 0}, dtype=np.int32)
+        expected = pd.DataFrame({"int": 1, "__fileposition__": 0}, dtype=np.int32)
         self.assertEqual(expected.to_csv(), res)
 
     def test_save_thor_file_works_when_num_rows_equal_to_chunksize(self):
@@ -579,7 +577,7 @@ class TestGetThorFile(unittest.TestCase):
             self, mock):
         file_name = ("test_save_thor_file_chunks_when_num_rows_less_than"
                      "_chunksize")
-        mock.return_value = pd.DataFrame({'int': ['1'], '__fileposition__': ['0']})
+        mock.return_value = pd.DataFrame({'int': '1', '__fileposition__': '0'})
         self.conn.run_ecl_string(
             "a := DATASET([{{1}}], {{INTEGER int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
@@ -588,7 +586,7 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         save_thor_file(connection=self.conn, thor_file=file_name, chunk_size=3)
-        mock.assert_called_with(file_name, 0, 1, 3, 60, 50, None, ['int', '__fileposition__'])
+        mock.assert_called_with(file_name, 0, 1, 3, 60, 50)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_save_thor_file_chunks_when_num_rows_equal_to_chunksize(self, mock):
@@ -602,7 +600,7 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         save_thor_file(connection=self.conn, thor_file=file_name, chunk_size=2)
-        mock.assert_called_with(file_name, 0, 2, 3, 60, 50, None, ['int', '__fileposition__'])\
+        mock.assert_called_with(file_name, 0, 2, 3, 60, 50)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_save_thor_file_chunks_when_num_rows_greater_than_chunksize(
@@ -618,8 +616,8 @@ class TestGetThorFile(unittest.TestCase):
         )
         save_thor_file(connection=self.conn, thor_file=file_name, chunk_size=1)
         expected = [
-            unittest.mock.call(file_name, 0, 1, 3, 60, 50, None,  ['int', '__fileposition__']),
-            unittest.mock.call(file_name, 1, 1, 3, 60, 50, None, ['int', '__fileposition__'])
+            unittest.mock.call(file_name, 0, 1, 3, 60, 50),
+            unittest.mock.call(file_name, 1, 1, 3, 60, 50)
         ]
         self.assertEqual(expected, mock.call_args_list)
 
@@ -636,8 +634,8 @@ class TestGetThorFile(unittest.TestCase):
         )
         save_thor_file(connection=self.conn, thor_file=file_name)
         expected = [
-            unittest.mock.call(file_name, 0, 10000, 3, 60, 50, None, ['int', '__fileposition__']),
-            unittest.mock.call(file_name, 10000, 1, 3, 60, 50, None, ['int', '__fileposition__'])
+            unittest.mock.call(file_name, 0, 10000, 3, 60, 50),
+            unittest.mock.call(file_name, 10000, 1, 3, 60, 50)
         ]
         self.assertEqual(expected, mock.call_args_list)
 
@@ -779,7 +777,7 @@ class TestGetThorFile(unittest.TestCase):
                 expected_val = t[2]
             a = save_thor_file(connection=self.conn, thor_file=file_name, dtype=None, low_mem=True)
             expected = pd.DataFrame(
-                {t[1]: [expected_val], "__fileposition__": [0]})
+                {t[1]: expected_val, "__fileposition__": 0})
 
             self.assertEqual(expected.to_csv(), a)
 
@@ -840,7 +838,7 @@ class TestGetThorFile(unittest.TestCase):
                 expected_val = t[2]
             a = save_thor_file(connection=self.conn, thor_file=file_name, dtype=None)
             expected = pd.DataFrame(
-                {t[1]: [[expected_val]], "__fileposition__": [0]})
+                {t[1]: [expected_val], "__fileposition__": 0})
             self.assertEqual(expected.to_csv(), a)
 
     def test_save_thor_file_parses_set_types_correctly_low_mem(self):
@@ -900,7 +898,7 @@ class TestGetThorFile(unittest.TestCase):
                 expected_val = t[2]
             a = save_thor_file(connection=self.conn, thor_file=file_name, dtype=None, low_mem=True)
             expected = pd.DataFrame(
-                {t[1]: [[expected_val]], "__fileposition__": [0]})
+                {t[1]: [expected_val], "__fileposition__": 0})
             self.assertEqual(expected.to_csv(), a)
 
     @patch.object(hpycc.get, "ThreadPoolExecutor")
@@ -933,7 +931,7 @@ class TestGetThorFile(unittest.TestCase):
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_save_thor_file_uses_defaults(self, mock):
-        mock.return_value = pd.DataFrame({'int': ['1'], '__fileposition__': ['0']})
+        mock.return_value = pd.DataFrame({'int': '1', '__fileposition__': '0'})
         file_name = "test_save_thor_file_uses_defaults"
         self.conn.run_ecl_string(
             "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
@@ -947,7 +945,7 @@ class TestGetThorFile(unittest.TestCase):
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_save_thor_file_uses_max_sleep(self, mock):
-        mock.return_value = pd.DataFrame({'int': ['1'], '__fileposition__': ['0']})
+        mock.return_value = pd.DataFrame({'int': '1', '__fileposition__': '0'})
         file_name = "test_save_thor_file_uses_max_sleep"
         self.conn.run_ecl_string(
             "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "

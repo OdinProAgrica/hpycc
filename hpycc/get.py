@@ -385,19 +385,14 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_
         ]
 
     # Parse results into a master dict
-    results = {key: [] for key in schema.keys()}
-    for future in as_completed(futures):
-        future_result = future.result()
-        print(future_result)
-        for result_line in future_result:  # Note that it's a by row thing in HPCC return JSON
-            print(result_line)
-            for key in result_line.keys():
-                results[key] += [result_line[key]]
-        del future_result  # Trying to be as memory efficient as possible
-
+    # use a generator and it means we can avoid a for loop and keep things out of memory
+    results = (i.result() for i in futures)
+    # unnest things first
+    flat_list = (item for sublist in results for item in sublist)
+    # now we can do one for loop
+    results = {k: [dic[k] for dic in flat_list] for k in schema.keys()}
     print(results)
     results = pd.DataFrame(results)[list(schema.keys())]
-
 
     for col in schema.keys():
         c = schema[col]

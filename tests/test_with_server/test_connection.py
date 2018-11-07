@@ -16,17 +16,17 @@ from requests.exceptions import ConnectionError
 
 import hpycc.connection
 from hpycc.connection import check_ecl_cmd
-from hpycc.utils import hpcc_docker
+from hpycc.utils import docker_tools
 
 
 # noinspection PyPep8Naming
 def setUpModule():
-    hpcc_docker.HPCCContainer(tag="6.4.26-1")
+    docker_tools.HPCCContainer(tag="6.4.26-1")
 
 
 # noinspection PyPep8Naming
 def tearDownModule():
-    hpcc_docker.HPCCContainer(pull=False, start=False).stop_container()
+    docker_tools.HPCCContainer(pull=False, start=False).stop_container()
 
 
 class TestConnectionTestConnectionWithNoAuth(unittest.TestCase):
@@ -281,9 +281,7 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
 
     def test_get_logical_file_chunk_lowmem_mode(self):
         cols = ['__fileposition__', 'a', 'b']
-        expected_result = pd.DataFrame(
-            {'a': [1, 2], 'b': ['a', 'b']},  # Read-in from file will cast a to int.
-        )
+        expected_result = [{'a': [1, 2], 'b': ['a', 'b']}]
         conn = hpycc.Connection("user")
         df = pd.DataFrame({"a": [1, 2, 3], "b": ["a", "b", "c"]})
 
@@ -300,12 +298,11 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
             result = result.drop("__fileposition__", axis=1)
 
         self.assertEqual('Completed Successfully', result_report)
-        pd.testing.assert_frame_equal(expected_result, result)
+        self.assertEqual(result, expected_result)
 
     def test_get_logical_file_chunk_is_zero_indexed(self):
-        expected_result = pd.DataFrame(
-            {'__fileposition__': ['0'], 'a': ['1'], 'b': ['a']}
-        )
+        expected_result = [{'__fileposition__': ['0'], 'a': ['1'], 'b': ['a']}]
+
         conn = hpycc.Connection("user")
         df = pd.DataFrame({"a": [1, 2, 3], "b": ["a", "b", "c"]})
         with TemporaryDirectory() as d:
@@ -316,8 +313,7 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
         result = conn.get_logical_file_chunk("thor::data", 0, 1, 3, 0, 0)
 
         self.assertIsInstance(result, pd.DataFrame)
-        pd.testing.assert_frame_equal(result, expected_result)
-
+        self.assertEqual(result, expected_result)
 
 class TestConnectionRunECLStringWithServer(unittest.TestCase):
     def test_run_ecl_string_returns_result_of_run_ecl_script(self):
