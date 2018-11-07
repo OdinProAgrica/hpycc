@@ -17,6 +17,7 @@ __all__ = ["get_output", "get_outputs", "get_thor_file", "get_logical_file"]
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import re
+import os
 import warnings
 import tempfile
 import pandas as pd
@@ -270,7 +271,7 @@ def fix_x(x):
         return None
 
 
-def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None, max_attempts=3, max_sleep=60,
+def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_attempts=3, max_sleep=60,
                   min_sleep=50, dtype=None, low_mem=False, temp_dir=None):
     """
     Return a thor file as a pandas.DataFrame.
@@ -287,7 +288,7 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None, max_at
     max_workers: int, optional
         Number of concurrent threads to use when downloading file.
         Warning: too many may cause either your machine or
-        your cluster to crash! 20 by default.
+        your cluster to crash! 10 by default.
     chunk_size: int, optional
         Size of chunks to use when downloading file. If not provided
         this is number of rows / number of workers, bounded
@@ -374,33 +375,33 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None, max_at
     schema_str = wuresultresponse["Result"]["XmlSchema"]["xml"]
 
     # get the schema as named tuples of (name, is_set, type)
-    schema, cols = parse_schema_from_xml(schema_str, dtype)
+    schema = parse_schema_from_xml(schema_str, dtype)
     num_rows = wuresultresponse["Total"]
 
-    if chunk_size is None:  # Automagically optimise. TODO: we could use width too.
+    if chunk_size == 'auto':  # Automagically optimise. TODO: we could use width too.
         suggested_size = ceil(num_rows/max_workers)
         chunk_size = num_rows if suggested_size < 10000 else suggested_size  # Don't chunk small stuff.
         chunk_size = 325000 if suggested_size > 325000 else chunk_size  # More chunks than workers for big stuff.
 
     if low_mem:  # Make a temp dir and a blank file to write to
         temp_dir = tempfile.TemporaryDirectory(dir=temp_dir)
-        temp_file = temp_dir.name + '\\hpycc_temp.csv'
-        pd.DataFrame(columns=cols).to_csv(temp_file, mode='w', index=False)
+        temp_file = os.path.join(temp_dir.name, "hpycc_temp.csv")
+        pd.DataFrame(columns=schema.keys()).to_csv(temp_file, mode='w', index=False)
     else:
         temp_file = None
 
     if not num_rows:  # if there are no rows to go and get, we should return an empty dataframe
-        return pd.DataFrame(columns=cols)
+        return pd.DataFrame(columns=schema.keys())
 
     chunks = filechunker.make_chunks(num_rows, chunk_size)
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [
             executor.submit(connection.get_logical_file_chunk, thor_file, start_row,
-                            n_rows, max_attempts, max_sleep, min_sleep, temp_file, cols)
+                            n_rows, max_attempts, max_sleep, min_sleep, temp_file)
             for start_row, n_rows in chunks
         ]
 
-        results = as_completed(futures)  # Wait and exception check too
+        results = [i.result() for i in futures]  # Wait and exception check too
     # TODO plus just get the first chunk normally
     # and make the csv. or append as we go. but that is handled in the get_
     # chunk bit. which it shouldn't be. could we write to lots of small files?
@@ -411,12 +412,12 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size=None, max_at
     else:
         df = pd.concat(results)
 
-    if not isinstance(dtype, dict) and dtype is not None:
-        return df.astype(dtype)
+    # if not isinstance(dtype, dict) and dtype is not None:
+    #     return df.astype(dtype)
 
     # todo - this seems like a hack. can we specifiy dtypes on csv read?
 
-    for col in cols:
+    for col in schema.keys():
         c = schema[col]
         nam = col
         typ = c['type']
