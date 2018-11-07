@@ -37,7 +37,7 @@ def _make_thorname_html(logical_file):
     """
     quote_plus in urllib is so badly named I made this function.
     """
-    quote_plus(logical_file)
+    return quote_plus(logical_file)
 
 
 def check_ecl_cmd(cmd='ecl'):
@@ -344,7 +344,7 @@ class Connection:
 
     def get_logical_file_chunk(self, logical_file, start_row, n_rows,
                                max_attempts, max_sleep, min_sleep,
-                               temp_file, cols):
+                               temp_file):
         """
         Return a chunk of a logical file from a HPCC instance.
 
@@ -377,9 +377,6 @@ class Connection:
             If `hpycc.get.get_thor_file` is in 'low_mem' mode then this will be the
             temporary file to write results to. If None then stores everything in
             memory. Basically, if present then we save RAM at the cost of speed.
-        cols: list
-            Column names for output. Required to ensure column order is maintained over
-            chunks.
 
         Returns
         -------
@@ -405,7 +402,7 @@ class Connection:
             print("json can't be parsed as a WU:\n{}".format(resp))
             raise
 
-        resp = pd.DataFrame((item for item in resp))[cols]
+        # resp = pd.DataFrame((item for item in resp))
 
         # TODO I don;t like the temp_file, lock thing. can we use a temp folder somewhere else? it shouldnt be this functions job
         if temp_file:
