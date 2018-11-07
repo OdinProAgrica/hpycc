@@ -10,17 +10,17 @@ import pandas as pd
 
 import hpycc
 from hpycc.get import get_thor_file
-from hpycc.utils import docker
+from hpycc.utils import hpcc_docker
 
 
 # noinspection PyPep8Naming
 def setUpModule():
-    docker.HPCCContainer(tag="6.4.26-1")
+    hpcc_docker.HPCCContainer(tag="6.4.26-1")
 
 
 # noinspection PyPep8Naming
 def tearDownModule():
-    docker.HPCCContainer(pull=False, start=False).stop_container()
+    hpcc_docker.HPCCContainer(pull=False, start=False).stop_container()
 
 
 def _spray_df(conn, df, name):
@@ -610,7 +610,7 @@ class TestGetThorFile(unittest.TestCase):
         )
 
         get_thor_file(connection=self.conn, thor_file=file_name, chunk_size=3)
-        mock.assert_called_with(file_name, 0, 1, 3, 60, 50, None, ['int', '__fileposition__'])
+        mock.assert_called_with(file_name, 0, 1, 3, 60, 50, None)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_get_thor_file_chunks_when_num_rows_equal_to_chunksize(self, mock):
@@ -624,7 +624,7 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         get_thor_file(connection=self.conn, thor_file=file_name, chunk_size=1)
-        mock.assert_called_with(file_name, 1, 1, 3, 60, 50, None, ['int', '__fileposition__'])
+        mock.assert_called_with(file_name, 1, 1, 3, 60, 50, None)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_get_thor_file_chunks_when_num_rows_greater_than_chunksize(self, mock):
@@ -638,8 +638,8 @@ class TestGetThorFile(unittest.TestCase):
         )
         get_thor_file(connection=self.conn, thor_file=file_name, chunk_size=1)
         expected = [
-            unittest.mock.call(file_name, 0, 1, 3, 60, 50, None, ['int', '__fileposition__']),
-            unittest.mock.call(file_name, 1, 1, 3, 60, 50, None, ['int', '__fileposition__'])
+            unittest.mock.call(file_name, 0, 1, 3, 60, 50, None),
+            unittest.mock.call(file_name, 1, 1, 3, 60, 50, None)
         ]
 
         self.assertEqual(expected, mock.call_args_list)
@@ -659,8 +659,8 @@ class TestGetThorFile(unittest.TestCase):
         )
         get_thor_file(connection=self.conn, thor_file=file_name, max_workers=2)
         expected = [
-            unittest.mock.call(file_name, 0, 75000, 3, 60, 50, None, ['int', '__fileposition__']),
-            unittest.mock.call(file_name, 75000, 75000, 3, 60, 50, None, ['int', '__fileposition__'])
+            unittest.mock.call(file_name, 0, 75000, 3, 60, 50, None),
+            unittest.mock.call(file_name, 75000, 75000, 3, 60, 50, None)
         ]
         self.assertEqual(expected[0], mock.call_args_list[0])
         self.assertEqual(expected[1], mock.call_args_list[1])
@@ -680,9 +680,9 @@ class TestGetThorFile(unittest.TestCase):
         )
         get_thor_file(connection=self.conn, thor_file=file_name, max_workers=3)
         expected = [
-            unittest.mock.call(file_name, 0, 50000, 3, 60, 50, None, ['int', '__fileposition__']),
-            unittest.mock.call(file_name, 50000, 50000, 3, 60, 50, None, ['int', '__fileposition__']),
-            unittest.mock.call(file_name, 100000, 50000, 3, 60, 50, None, ['int', '__fileposition__'])
+            unittest.mock.call(file_name, 0, 50000, 3, 60, 50, None),
+            unittest.mock.call(file_name, 50000, 50000, 3, 60, 50, None),
+            unittest.mock.call(file_name, 100000, 50000, 3, 60, 50, None)
         ]
         self.assertEqual(expected[0], mock.call_args_list[0])
         self.assertEqual(expected[1], mock.call_args_list[1])
@@ -703,8 +703,8 @@ class TestGetThorFile(unittest.TestCase):
         )
         get_thor_file(connection=self.conn, thor_file=file_name, max_workers=1)
         expected = [
-            unittest.mock.call(file_name, 0, 325000, 3, 60, 50, None, ['int', '__fileposition__']),
-            unittest.mock.call(file_name, 325000, 25000, 3, 60, 50, None, ['int', '__fileposition__'])
+            unittest.mock.call(file_name, 0, 325000, 3, 60, 50, None),
+            unittest.mock.call(file_name, 325000, 25000, 3, 60, 50, None)
         ]
         self.assertEqual(expected[0], mock.call_args_list[0])
         self.assertEqual(expected[1], mock.call_args_list[1])
@@ -848,6 +848,9 @@ class TestGetThorFile(unittest.TestCase):
             a = get_thor_file(connection=self.conn, thor_file=file_name, dtype=None, low_mem=True)
             expected = pd.DataFrame(
                 {t[1]: [expected_val], "__fileposition__": [0]})
+
+            print(expected)
+            print(a)
 
             pd.testing.assert_frame_equal(expected.sort_index(axis=1), a.sort_index(axis=1), check_dtype=False)
 
@@ -1011,7 +1014,7 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         get_thor_file(self.conn, file_name)
-        mock.assert_called_with(file_name, 0, 2, 3, 60, 50, None, ['int', '__fileposition__'])
+        mock.assert_called_with(file_name, 0, 2, 3, 60, 50, None)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_get_thor_file_uses_max_sleep(self, mock):
@@ -1025,7 +1028,7 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         get_thor_file(self.conn, file_name, max_sleep=120)
-        mock.assert_called_with(file_name, 0, 2, 3, 120, 50, None, ['int', '__fileposition__'])
+        mock.assert_called_with(file_name, 0, 2, 3, 120, 50, None)
 
     # test the dtype
 
