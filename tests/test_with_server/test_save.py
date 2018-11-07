@@ -8,17 +8,17 @@ import pandas as pd
 
 import hpycc
 from hpycc.save import save_thor_file
-from hpycc.utils import docker
+from hpycc.utils import docker_tools
 
 
 # noinspection PyPep8Naming
 def setUpModule():
-    docker.HPCCContainer(tag="6.4.26-1")
+    docker_tools.HPCCContainer(tag="6.4.26-1")
 
 
 # noinspection PyPep8Naming
 def tearDownModule():
-    docker.HPCCContainer(pull=False, start=False).stop_container()
+    docker_tools.HPCCContainer(pull=False, start=False).stop_container()
 
 
 def _spray_df(conn, df, name):
@@ -173,7 +173,7 @@ class TestSaveThorFile(unittest.TestCase):
         res = _get_a_save(connection=self.conn, thor_file="test_save_thor_file_returns_single_row_dataset", index=False)
         expected = pd.DataFrame({"int": [1], "__fileposition__": 0},
                                 dtype=np.int64)
-        pd.testing.assert_frame_equal(expected, res)
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
 
     def test_save_thor_file_returns_100_row_dataset(self):
         lots_of_1s = "[" + ",".join(["{1}"]*100) + "]"
@@ -190,7 +190,7 @@ class TestSaveThorFile(unittest.TestCase):
             "int": [1]*100,
             "__fileposition__": [i*8 for i in range(100)]
         }, dtype=np.int64)
-        pd.testing.assert_frame_equal(expected, res)
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
 
     def test_save_thor_file_returns_no_path(self):
         lots_of_1s = "[" + ",".join(["{1}"]*10) + "]"
@@ -207,10 +207,8 @@ class TestSaveThorFile(unittest.TestCase):
         expected = pd.DataFrame({
             "int": [1]*10,
             "__fileposition__": [i*8 for i in range(10)]
-        }, dtype=np.int64).to_csv(index=False)
+        }, dtype=np.int64).sort_index(axis=1).to_csv(index=False)
 
-        print(expected)
-        print(res)
         self.assertEqual(expected, res)
 
     def test_save_thor_file_returns_a_set(self):

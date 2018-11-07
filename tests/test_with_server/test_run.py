@@ -5,16 +5,16 @@ import unittest
 import pandas as pd
 
 import hpycc
-from hpycc.utils import docker
+from hpycc.utils import docker_tools
 
 # noinspection PyPep8Naming
 def setUpModule():
-    docker.HPCCContainer(tag="6.4.26-1")
+    docker_tools.HPCCContainer(tag="6.4.26-1")
 
 
 # noinspection PyPep8Naming
 def tearDownModule():
-    docker.HPCCContainer(pull=False, start=False).stop_container()
+    docker_tools.HPCCContainer(pull=False, start=False).stop_container()
 
 
 class TestRunWithServer(unittest.TestCase):
@@ -90,9 +90,9 @@ class TestRunWithServer(unittest.TestCase):
         expected = pd.DataFrame({
             "str": ["ShouldbethecorrectoutputShouldbethecorrectoutput"],
             "__fileposition__": [0]})
-        pd.testing.assert_frame_equal(expected, res, check_dtype=False)
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1), check_dtype=False)
 
-    def test_run_script_does_nothing_when_not_using_stored_(self):
+    def test_run_script_does_nothing_when_not_using_stored(self):
         conn = hpycc.Connection("user", test_conn=False)
         file_name = "test_run_script_does_nothing_when_not_using_stored_"
         good_script = "str := 'abc' : STORED('str');" \
@@ -108,4 +108,4 @@ class TestRunWithServer(unittest.TestCase):
             hpycc.run_script(conn, p, stored={'b': 'Shouldbethecorrectoutput'})
         res = hpycc.get_thor_file(conn, file_name)
         expected = pd.DataFrame({"str": ["abcabc"], "__fileposition__": [0]})
-        pd.testing.assert_frame_equal(expected, res, check_dtype=False)
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1), check_dtype=False)
