@@ -16,18 +16,17 @@ from requests.exceptions import ConnectionError
 
 import hpycc.connection
 from hpycc.connection import check_ecl_cmd
-from tests.test_helpers import hpcc_functions
+from hpycc.utils import docker_tools
 
 
 # noinspection PyPep8Naming
 def setUpModule():
-    a = hpcc_functions.start_hpcc_container()
-    hpcc_functions.start_hpcc(a)
+    docker_tools.HPCCContainer(tag="6.4.26-1")
 
 
 # noinspection PyPep8Naming
 def tearDownModule():
-    hpcc_functions.stop_hpcc_container()
+    docker_tools.HPCCContainer(pull=False, start=False).stop_container()
 
 
 class TestConnectionTestConnectionWithNoAuth(unittest.TestCase):
