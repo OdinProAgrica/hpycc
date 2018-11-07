@@ -20,7 +20,6 @@ def tearDownModule():
 def check_file_exists(conn, file_name):
     res = conn.run_ecl_string("IMPORT std; STD.File.FileExists('%s');" % file_name, False, False, None)
     x = re.findall('<Row><Result_1>([a-z]+)</Result_1></Row>', str(res))
-    print(x[0])
 
     return x[0] == 'true'
 

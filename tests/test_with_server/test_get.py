@@ -429,7 +429,7 @@ class TestGetThorFile(unittest.TestCase):
             thor_file="test_get_thor_file_returns_single_row_dataset")
         expected = pd.DataFrame({"int": [1], "__fileposition__": 0},
                                 dtype=np.int32)
-        pd.testing.assert_frame_equal(expected, res)
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
 
     def test_get_thor_file_returns_100_row_dataset(self):
         lots_of_1s = "[" + ",".join(["{1}"]*100) + "]"
@@ -448,7 +448,7 @@ class TestGetThorFile(unittest.TestCase):
             "int": [1]*100,
             "__fileposition__": [i*8 for i in range(100)]
         }, dtype=np.int32)
-        pd.testing.assert_frame_equal(expected, res)
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
 
     def test_get_thor_file_works_when_num_rows_less_than_chunksize(self):
         file_name = ("test_get_thor_file_works_when_num_rows_less_than_"
@@ -464,7 +464,7 @@ class TestGetThorFile(unittest.TestCase):
             connection=self.conn, thor_file=file_name, chunk_size=2)
         expected = pd.DataFrame({"int": [1], "__fileposition__": 0},
                                 dtype=np.int32)
-        pd.testing.assert_frame_equal(expected, res)
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
 
     def test_get_thor_file_works_when_num_rows_equal_to_chunksize(self):
         file_name = "test_get_thor_file_works_when_num_rows_equal_to_chunksize"
@@ -479,7 +479,7 @@ class TestGetThorFile(unittest.TestCase):
             connection=self.conn, thor_file=file_name, chunk_size=2)
         expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]},
                                 dtype=np.int32)
-        pd.testing.assert_frame_equal(expected, res)
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
 
     def test_get_thor_file_works_when_num_rows_greater_than_chunksize(self):
         file_name = ("test_get_thor_file_works_when_num_rows_greater_than_"
@@ -498,7 +498,7 @@ class TestGetThorFile(unittest.TestCase):
                                 dtype=np.int32)
         res = res.sort_values("__fileposition__").reset_index(drop=True)
         pd.testing.assert_frame_equal(
-            expected, res, check_dtype=False)
+            expected.sort_index(axis=1), res.sort_index(axis=1), check_dtype=False)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_get_thor_file_chunks_when_num_rows_less_than_chunksize(
@@ -782,7 +782,7 @@ class TestGetThorFile(unittest.TestCase):
         res = get_thor_file(self.conn, file_name, dtype=int)
         expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 5]},
                                 dtype=np.int32)
-        pd.testing.assert_frame_equal(expected, res)
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
 
     def test_get_thor_file_uses_dict_of_dtypes(self):
         file_name = "test_get_thor_file_uses_dict_of_dtypes"
@@ -803,7 +803,7 @@ class TestGetThorFile(unittest.TestCase):
             "bool": [True, False],
             "__fileposition__": ["0", "14"]}).astype(
             {"str": int, "bool": bool, "int": str, "__fileposition__": str})
-        pd.testing.assert_frame_equal(expected, res)
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
 
     def test_get_thor_file_uses_dict_of_dtypes_with_missing_cols(self):
         file_name = "test_get_thor_file_uses_dict_of_dtypes_with_missing__cols"
@@ -822,7 +822,7 @@ class TestGetThorFile(unittest.TestCase):
             "str": ["1", "2"],
             "bool": [True, False],
             "__fileposition__": [0, 14]})
-        pd.testing.assert_frame_equal(expected, res, check_dtype=False)
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1), check_dtype=False)
 
     def test_get_thor_file_uses_dict_of_dtypes_with_extra_cols(self):
         file_name = "test_get_thor_file_uses_dict_of_dtypes_with_extra_cols"
@@ -847,4 +847,4 @@ class TestGetThorFile(unittest.TestCase):
         expected = pd.DataFrame({"set": [[1, 2, 3]], "__fileposition__": 0},
                                 dtype=np.int32)
         self.assertEqual(res.set.values[0], [1, 2, 3])
-        pd.testing.assert_frame_equal(expected, res)
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
