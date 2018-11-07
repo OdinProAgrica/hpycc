@@ -117,7 +117,7 @@ def _stringify_rows(df, start_row, num_rows):
 
 
 def spray_file(connection, source_file, logical_file, overwrite=False,
-               expire=None, chunk_size=50000, max_workers=5,
+               expire=None, chunk_size=100000, max_workers=5,
                delete_workunit=True):
     """
     Spray a file to a HPCC logical file.
@@ -134,7 +134,7 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
         Should the file overwrite any pre-existing logical file.
         False by default.
     chunk_size: int, optional
-        Size of chunks to use when spraying file. 10000 by
+        Size of chunks to use when spraying file. 100000 by
         default.
     max_workers: int, optional
         Number of concurrent threads to use when spraying.
