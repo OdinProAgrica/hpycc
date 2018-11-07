@@ -36,8 +36,8 @@ class TestRunWithServer(unittest.TestCase):
             self.assertTrue(res)
             res = conn.get_logical_file_chunk("thor::testrunscriptsaveslogicalfile", 0, 1, 3, 1, 0)
 
-        expected = pd.DataFrame({"a": ["1"], "b": ["a"], "__fileposition__": ["0"]}, index=[0])
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
+        expected ={"a": ["1"], "b": ["a"], "__fileposition__": ["0"]}
+        self.assertEqual(expected, res)
 
     def test_run_script_deletes_workunit(self):
         conn = hpycc.Connection("user", test_conn=False)

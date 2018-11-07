@@ -56,8 +56,8 @@ class Testconcatenatelogicalfiles(unittest.TestCase):
         concatenate_logical_files(self.conn, output_names, thor_file, 'STRING a; STRING b;',
                                   overwrite, expire, delete_workunit)
 
-        res = get_thor_file(connection=self.conn, thor_file=thor_file)[['a', 'b']].sort_values("a")
-        expected_result = pd.DataFrame({"a": col_1_values, "b": col_2_values}).sort_values("a")
+        res = get_thor_file(connection=self.conn, thor_file=thor_file)[['a', 'b']].sort_values("a").reset_index()
+        expected_result = pd.DataFrame({"a": col_1_values, "b": col_2_values}).sort_values("a").reset_index()
 
         pd.testing.assert_frame_equal(expected_result, res, check_names=False)
 
