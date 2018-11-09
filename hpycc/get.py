@@ -342,7 +342,8 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_
         schema = parse_schema_from_xml(schema_str, dtype)
         num_rows = wuresultresponse["Total"]
     except (KeyError, TypeError) as exc:
-        raise exc("Can't find schema in returned json: {}".format(resp))
+        msg = "Can't find schema in returned json: {}".format(resp)
+        raise type(exc)(msg) from exc
 
     if chunk_size == 'auto':  # Automagically optimise. TODO: we could use width too.
         suggested_size = ceil(num_rows/max_workers)
