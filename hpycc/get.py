@@ -9,7 +9,7 @@ Functions
 ---------
 - `get_output` -- Return the first output of an ECL script.
 - `get_outputs` -- Return all outputs of an ECL script.
-- `get_logical_file` -- Return the contents of a logical file.
+- `get_logical_file` -- Deprecated
 - `get_thor_file` -- Return the contents of a thor file.
 
 """
@@ -19,7 +19,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import re
 import warnings
 import pandas as pd
-import json
 from hpycc.utils import filechunker
 from hpycc.utils.parsers import parse_xml, parse_schema_from_xml
 from math import ceil
@@ -258,16 +257,6 @@ def get_logical_file(*args, **kwargs):
     raise ImportError("This function has been deprecated, use get_thor_file "
                       "instead.")
 
-# TODO is this just parsing a json correctly? also - replacing single quotes
-# seems like it is going to break things
-def fix_x(x):
-
-    if x:
-        x = x.replace("'", '"').replace('True', 'true').replace('False', 'false')
-        return json.loads(x)
-    else:
-        return None
-
 
 def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_attempts=3, max_sleep=60,
                   min_sleep=50, dtype=None):
@@ -326,7 +315,7 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_
     >>> df = pandas.DataFrame({"col1": [1, 2, 3]})
     >>> df.to_csv("example.csv", index=False)
     >>> hpycc.spray_file(conn,"example.csv","example")
-    >>> hpycc.get_logical_file(conn, "example")
+    >>> hpycc.get_thor_file(conn, "example")
         col1
     0     1
     1     2
@@ -338,33 +327,29 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_
     >>> df = pandas.DataFrame({"col1": [1, 2, 3]})
     >>> df.to_csv("example.csv", index=False)
     >>> hpycc.spray_file(conn,"example.csv","example")
-    >>> hpycc.get_logical_file(conn, "example", dtype=str)
+    >>> hpycc.get_thor_file(conn, "example", dtype=str)
         col1
     0     '1'
     1     '2'
     2     '3'
 
     """
-    # todo why min sleep?
 
     resp = connection.get_chunk_from_hpcc(thor_file, 0, 1, max_attempts, max_sleep, min_sleep)
-    resp = resp.json()
     try:
         wuresultresponse = resp["WUResultResponse"]
         schema_str = wuresultresponse["Result"]["XmlSchema"]["xml"]
-    except (KeyError, TypeError, JSONDecodeError) as exc:
+        schema = parse_schema_from_xml(schema_str, dtype)
+        num_rows = wuresultresponse["Total"]
+    except (KeyError, TypeError) as exc:
         raise exc("Can't find schema in returned json: {}".format(resp))
-
-    # get the schema as named tuples of (name, is_set, type)
-    schema = parse_schema_from_xml(schema_str, dtype)
-    num_rows = wuresultresponse["Total"]
 
     if chunk_size == 'auto':  # Automagically optimise. TODO: we could use width too.
         suggested_size = ceil(num_rows/max_workers)
         chunk_size = num_rows if suggested_size < 10000 else suggested_size  # Don't chunk small stuff.
         chunk_size = 325000 if suggested_size > 325000 else chunk_size  # More chunks than workers for big stuff.
 
-    if not num_rows:  # if there are no rows to go and get, we should return an empty dataframe
+    if not num_rows or num_rows == 0:  # if there are no rows to go and get, we should return an empty dataframe
         return pd.DataFrame(columns=schema.keys())
 
     chunks = filechunker.make_chunks(num_rows, chunk_size)
@@ -388,12 +373,9 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_
         typ = c['type']
         if c['is_a_set']:  # TODO: Nested DF are also caught here. Open issue to fix
             results[nam] = results[nam].map(lambda x: [typ(i) for i in x["Item"]])
-        # elif c['is_a_set'] and low_mem:  # low_mem coerces the set to string.
-        #     df[nam] = df[nam].map(lambda x: [typ(i) for i in fix_x(x)['Item']])
         else:
             try:
                 results[nam] = results[nam].astype(typ)
             except OverflowError:  # An int that is horrifically long cannot be converted properly. Use float instead
                 results[nam] = results[nam].astype('float')
     return results
-
