@@ -454,19 +454,6 @@ class TestGetThorFile(unittest.TestCase):
         expected = pd.DataFrame(columns=["int", "__fileposition__"])
         self.assertEqual(expected.to_csv(), res)
 
-    def test_save_thor_file_returns_empty_dataset_low_mem(self):
-        file_name = "test_save_thor_file_returns_empty_dataset_low_mem"
-        self.conn.run_ecl_string(
-            "a := DATASET([], {INTEGER int;}); "
-            "OUTPUT(a,,'~%s');" % file_name,
-            True,
-            True,
-            None
-        )
-        res = save_thor_file(connection=self.conn, thor_file=file_name, low_mem=True)
-        expected = pd.DataFrame(columns=["int", "__fileposition__"])
-        self.assertEqual(expected.to_csv(), res)
-
     def test_save_thor_file_returns_single_row_dataset(self):
         self.conn.run_ecl_string(
             "a := DATASET([{1}], {INTEGER int;}); "
@@ -846,28 +833,6 @@ class TestGetThorFile(unittest.TestCase):
 
         self.assertEqual(expected.to_csv(), res)
 
-    def test_save_thor_file_uses_dict_of_dtypes_low_mem(self):
-        file_name = "test_save_thor_file_uses_dict_of_dtypes_low_mem"
-        self.conn.run_ecl_string(
-            "a := DATASET([{{'1', TRUE, 1}}, {{'2', FALSE, 2}}], "
-            "{{STRING str; BOOLEAN bool; INTEGER int;}}); "
-            "OUTPUT(a,,'~{}');".format(file_name),
-            True,
-            True,
-            None
-        )
-
-        the_dtypes = {"str": int, "bool": bool, "int": str, "__fileposition__": str}
-        res = save_thor_file(self.conn, file_name, dtype=the_dtypes, low_mem=True)
-        expected = pd.DataFrame({
-            "str": [1, 2],
-            "bool": [True, False],
-            "int": ["1", "2"],
-            "__fileposition__": ["0", "14"]}).astype(
-            {"str": int, "bool": bool, "int": str, "__fileposition__": str})
-
-        self.assertEqual(expected.to_csv(), res)
-
     def test_save_thor_file_uses_dict_of_dtypes_with_missing_cols(self):
         file_name = "test_save_thor_file_uses_dict_of_dtypes_with_missing__cols"
         self.conn.run_ecl_string(
@@ -906,14 +871,5 @@ class TestGetThorFile(unittest.TestCase):
              "OUTPUT(a,,'~{}');").format(file_name)
         self.conn.run_ecl_string(s, True, True, None)
         res = save_thor_file(self.conn, file_name)
-        expected = pd.DataFrame({"set": [[1, 2, 3]], "__fileposition__": 0})
-        self.assertEqual(expected.to_csv(), res)
-
-    def test_save_thor_file_returns_a_set_low_mem(self):
-        file_name = "test_save_thor_file_returns_a_set_low_mem"
-        s = ("a := DATASET([{{[1, 2, 3]}}], {{SET OF INTEGER set;}}); "
-             "OUTPUT(a,,'~{}');").format(file_name)
-        self.conn.run_ecl_string(s, True, True, None)
-        res = save_thor_file(self.conn, file_name, low_mem=True)
         expected = pd.DataFrame({"set": [[1, 2, 3]], "__fileposition__": 0})
         self.assertEqual(expected.to_csv(), res)
