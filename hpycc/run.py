@@ -4,7 +4,8 @@ Function to run an ECL script
 This module provides a function, `run_script`, to run an ECL script
 using an existing `Connection`. This can be used to run a script,
 saving a logical file which can then be accessing
-with `get_thor_file()`. This approach allows for multi-threading,
+with `get_thor_file()`. The advantage of giving the download task to
+`get_thor_file()` is that it is able to multi-thread,
 something which functions in `get_output`, `get_outputs`,
 `save_output` and `save_outputs` cannot do.
 

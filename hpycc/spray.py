@@ -1,5 +1,10 @@
 """
 The module contains functions to send files to HPCC.
+
+Functions
+---------
+- `spray_file` -- Spray a given csv or pandas DataFrame to HPCC.
+
 """
 from concurrent.futures import ThreadPoolExecutor, wait
 
@@ -63,6 +68,7 @@ def _get_type(typ):
         ECL data type.
     """
     typ = str(typ)
+    #  TODO: Can we make this work again? Non-nullable data types are a pain!
     if 'float' in typ:
         # return 'DECIMAL32_12'
         pass
@@ -120,7 +126,7 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
                expire=None, chunk_size=100000, max_workers=5,
                delete_workunit=True):
     """
-    Spray a file to a HPCC logical file.
+    Spray a file to a HPCC logical file, bypassing the landing zone.
 
     Parameters
     ----------

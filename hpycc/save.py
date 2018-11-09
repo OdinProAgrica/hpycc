@@ -1,3 +1,20 @@
+"""
+Functions to get data out of an HPCC instance and save
+them to disk.
+
+This modules functions closely mirror those in `get`.
+In fact all they really do is wrap `get`'s functions
+around csv writing tasks. The first input to all
+functions is an instance of `Connection`.
+
+Functions
+---------
+- `save_output` -- Save the first output of an ECL script.
+- `save_outputs` -- Save all outputs of an ECL script.
+- `save_thor_file` -- Save the contents of a thor file.
+
+"""
+
 import os
 
 import hpycc.utils.parsers
@@ -105,10 +122,10 @@ def save_outputs(connection, script, directory=".", overwrite=True,
 
 def save_thor_file(connection, thor_file, path_or_buf=None,
                    max_workers=15, chunk_size=10000, max_attempts=3,
-                   max_sleep=60, min_sleep=50, dtype=None, low_mem=False, temp_dir=None,
+                   max_sleep=60, min_sleep=50, dtype=None,
                    **kwargs):
     """
-    Save a logical file to disk, see get_file() for returning a
+    Save a logical file to disk, see `get_thor_file()` for returning a
     DataFrame.
 
     Parameters
@@ -133,7 +150,11 @@ def save_thor_file(connection, thor_file, path_or_buf=None,
         3 by default.
     max_sleep: int, optional
             Maximum time, in seconds, to sleep between attempts.
-            The true sleep time is a random int between 0 and
+            The true sleep time is a random int between `min_sleep` and
+            `max_sleep`.
+    min_sleep: int, optional
+            Maximum time, in seconds, to sleep between attempts.
+            The true sleep time is a random int between `min_sleep` and
             `max_sleep`.
     dtype: type name or dict of col -> type, optional
         Data type for data or columns. E.g. {‘a’: np.float64, ‘b’:
@@ -141,15 +162,6 @@ def save_thor_file(connection, thor_file, path_or_buf=None,
         INSTEAD of dtype conversion. If None, or columns are missing
         from the provided dict, they will be converted to one of
         bool, str or int based on the HPCC datatype. None by default.
-    low_mem: bool, optional
-        Should the function operate in low memory mode? This writes each
-        thread's result to disk then reads in the resultant file, rather
-        than storing all results in memory and concatenating. Much more
-        memory efficient but the need for a file lock and I/O time will
-        reduce speed. Owing to the speed cost, this is False by default.
-    temp_dir: str, None
-        Optional location of temp directory, if None one is created in
-        the default location
     kwargs
         Additional parameters to be provided to
         pandas.DataFrame.to_csv().
@@ -161,7 +173,6 @@ def save_thor_file(connection, thor_file, path_or_buf=None,
         representation of the output csv.
 
     """
-    # TODO all the low_mem stuff applies to this as get
 
     file = get_thor_file(
         connection, thor_file, max_workers=max_workers, chunk_size=chunk_size,
