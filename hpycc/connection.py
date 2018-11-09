@@ -357,7 +357,42 @@ class Connection:
                 if attempts == max_attempts:
                     raise RetryError(e)
 
-    def get_chunk_from_hpcc(self, logical_file, start_row, n_rows, max_attempts, max_sleep, min_sleep):
+    def get_chunk_from_hpcc(self, logical_file, start_row, n_rows, max_attempts,
+                            max_sleep, min_sleep):
+        """
+        Using the HPCC instance at `server`:`port` and the
+        credentials `username` and `password`, return the
+        JSON response to a request for a part of a `logical_file`.
+        Starting at `start row` and `n_rows` long.
+
+        Parameters
+        ----------
+        logical_file: str
+            Name of logical file.
+        start_row: int
+            First row to return where 0 is the first row of the
+            dataset.
+        n_rows: int
+            Number of rows to return.
+        max_attempts: int
+            Maximum number of times url should be queried in the
+            case of an exception being raised.
+        max_sleep: int
+            Maximum time, in seconds, to sleep between attempts.
+            The true sleep time is a random int between 0 and
+            `max_sleep`.
+        min_sleep: int
+            Maximum time, in seconds, to sleep between attempts.
+            The true sleep time is a random int between 'min_sleep' and
+            `max_sleep`.
+
+        Returns
+        -------
+        resp: json
+            JSON formatted response containing rows and all associated
+            metadata.
+        """
+
         url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
                "&Cluster=thor&Start={}&Count={}").format(
             self.server, self.port, _make_thorname_html(logical_file), start_row, n_rows)
