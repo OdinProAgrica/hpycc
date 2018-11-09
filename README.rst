@@ -22,7 +22,11 @@ Installation
 ------------
 Install with:
 
-pip install git+git://github.com/OdinProAgrica/hpycc
+pip install hpycc
+
+Or, if you are still a bit old school:
+
+python -m pip install hpycc
 
 Current Status
 --------------
@@ -34,17 +38,17 @@ The package itself mainly uses core Python, Pandas is needed for outputting data
 
 There is a dependency for client tools to run ECL scripts (you need ecl.exe and eclcc.exe).
 Make sure you install the right client tools for your HPCC version and add the dir to your system path,
-e.g. C:\Program Files (x86)\HPCCSystems\X.X.X\clienttools\bin.
+e.g. C:\\Program Files (x86)\\HPCCSystems\\X.X.X\\clienttools\\bin.
 
-Tests require docker to spin up HPCC test environments.
+Tests and docker contianer functions require docker to spin up HPCC environments.
 
 Main Functions
 --------------
 Below summarises the key functions and non-optional parameters. For specific arguments see the relevant
 function's documentation. Note that while retrieving a file is a multi-thread process, running a script
 and getting the results is not. Therefore if your file is quite big you may be better off saving the
-results of a script using run_script_internal() with a thor file output then downloading the file with
-get_file_internal().
+results of a script using run.run_script() with a thor file output then downloading the file with
+get.get_thor_file().
 
 connection(username, server="localhost", port=8010, repo=None, password="password", legacy=False, test_conn=True)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -68,7 +72,13 @@ Run a given ECL script. 10 rows will be returned but they will be dumped, no out
 
 spray_file(connection, source_file, logical_file, ...)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Spray a csv into HPCC
+Spray a csv or pandas DataFrame into HPCC.
+
+docker_tools.HPCCContainer(tag="6.4.26-1", ...)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Designed for our testing but made available generally, a collection of functions for running and managing
+HPCC docker containers is also available. The above function starts a container, see help file for shutting
+down and other management tasks.
 
 
 Examples 
@@ -81,77 +91,75 @@ The below code gives an example of functionality::
     from os import remove
 
     # Start an HPCC docker image for testing
-    a = dockerutils.start_hpcc_container()
-    dockerutils.start_hpcc(a)
+    docker_tools.HPCCContainer(tag="6.4.26-1")
 
     # Setup stuff
     username = 'HPCC_dev'
-    f = 'test.csv'
+    test_file = 'test.csv'
     f_hpcc_1 = '~temp::testfile1'
     f_hpcc_2 = '~temp::testfile2'
     ecl_script = 'ecl_script.ecl'
-
 
     # Let's create a connection object so we can interface with HPCC.
     # up with Docker
     conn = hpycc.Connection(username, server="localhost")
     try:
-       # So, let's spray up some data:
-       pd.DataFrame({'col1': [1, 2, 3, 4], 'col2': ['a', 'b', 'c', 'd']}).to_csv(f, index=False)
-       hpycc.spray_file(conn, f, f_hpcc_1, expire=7)
+        # So, let's spray up some data:
+        pd.DataFrame({'col1': [1, 2, 3, 4], 'col2': ['a', 'b', 'c', 'd']}).to_csv(test_file, index=False)
+        hpycc.spray_file(conn, test_file, f_hpcc_1, expire=7)
 
-       # Lovely, we can now extract that as a Thor file:
-       df = hpycc.get_thor_file(conn, f_hpcc_1)
-       print(df)
-       # Note __fileposition__ column. This will be drop-able in future versions.
+        # Lovely, we can now extract that as a Thor file:
+        df = hpycc.get_thor_file(conn, f_hpcc_1)
+        print(df)
+        # Note __fileposition__ column. This will be drop-able in future versions.
 
-       #################################
-       #   col1 col2  \__fileposition__#
-       # 0    1    a                 0 #
-       # 1    3    c                20 #
-       # 2    2    b                10 #
-       # 3    4    d                30 #
-       #################################
+        #################################
+        #   col1 col2  \__fileposition__#
+        # 0    1    a                 0 #
+        # 1    3    c                20 #
+        # 2    2    b                10 #
+        # 3    4    d                30 #
+        #################################
 
-       # If preferred data can also be extracted using an ECL script.
-       with open(ecl_script, 'w') as f:
-          f.writelines("DATASET('%s', {STRING col1; STRING col2;}, THOR);" % f_hpcc_1)
-          # Note, all columns are currently string-ified by default
-       df = hpycc.get_output(conn, ecl_script)
-       print(df)
+        # If preferred data can also be extracted using an ECL script.
+        with open(ecl_script, 'w') as f:
+            f.writelines("DATASET('%s', {STRING col1; STRING col2;}, THOR);" % f_hpcc_1)
+            # Note, all columns are currently string-ified by default
+        df = hpycc.get_output(conn, ecl_script)
+        print(df)
 
-       ################
-       #   col1 col2  #
-       # 0    1    a  #
-       # 1    3    c  #
-       # 2    2    b  #
-       # 3    4    d  #
-       ############## #
+        ################
+        #   col1 col2  #
+        # 0    1    a  #
+        # 1    3    c  #
+        # 2    2    b  #
+        # 3    4    d  #
+        ############## #
 
 
-       # get_thor_file() is optimised for large files, get_output is not (yet). To run a script and
-       # download a large result you should therefore save a thor file and grab that.
+        # get_thor_file() is optimised for large files, get_output is not (yet). To run a script and
+        # download a large result you should therefore save a thor file and grab that.
 
-       with open(ecl_script, 'w') as f:
-          f.writelines("a := DATASET('%s', {STRING col1; STRING col2;}, THOR);"
-                       "OUTPUT(a, , '%s');" % (f_hpcc_1, f_hpcc_2))
-       hpycc.run_script(conn, ecl_script)
-       df = hpycc.get_thor_file(conn, f_hpcc_2)
-       print(df)
+        with open(ecl_script, 'w') as f:
+            f.writelines("a := DATASET('%s', {STRING col1; STRING col2;}, THOR);"
+                         "OUTPUT(a, , '%s');" % (f_hpcc_1, f_hpcc_2))
+        hpycc.run_script(conn, ecl_script)
+        df = hpycc.get_thor_file(conn, f_hpcc_2)
+        print(df)
 
-       #################################
-       #   col1 col2  \__fileposition__#
-       # 0    1    a                 0 #
-       # 1    3    c                20 #
-       # 2    2    b                10 #
-       # 3    4    d                30 #
-       #################################
+        #################################
+        #   col1 col2  \__fileposition__#
+        # 0    1    a                 0 #
+        # 1    3    c                20 #
+        # 2    2    b                10 #
+        # 3    4    d                30 #
+        #################################
 
     finally:
-       # Shutdown our docker container
-       dockerutils.stop_hpcc_container()
-       remove(ecl_script)
-       remove(f)
+        # Shutdown our docker container
+        docker_tools.HPCCContainer(pull=False, start=False).stop_container()
+        remove(ecl_script)
+        remove(test_file)
 
 Issues, Bugs, Comments? 
 -----------------------
