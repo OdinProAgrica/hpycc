@@ -399,15 +399,17 @@ class Connection:
 
         resp = self.run_url_request(url, max_attempts, max_sleep, min_sleep)
         try:
-            return resp.json()
+            resp = resp.json()
         except JSONDecodeError as exc:
             msg = ("response can't be parsed as JSON:\n{}".format(resp))
-            raise exc(msg)
+            raise type(exc)(msg, exc.doc, exc.pos) from exc
+
+        return resp
 
     def get_logical_file_chunk(self, logical_file, start_row, n_rows,
                                max_attempts, max_sleep, min_sleep):
         """
-        Return a chunk of a logical file from a HPCC instance.
+        Return a chunk of a logical file from an HPCC instance.
 
         Using the HPCC instance at `server`:`port` and the
         credentials `username` and `password`, return a chunk of
@@ -450,7 +452,7 @@ class Connection:
             resp = resp["WUResultResponse"]["Result"]["Row"]
         except (KeyError, TypeError) as exc:
             msg = ("json can't be parsed as a WU:\n{}".format(resp))
-            raise exc(msg)
+            raise type(exc)(msg) from exc
 
         return {key: [a_dict[key] for a_dict in resp] for key in resp[0]}
 
