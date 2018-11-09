@@ -122,7 +122,6 @@ def get_output(connection, script, syntax_check=True, delete_workunit=True,
         parsed = parse_xml(match_content)
     except AttributeError:
         parsed = pd.DataFrame()
-    # TODO why do this len check? It should be caught by the try except
 
     if len(parsed) == 0:
         warnings.warn(warn_msg)
