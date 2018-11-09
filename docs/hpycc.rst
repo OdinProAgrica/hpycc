@@ -26,14 +26,7 @@ hpycc\.delete module
     :members:
     :undoc-members:
     :show-inheritance:
-    
-hpycc\.dockerutils module
--------------------------
 
-.. automodule:: hpycc.dockerutils
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 hpycc\.get module
 -----------------
