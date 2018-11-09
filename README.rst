@@ -77,7 +77,7 @@ The below code gives an example of functionality::
 
     import hpycc
     import pandas as pd
-    from hpycc import dockerutils
+    from hpycc.utils import docker_tools
     from os import remove
 
     # Start an HPCC docker image for testing
@@ -129,15 +129,14 @@ The below code gives an example of functionality::
        ############## #
 
 
-       # get_thor_file() is optimised for large files, get_output is not. max_workers, chunk_size and low_mem can all
-       # be used to download data quickly and efficiently. To run a script and download a large result you should therefore
-       # save a thor file and grab that.
+       # get_thor_file() is optimised for large files, get_output is not (yet). To run a script and
+       # download a large result you should therefore save a thor file and grab that.
 
        with open(ecl_script, 'w') as f:
           f.writelines("a := DATASET('%s', {STRING col1; STRING col2;}, THOR);"
                        "OUTPUT(a, , '%s');" % (f_hpcc_1, f_hpcc_2))
        hpycc.run_script(conn, ecl_script)
-       df = hpycc.get_thor_file(conn, f_hpcc_2, max_workers=3, chunk_size=1, low_mem=True)
+       df = hpycc.get_thor_file(conn, f_hpcc_2)
        print(df)
 
        #################################
