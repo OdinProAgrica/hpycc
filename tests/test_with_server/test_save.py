@@ -12,7 +12,7 @@ from pandas.errors import EmptyDataError
 import hpycc
 from hpycc.save import save_thor_file
 from hpycc.utils import docker_tools
-
+from io import StringIO
 
 # noinspection PyPep8Naming
 def setUpModule():
@@ -61,19 +61,20 @@ def _save_outputs_from_ecl_string(
         res = {}
         for file in files:
             try:
-                res[file.replace('.csv', '')] = pd.read_csv(file)
+                res[file.replace('.csv', '').replace('.\\', '')] = pd.read_csv(file)
             except EmptyDataError:
-                res[file.replace('.csv', '')] = pd.DataFrame()
+                res[file.replace('.csv', '').replace('.\\', '')] = pd.DataFrame()
+            print(res)
             os.remove(file)
         return res
 
 
-def _get_a_save(connection, thor_file, path_or_buf,
+def _get_a_save(connection, thor_file, path_or_buf=None,
                max_workers=15, chunk_size=10000, max_attempts=3,
-               max_sleep=10, dtype=None, **kwargs):
-    save_thor_file(connection, thor_file, path_or_buf,
-                   max_workers=max_workers, chunk_size=chunk_size, max_attempts=max_attempts,
-                   max_sleep=max_sleep, dtype=dtype, **kwargs)
+               min_sleep=5, max_sleep=10, dtype=None, **kwargs):
+    return save_thor_file(connection, thor_file, path_or_buf,
+                          max_workers=max_workers, chunk_size=chunk_size, max_attempts=max_attempts,
+                          max_sleep=max_sleep, dtype=dtype, min_sleep=min_sleep, **kwargs)
 
 
 class TestGetOutputWithServer(unittest.TestCase):
@@ -476,9 +477,8 @@ class TestGetThorFile(unittest.TestCase):
         )
 
         res = _get_a_save(connection=self.conn, thor_file="test_save_thor_file_returns_single_row_dataset", index=False)
-        expected = pd.DataFrame({"int": [1], "__fileposition__": 0},
-                                dtype=np.int64)
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
+        expected = pd.DataFrame({"int": [1], "__fileposition__": [0]}, dtype=np.int64).to_csv(index=False)
+        self.assertEqual(expected, res)
 
     def test_save_thor_file_returns_100_row_dataset(self):
         lots_of_1s = "[" + ",".join(["{1}"] * 100) + "]"
@@ -494,27 +494,7 @@ class TestGetThorFile(unittest.TestCase):
         expected = pd.DataFrame({
             "int": [1]*100,
             "__fileposition__": [i*8 for i in range(100)]
-        }, dtype=np.int64)
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
-
-    def test_save_thor_file_returns_100_row_dataset_low_mem(self):
-        file_name = "test_save_thor_file_returns_100_row_dataset_low_mem"
-
-        lots_of_1s = "[" + ",".join(["{1}"] * 100) + "]"
-        self.conn.run_ecl_string(
-            "a := DATASET({}, {{INTEGER int;}}); "
-            "OUTPUT(a,,'~{}');".format(
-                lots_of_1s, file_name),
-            True,
-            True,
-            None
-        )
-        res = save_thor_file(connection=self.conn, thor_file=file_name, low_mem=True)
-        expected = pd.DataFrame({
-            "int": [1]*10,
-            "__fileposition__": [i*8 for i in range(10)]
-        }, dtype=np.int64).sort_index(axis=1).to_csv(index=False)
-
+        }, dtype=np.int64).to_csv()
         self.assertEqual(expected, res)
 
     def test_save_thor_file_works_when_num_rows_less_than_chunksize(self):
@@ -528,7 +508,7 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         res = save_thor_file(connection=self.conn, thor_file=file_name, chunk_size=2)
-        expected = pd.DataFrame({"int": 1, "__fileposition__": 0}, dtype=np.int32)
+        expected = pd.DataFrame({"int": [1], "__fileposition__": [0]}, dtype=np.int32)
         self.assertEqual(expected.to_csv(), res)
 
     def test_save_thor_file_works_when_num_rows_equal_to_chunksize(self):
@@ -540,9 +520,15 @@ class TestGetThorFile(unittest.TestCase):
             True,
             None
         )
-        res = save_thor_file(connection=self.conn, thor_file=file_name, chunk_size=2)
-        expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]}, dtype=np.int32)
-        self.assertEqual(expected.to_csv(), res)
+
+        res = save_thor_file(connection=self.conn, thor_file=file_name, chunk_size=2, index=False)
+        res = pd.read_csv(StringIO(res)).sort_values('int').reset_index(drop=True)
+        expected = pd.DataFrame({"int": [2, 1], "__fileposition__": [8, 0]}, dtype=np.int32)
+        expected = expected.sort_values('int').reset_index(drop=True)
+
+        print(expected)
+        print(res)
+        pd.testing.assert_frame_equal(expected, res, check_dtype=False)
 
     def test_save_thor_file_works_when_num_rows_greater_than_chunksize(self):
         file_name = ("test_save_thor_file_works_when_num_rows_greater_than_"
@@ -555,16 +541,18 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         res = save_thor_file(connection=self.conn, thor_file=file_name, chunk_size=1, index=False)
-        expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]}, dtype=np.int32)
+        res = pd.read_csv(StringIO(res)).sort_values('int').reset_index(drop=True)
+        expected = pd.DataFrame({"int": [2, 1], "__fileposition__": [8, 0]}, dtype=np.int32)
+        expected = expected.sort_values('int').sort_values('int').reset_index(drop=True)
 
-        self.assertEqual(expected.to_csv(index=False), res)
+        pd.testing.assert_frame_equal(expected, res, check_dtype=False)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_save_thor_file_chunks_when_num_rows_less_than_chunksize(
             self, mock):
         file_name = ("test_save_thor_file_chunks_when_num_rows_less_than"
                      "_chunksize")
-        mock.return_value = pd.DataFrame({'int': '1', '__fileposition__': '0'})
+        mock.return_value = pd.DataFrame({'int': ['1'], '__fileposition__': ['0']})
         self.conn.run_ecl_string(
             "a := DATASET([{{1}}], {{INTEGER int;}}); "
             "OUTPUT(a,,'~{}');".format(file_name),
@@ -703,71 +691,6 @@ class TestGetThorFile(unittest.TestCase):
 
             self.assertEqual(expected.to_csv(), a)
 
-    def test_save_thor_file_parses_column_types_correctly_low_mem(self):
-        i = 1
-        d = 1.5
-        u = "U'ABC'"
-        s = "'ABC'"
-        b = "TRUE"
-        x = "x'ABC'"
-        es = "ABC"
-        types = [("INTEGER", "int", i),
-                 ("INTEGER1", "int1", i),
-                 ("UNSIGNED INTEGER", "unsigned_int", i),
-                 ("UNSIGNED INTEGER1", "unsigned_int_1", i),
-                 ("UNSIGNED8", "is_unsigned_8", i),
-                 ("UNSIGNED", "usigned", i),
-                 ("DECIMAL10", "dec10", d, float(round(d))),
-                 ("DECIMAL5_3", "dec5_3", d),
-                 ("UNSIGNED DECIMAL10", "unsigned_dec10", d, float(round(d))),
-                 ("UNSIGNED DECIMAL5_3", "unsigned_decl5_3", d),
-                 ("UDECIMAL10", "udec10", d,  float(round(d))),
-                 ("UDECIMAL5_3", "udec5_3", d),
-                 ("REAL", "is_real", d),
-                 ("REAL4", "is_real4", d),
-                 ("UNICODE", "ucode", u, es),
-                 ("UNICODE_de", "ucode_de", u, es),
-                 ("UNICODE3", "ucode4", u, es),
-                 ("UNICODE_de3", "ucode_de4", u, es),
-                 ("UTF8", "is_utf8", u, es),
-                 ("UTF8_de", "is_utf8_de", u, es),
-                 ("STRING", "str", s, es),
-                 ("STRING3", "str1", s, es),
-                 ("ASCII STRING", "ascii_str", s, es),
-                 ("ASCII STRING3", "ascii_str1", s, es),
-                 ("EBCDIC STRING", "ebcdic_str", s, es),
-                 ("EBCDIC STRING3", "ebcdic_str1", s, es),
-                 ("BOOLEAN", "bool", b, True),
-                 ("DATA", "is_data", x, "0ABC"),
-                 ("DATA3", "is_data_16", x, "0ABC00"),
-                 ("VARUNICODE", "varucode", u, es),
-                 ("VARUNICODE_de", "varucode_de", u, es),
-                 ("VARUNICODE3", "varucode4", u, es),
-                 ("VARUNICODE_de3", "varucode_de4", u, es),
-                 ("VARSTRING", "varstr", u, es),
-                 ("VARSTRING3", "varstr3", u, es),
-                 ("QSTRING", "qstr", s, es),
-                 ("QSTRING3", "qstr8", s, es)]
-        for t in types:
-            file_name = ("test_save_thor_file_parses_column_types"
-                         "_correctly_low_mem_{}").format(t[1])
-            self.conn.run_ecl_string(
-                "a := DATASET([{{{}}}], {{{} {};}}); "
-                "OUTPUT(a,,'~{}');".format(t[2], t[0], t[1], file_name),
-                True,
-                True,
-                None
-            )
-            try:
-                expected_val = t[3]
-            except IndexError:
-                expected_val = t[2]
-            a = save_thor_file(connection=self.conn, thor_file=file_name, dtype=None, low_mem=True)
-            expected = pd.DataFrame(
-                {t[1]: expected_val, "__fileposition__": 0})
-
-            self.assertEqual(expected.to_csv(), a)
-
     def test_save_thor_file_parses_set_types_correctly(self):
         i = 1
         d = 1.5
@@ -825,67 +748,10 @@ class TestGetThorFile(unittest.TestCase):
                 expected_val = t[2]
             a = save_thor_file(connection=self.conn, thor_file=file_name, dtype=None)
             expected = pd.DataFrame(
-                {t[1]: [expected_val], "__fileposition__": 0})
-            self.assertEqual(expected.to_csv(), a)
+                {t[1]: [[expected_val]], "__fileposition__": 0}, index=[0])
 
-    def test_save_thor_file_parses_set_types_correctly_low_mem(self):
-        i = 1
-        d = 1.5
-        u = "U'ABC'"
-        s = "'ABC'"
-        b = "TRUE"
-        x = "x'ABC'"
-        es = "ABC"
-        types = [("INTEGER", "int", i),
-                 ("INTEGER1", "int1", i),
-                 ("UNSIGNED INTEGER", "unsigned_int", i),
-                 ("UNSIGNED INTEGER1", "unsigned_int_1", i),
-                 ("UNSIGNED8", "is_unsigned_8", i),
-                 ("UNSIGNED", "usigned", i),
-                 ("DECIMAL10", "dec10", d,  float(round(d))),
-                 ("DECIMAL5_3", "dec5_3", d),
-                 ("UNSIGNED DECIMAL10", "unsigned_dec10", d,  float(round(d))),
-                 ("UNSIGNED DECIMAL5_3", "unsigned_decl5_3", d),
-                 ("UDECIMAL10", "udec10", d,  float(round(d))),
-                 ("UDECIMAL5_3", "udec5_3", d),
-                 ("REAL", "is_real", d),
-                 ("REAL4", "is_real4", d),
-                 ("UNICODE", "ucode", u, es),
-                 ("UNICODE_de", "ucode_de", u, es),
-                 ("UNICODE3", "ucode4", u, es),
-                 ("UNICODE_de3", "ucode_de4", u, es),
-                 ("UTF8", "is_utf8", u, es),
-                 ("UTF8_de", "is_utf8_de", u, es),
-                 ("STRING", "str", s, es),
-                 ("STRING3", "str1", s, es),
-                 ("ASCII STRING", "ascii_str", s, es),
-                 ("ASCII STRING3", "ascii_str1", s, es),
-                 ("EBCDIC STRING", "ebcdic_str", s, es),
-                 ("EBCDIC STRING3", "ebcdic_str1", s, es),
-                 ("BOOLEAN", "bool", b, True),
-                 ("DATA", "is_data", x, "0ABC"),
-                 ("DATA3", "is_data_16", x, "0ABC00"),
-                 ("VARUNICODE", "varucode", u, es),
-                 ("VARUNICODE_de", "varucode_de", u, es),
-                 ("VARUNICODE3", "varucode4", u, es),
-                 ("VARUNICODE_de3", "varucode_de4", u, es),
-                 ("VARSTRING", "varstr", u, es),
-                 ("VARSTRING3", "varstr3", u, es),
-                 ("QSTRING", "qstr", s, es),
-                 ("QSTRING3", "qstr8", s, es)]
-        for t in types:
-            file_name = ("test_save_thor_file_parses_set_types_"
-                         "correctly_low_mem_{}").format(t[1])
-            s = ("a := DATASET([{{[{}]}}], {{SET OF {} {};}}); "
-                 "OUTPUT(a,,'~{}');").format(t[2], t[0], t[1], file_name)
-            self.conn.run_ecl_string(s, True, False, None)
-            try:
-                expected_val = t[3]
-            except IndexError:
-                expected_val = t[2]
-            a = save_thor_file(connection=self.conn, thor_file=file_name, dtype=None, low_mem=True)
-            expected = pd.DataFrame(
-                {t[1]: [expected_val], "__fileposition__": 0})
+            print(expected.to_csv())
+            print(a)
             self.assertEqual(expected.to_csv(), a)
 
     @patch.object(hpycc.get, "ThreadPoolExecutor")
@@ -918,7 +784,7 @@ class TestGetThorFile(unittest.TestCase):
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_save_thor_file_uses_defaults(self, mock):
-        mock.return_value = pd.DataFrame({'int': '1', '__fileposition__': '0'})
+        mock.return_value = pd.DataFrame({'int': ['1'], '__fileposition__': ['0']})
         file_name = "test_save_thor_file_uses_defaults"
         self.conn.run_ecl_string(
             "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
@@ -928,11 +794,11 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         save_thor_file(self.conn, file_name)
-        mock.assert_called_with(file_name, 0, 2, 3, 60, 50, None, ['int', '__fileposition__'])
+        mock.assert_called_with(file_name, 0, 2, 3, 60, 50)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_save_thor_file_uses_max_sleep(self, mock):
-        mock.return_value = pd.DataFrame({'int': '1', '__fileposition__': '0'})
+        mock.return_value = pd.DataFrame({'int': ['1'], '__fileposition__': ['0']})
         file_name = "test_save_thor_file_uses_max_sleep"
         self.conn.run_ecl_string(
             "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
@@ -942,7 +808,7 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         save_thor_file(self.conn, file_name, max_sleep=120)
-        mock.assert_called_with(file_name, 0, 2, 3, 120, 50, None, ['int', '__fileposition__'])
+        mock.assert_called_with(file_name, 0, 2, 3, 120, 50)
 
     # test the dtype
     def test_save_thor_file_uses_single_dtype(self):

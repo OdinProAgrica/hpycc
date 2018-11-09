@@ -50,7 +50,6 @@ class TestRunWithServer(unittest.TestCase):
                 file.write(good_script)
             hpycc.run_script(conn, p)
         res = conn._run_command(check_wu_ecl)
-        print(res)
 
         self.assertEqual("", res.stdout)
 

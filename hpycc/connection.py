@@ -396,7 +396,7 @@ class Connection:
         # need to specify temp file and min_sleep.
         # TODO: This should be an internal function.
 
-        resp = get_chunk_from_hpcc(logical_file, start_row, n_rows, max_attempts, max_sleep, min_sleep)
+        resp = self.get_chunk_from_hpcc(logical_file, start_row, n_rows, max_attempts, max_sleep, min_sleep)
 
         try:
             resp = resp.json()

@@ -86,6 +86,7 @@ class TestParseSchemaFromXML(unittest.TestCase):
                 '</xs:schema>'
             ])
         self.column_schema = '<xs:element name="int" type="{}"/>'
+        self.column_schema_with_name = '<xs:element name="{}" type="{}"/>'
         self.set_schema = "\n".join([
             '<xs:element name="set_int">',
             ('<xs:complexType><xs:sequence><xs:element name="All" '
@@ -130,17 +131,23 @@ class TestParseSchemaFromXML(unittest.TestCase):
         res = parse_schema_from_xml(schema, None)
         self.assertFalse(res['__fileposition__']['is_a_set'])
         self.assertEqual(res['__fileposition__']['type'], int)
-        self.assertEqual(['int', '__fileposition__'], cols)
         self.assertIsNotNone(res['__fileposition__'])
 
     def test_parse_schema_from_xml_returns_all_columns(self):
-        cols = [self.column_schema.format("string")] * 100
+        cols = [self.column_schema_with_name.format("int1", "string"),
+                self.column_schema_with_name.format("int2", "string"),
+                self.column_schema_with_name.format("int3", "string"),
+                self.column_schema_with_name.format("int4", "string"),
+                self.column_schema_with_name.format("int5", "string"),
+                self.column_schema_with_name.format("int6", "string"),
+                self.column_schema_with_name.format("int7", "string"),
+                self.column_schema_with_name.format("int8", "string")]
         joined = "\n".join(cols)
         schema = self.bare_schema.format(joined)
-
-        # res, cols = [i for i in parse_schema_from_xml(schema, None)][:-1]
+        print(schema)
         res = parse_schema_from_xml(schema, None)
-        self.assertEqual(101, len(cols))  # add file position
+        print(res)
+        self.assertEqual(9, len(res))  # add file position
 
     def test_parse_schema_from_xml_parses_set_types_correctly(self):
         types = [
@@ -186,7 +193,6 @@ class TestParseSchemaFromXML(unittest.TestCase):
             self.assertEqual(e[0], r[0])
             self.assertEqual(e[1], r[1])
             self.assertEqual(e[2], r[2])
-        self.assertEqual(cols, list(expected.keys()))
 
 
 class TestGetPythonTypeFromECLType(unittest.TestCase):
