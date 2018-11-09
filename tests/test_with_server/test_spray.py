@@ -5,7 +5,7 @@ import unittest
 import pandas as pd
 import hpycc
 from hpycc.utils import docker_tools
-from hpycc.spray import concatenate_logical_files, spray_file
+from hpycc.spray import _concatenate_logical_files, spray_file
 from hpycc.get import get_thor_file
 
 
@@ -53,8 +53,8 @@ class Testconcatenatelogicalfiles(unittest.TestCase):
 
         [send_file_chunks(self.conn, CONCAT_SCRIPT_BASE % (col1, col2, nam))
          for col1, col2, nam in zip(col_1_values, col_2_values, output_names)]
-        concatenate_logical_files(self.conn, output_names, thor_file, 'STRING a; STRING b;',
-                                  overwrite, expire, delete_workunit)
+        _concatenate_logical_files(self.conn, output_names, thor_file, 'STRING a; STRING b;',
+                                   overwrite, expire, delete_workunit)
 
         res = get_thor_file(connection=self.conn, thor_file=thor_file)[['a', 'b']].sort_values("a")
         expected_result = pd.DataFrame({"a": col_1_values, "b": col_2_values}).sort_values("a")
@@ -78,10 +78,10 @@ class Testconcatenatelogicalfiles(unittest.TestCase):
          for col1, col2, nam
          in zip(col_1_values, col_2_values, output_names)]
 
-        concatenate_logical_files(conn, output_names,
-                                  thor_file,
+        _concatenate_logical_files(conn, output_names,
+                                   thor_file,
                                   'STRING a; STRING b;',
-                                  overwrite, expire, delete_workunit)
+                                   overwrite, expire, delete_workunit)
 
         res = get_thor_file(connection=conn, thor_file=thor_file)[['a', 'b']].sort_values("a")
         expected_result = pd.DataFrame({"a": col_1_values, "b": col_2_values}).sort_values("a")

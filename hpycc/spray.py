@@ -186,7 +186,7 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
             for row, name in zip(stringified_rows, target_names)]
         _, __ = wait(futures)
 
-    concatenate_logical_files(connection, target_names, logical_file, record_set, overwrite, expire, delete_workunit)
+    _concatenate_logical_files(connection, target_names, logical_file, record_set, overwrite, expire, delete_workunit)
 
     for tmp in target_names:
         delete_logical_file(connection, tmp, delete_workunit)
@@ -212,8 +212,8 @@ def _make_record_set(df):
     return record_set
 
 
-def concatenate_logical_files(connection, to_concat, logical_file, record_set,
-                              overwrite, expire, delete_workunit):
+def _concatenate_logical_files(connection, to_concat, logical_file, record_set,
+                               overwrite, expire, delete_workunit):
     """
     Concatenate a list of logical files (with the same recordset)
     into a single logical file.
