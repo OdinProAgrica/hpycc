@@ -4,6 +4,14 @@ hpycc\.utils package
 Submodules
 ----------
 
+hpycc\.utils\.docker_tools module
+---------------------------------
+
+.. automodule:: hpycc.utils.docker_tools
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 hpycc\.utils\.filechunker module
 --------------------------------
 
