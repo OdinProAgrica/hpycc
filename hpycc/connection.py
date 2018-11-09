@@ -40,14 +40,24 @@ def _make_thorname_html(logical_file):
 
 
 def check_ecl_cmd(cmd='ecl'):
+    """
+    Check that executionable is on the system path
+    """
+
     try:
         subprocess.run(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             stdin=subprocess.PIPE, shell=False)
     except FileNotFoundError:
-        warn("ecl is not on the system path! You may continue but "
-             "functionality will be limited to get and save_thor_file and "
-             "deleting workunits. All other tasks will likely fail.")
+        if cmd == 'ecl':
+            warn("ecl is not on the system path! You may continue but "
+                 "functionality will be limited to get and save_thor_file and "
+                 "deleting workunits. All other tasks will likely fail.")
+        elif cmd == 'eclcc':
+            warn("eclcc is not on the system path! You may continue but "
+                 "you will be unable to syntax check")
+        else:
+            warn("Command line check for %s failed" % cmd)
 
 
 class Connection:
@@ -125,7 +135,8 @@ class Connection:
         if test_conn:
             self.test_connection()
 
-        check_ecl_cmd()
+        check_ecl_cmd('ecl')
+        check_ecl_cmd('eclcc')
 
     def test_connection(self):
         """
@@ -155,6 +166,9 @@ class Connection:
 
     @staticmethod
     def _run_command(cmd):
+        """
+        Run a command line process.
+        """
         result = subprocess.run(cmd, stderr=subprocess.PIPE,
                                 stdout=subprocess.PIPE)
 
@@ -348,7 +362,12 @@ class Connection:
                "&Cluster=thor&Start={}&Count={}").format(
             self.server, self.port, _make_thorname_html(logical_file), start_row, n_rows)
 
-        return self.run_url_request(url, max_attempts, max_sleep, min_sleep)
+        resp = self.run_url_request(url, max_attempts, max_sleep, min_sleep)
+        try:
+            return resp.json()
+        except JSONDecodeError as exc:
+            msg = ("response can't be parsed as JSON:\n{}".format(resp))
+            raise exc(msg)
 
     def get_logical_file_chunk(self, logical_file, start_row, n_rows,
                                max_attempts, max_sleep, min_sleep):
@@ -380,10 +399,6 @@ class Connection:
             Maximum time, in seconds, to sleep between attempts.
             The true sleep time is a random int between 'min_sleep' and
             `max_sleep`.
-        temp_file: str, None
-            If `hpycc.get.get_thor_file` is in 'low_mem' mode then this will be the
-            temporary file to write results to. If None then stores everything in
-            memory. Basically, if present then we save RAM at the cost of speed.
 
         Returns
         -------
@@ -392,16 +407,13 @@ class Connection:
             [{"col1": 1, "col2": 2}, {"col1": 1, "col2": 2}, ...].
 
         """
-        # TODO lots of things about the docstring. Don't like that we need cols, don't like we
-        # need to specify temp file and min_sleep.
         # TODO: This should be an internal function.
 
         resp = self.get_chunk_from_hpcc(logical_file, start_row, n_rows, max_attempts, max_sleep, min_sleep)
 
         try:
-            resp = resp.json()
             resp = resp["WUResultResponse"]["Result"]["Row"]
-        except (KeyError, TypeError, JSONDecodeError) as exc:
+        except (KeyError, TypeError) as exc:
             msg = ("json can't be parsed as a WU:\n{}".format(resp))
             raise exc(msg)
 
