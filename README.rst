@@ -8,7 +8,7 @@ The hpycc package is intended to simplify the use of data stored on HPCC and mak
    
 Documentation
 -------------
-The below readme and package documentation is available at http://hpycc.readthedocs.io
+The below readme and package documentation is available at https://hpycc.readthedocs.io/en/latest/
 
 The package's github is available at: https://github.com/OdinProAgrica/hpycc
 
