@@ -68,7 +68,9 @@ def save_outputs(connection, script, directory=".", overwrite=True,
     """
     Save all outputs of an ECL script as csvs. See get_outputs()
     for returning DataFrames and save_output() for writing a single
-    output to file.
+    output to file. Names of CSVs are inhereted from the result
+    names of your OUTPUT statements. Use NAME() in ECL to specify.
+    A list of assigned names will be returned for reference.
 
     Parameters
     ----------
@@ -121,7 +123,7 @@ def save_outputs(connection, script, directory=".", overwrite=True,
 
 
 def save_thor_file(connection, thor_file, path_or_buf=None,
-                   max_workers=15, chunk_size=10000, max_attempts=3,
+                   max_workers=15, chunk_size='auto', max_attempts=3,
                    max_sleep=60, min_sleep=50, dtype=None,
                    **kwargs):
     """
