@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 from json import JSONDecodeError
+from simplejson.errors import JSONDecodeError as simpleJSONDecodeError
 
 import requests
 from requests import HTTPError
@@ -356,7 +357,7 @@ class TestConnectionGetLogicalFileChunk(unittest.TestCase):
         conn = hpycc.Connection("user", server="aa", port=123, test_conn=False)
         with TemporaryDirectory() as td:
             p = os.path.join(td, "data.csv")
-            with self.assertRaises(JSONDecodeError):
+            with self.assertRaises(simpleJSONDecodeError):
                 conn.get_logical_file_chunk("file", 1, 2, 1, 0, 0)
 
 
