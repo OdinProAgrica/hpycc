@@ -24,6 +24,7 @@ from warnings import warn
 import threading
 from urllib.parse import quote_plus
 from json import JSONDecodeError
+from simplejson.errors import JSONDecodeError as simpleJSONDecodeError
 
 from hpycc.utils.parsers import parse_wuid_from_failed_response, \
     parse_wuid_from_xml
@@ -295,10 +296,8 @@ class Connection:
         try:
             result = self._run_command(base_cmd)
         except subprocess.SubprocessError as e:
-            if delete_workunit:
-                wuid = parse_wuid_from_failed_response(e.args[0].decode())
-                delete.delete_workunit(self, wuid)
-            raise
+            msg = "Failed to run ecl command"
+            raise subprocess.SubprocessError(msg) from e
         else:
             if delete_workunit:
                 wuid = parse_wuid_from_xml(result.stdout)
@@ -400,7 +399,7 @@ class Connection:
         resp = self.run_url_request(url, max_attempts, max_sleep, min_sleep)
         try:
             resp = resp.json()
-        except JSONDecodeError as exc:
+        except (JSONDecodeError, simpleJSONDecodeError) as exc:
             msg = ("response can't be parsed as JSON:\n{}".format(resp))
             raise type(exc)(msg, exc.doc, exc.pos) from exc
 
