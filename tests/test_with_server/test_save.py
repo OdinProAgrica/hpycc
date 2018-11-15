@@ -64,7 +64,6 @@ def _save_outputs_from_ecl_string(
                 res[file.replace('.csv', '').replace('.\\', '')] = pd.read_csv(file)
             except EmptyDataError:
                 res[file.replace('.csv', '').replace('.\\', '')] = pd.DataFrame()
-            print(res)
             os.remove(file)
         return res
 
@@ -286,7 +285,6 @@ class TestGetOutputsWithServer(unittest.TestCase):
     def test_save_outputs_returns_single_value_int(self):
         expected = pd.DataFrame({"Result_1": 2}, index=[0])
         res = self.res
-        print(res)
         res = res["Result_1"]
         pd.testing.assert_frame_equal(expected, self.res["Result_1"])
 
@@ -308,10 +306,6 @@ class TestGetOutputsWithServer(unittest.TestCase):
     def test_save_outputs_parses_bools_all_false(self):
         expected = pd.DataFrame({"allfalse": [False, False, False]})
         res = self.t_f_res
-        print(res)
-        print(expected)
-        print(type(res))
-
         res = res["allfalse"]
         pd.testing.assert_frame_equal(expected, res)
 
@@ -418,8 +412,7 @@ class TestGetOutputsWithServer(unittest.TestCase):
             "Result_2": pd.DataFrame({"Result_2": [True]}),
             "Result_3": pd.DataFrame({"Result_3": [49202]})
         }
-        print(result)
-        print(expected)
+
         for df in expected:
             pd.testing.assert_frame_equal(result[df], expected[df])
 
@@ -513,8 +506,6 @@ class TestGetThorFile(unittest.TestCase):
         expected = pd.DataFrame({"int": [2, 1], "__fileposition__": [8, 0]}, dtype=np.int32)
         expected = expected.sort_values('int').reset_index(drop=True)
 
-        print(expected)
-        print(res)
         pd.testing.assert_frame_equal(expected, res, check_dtype=False)
 
     def test_save_thor_file_works_when_num_rows_greater_than_chunksize(self):
@@ -589,15 +580,15 @@ class TestGetThorFile(unittest.TestCase):
         mock.return_value = pd.DataFrame({'int': ['1'], '__fileposition__': ['0']})
         self.conn.run_ecl_string(
             "a := DATASET([{}], {{INTEGER int;}}); "
-            "OUTPUT(a,,'~{}');".format(",".join(["{1}"] * 10001), file_name),
+            "OUTPUT(a,,'~{}');".format(",".join(["{1}"] * 300000), file_name),
             True,
             True,
             None
         )
-        save_thor_file(connection=self.conn, thor_file=file_name)
+        save_thor_file(connection=self.conn, thor_file=file_name, max_workers=2)
         expected = [
-            unittest.mock.call(file_name, 0, 10000, 3, 60, 50),
-            unittest.mock.call(file_name, 10000, 1, 3, 60, 50)
+            unittest.mock.call(file_name, 0, 150000, 3, 60, 50),
+            unittest.mock.call(file_name, 150000, 150000, 3, 60, 50)
         ]
         self.assertEqual(expected, mock.call_args_list)
 
@@ -737,8 +728,6 @@ class TestGetThorFile(unittest.TestCase):
             expected = pd.DataFrame(
                 {t[1]: [[expected_val]], "__fileposition__": 0}, index=[0])
 
-            print(expected.to_csv())
-            print(a)
             self.assertEqual(expected.to_csv(), a)
 
     @patch.object(hpycc.get, "ThreadPoolExecutor")
