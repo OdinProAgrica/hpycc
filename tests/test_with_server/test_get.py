@@ -448,6 +448,22 @@ class TestGetThorFile(unittest.TestCase):
         }, dtype=np.int32)
         pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
 
+    def test_get_thor_file_returns_1000000_row_dataset(self):
+        file_name = '~test_get_thor_file_returns_1000000_row_dataset'
+        lots_of_1s = "[" + ",".join(["{1}"]*1000000) + "]"
+        self.conn.run_ecl_string(
+            "a := DATASET({}, {{INTEGER int;}}); "
+            "OUTPUT(a,,'{}');".format(lots_of_1s, file_name),
+            True,
+            True,
+            None
+        )
+        res = get_thor_file(connection=self.conn, thor_file=file_name)
+        expected = pd.DataFrame({
+            "int": [1] * 1000000
+        }, dtype=np.int32)
+        pd.testing.assert_series_equal(expected.sort_index(axis=1)["int"], res.sort_index(axis=1)["int"])
+
     def test_get_thor_file_works_when_num_rows_less_than_chunksize(self):
         file_name = ("test_get_thor_file_works_when_num_rows_less_than_"
                      "chunksize")
