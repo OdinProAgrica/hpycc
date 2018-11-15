@@ -31,7 +31,8 @@ setup(
         'requests>=2.18.4',
         'docker',
         'numpy',
-        "passlib"
+        "passlib",
+        "pypiwin32=220"
     ],
     project_urls={
         'Bug Reports': 'https://github.com/OdinProAgrica/hpycc/issues',
