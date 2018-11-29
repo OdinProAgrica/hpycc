@@ -12,7 +12,7 @@ Functions
 - `get_thor_file` -- Return the contents of a thor file.
 
 """
-__all__ = ["get_output", "get_outputs", "get_thor_file", "get_logical_file"]
+__all__ = ["get_output", "get_outputs", "get_thor_file"]
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import re
