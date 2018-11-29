@@ -22,7 +22,7 @@ from tempfile import TemporaryDirectory
 from time import sleep
 from warnings import warn
 import threading
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus as _make_thorname_html
 from json import JSONDecodeError
 from simplejson.errors import JSONDecodeError as simpleJSONDecodeError
 from math import ceil
@@ -32,13 +32,6 @@ from hpycc.utils.parsers import parse_wuid_from_failed_response, \
 from hpycc import delete
 
 lock = threading.Lock()
-
-
-def _make_thorname_html(logical_file):
-    """
-    quote_plus in urllib is so badly named I made this function.
-    """
-    return quote_plus(logical_file)
 
 
 def check_ecl_cmd(cmd='ecl'):
