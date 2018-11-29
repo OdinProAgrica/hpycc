@@ -140,7 +140,7 @@ def parse_wuid_from_xml(result):
     return wuid.group(0)
 
 
-def parse_schema_from_xml(xml, dtype):
+def parse_schema_from_xml(xml):
     """
     Parse an ECL schema into python types.
 
@@ -149,8 +149,6 @@ def parse_schema_from_xml(xml, dtype):
     xml : str
         xml string returned by ecl run. This is located in the json
         as ["WUResultResponse]["Result"]["XmlSchema"]["xml"].
-    dtype : None, dict
-        data types to be parsed from ecl. If None, these are inferred.
 
     Returns
     -------
@@ -168,24 +166,25 @@ def parse_schema_from_xml(xml, dtype):
     for child in schema:
         name = child.attrib["name"]
         is_set = "type" not in child.keys()
-        typ = _determine_dtype(dtype, name, child)
+        typ = get_python_type_from_ecl_type(child)
         schema_out[name] = {'type': typ, 'is_a_set': is_set}
-
-    # Check that no weird columns have been passed
-    if isinstance(dtype, dict) and any([dtype_col not in schema_out.keys() for dtype_col in dtype.keys()]):
-        raise KeyError('Not all dtype columns exist in the logical file!\nFound: %s\nGiven: %s' %
-                       (schema_out.keys(), dtype))
 
     return schema_out
 
 
-def _determine_dtype(dtype, name, child):
-    if dtype and not isinstance(dtype, dict):
-        return dtype
-    elif dtype and isinstance(dtype, dict) and name in dtype.keys():
-        return dtype[name]
-    else:
-        return get_python_type_from_ecl_type(child)
+def apply_custom_dtypes(schema, dtypes):
+
+    if dtypes and not isinstance(dtypes, dict):
+        return dtypes
+    elif dtypes and isinstance(dtypes, dict):
+
+        if any([dtype_col not in schema.keys() for dtype_col in dtypes.keys()]):  # Check that all columns passed exist
+            raise KeyError('Not all dtype columns exist in the logical file!\nFound: %s\nGiven: %s' %
+                           (schema.keys(), dtypes))
+        for name in dtypes.keys():
+            schema[name]['type'] = dtypes[name]
+
+    return schema
 
 
 def get_python_type_from_ecl_type(child):

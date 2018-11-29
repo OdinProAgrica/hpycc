@@ -19,7 +19,7 @@ import re
 import warnings
 import pandas as pd
 from hpycc.utils import filechunker
-from hpycc.utils.parsers import parse_xml, parse_schema_from_xml
+from hpycc.utils.parsers import parse_xml, parse_schema_from_xml, apply_custom_dtypes
 from math import ceil
 
 
@@ -320,7 +320,8 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_
     try:
         wuresultresponse = resp["WUResultResponse"]
         schema_str = wuresultresponse["Result"]["XmlSchema"]["xml"]
-        schema = parse_schema_from_xml(schema_str, dtype)
+        schema = parse_schema_from_xml(schema_str)
+        schema = apply_custom_dtypes(schema, dtype)
         num_rows = wuresultresponse["Total"]
     except (KeyError, TypeError) as exc:
         msg = "Can't find schema in returned json: {}".format(resp)
