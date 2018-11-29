@@ -12,7 +12,7 @@ Functions
 - `get_thor_file` -- Return the contents of a thor file.
 
 """
-__all__ = ["get_output", "get_outputs", "get_thor_file"]
+__all__ = ["get_output", "get_thor_file"]
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import re
@@ -127,120 +127,120 @@ def get_output(connection, script, syntax_check=True, delete_workunit=True,
     return parsed
 
 
-def get_outputs(connection, script, syntax_check=True, delete_workunit=True,
-                stored=None):
-    """
-    Return all outputs of an ECL script.
-
-    Note that whilst attempts are made to preserve the datatypes of
-    the result, anything with an ambiguous type will revert to a
-    string.
-
-    Parameters
-    ----------
-    connection: hpycc.Connection
-        HPCC Connection instance, see also `Connection`.
-    script: str
-         Path of script to execute.
-    syntax_check: bool, optional
-        Should the script be syntax checked before execution? True by
-        default.
-    delete_workunit: bool,
-       Delete the workunit once completed. True by default.
-    stored : dict or None, optional
-        Key value pairs to replace stored variables within the
-        script. Values should be str, int or bool. None by default.
-
-    Returns
-    -------
-    as_dict: dict of pandas.DataFrames
-        Outputs of `script` in the form
-        {output_name: pandas.DataFrame}
-
-    Raises
-    ------
-    SyntaxError:
-        If script fails syntax check.
-
-    See Also
-    --------
-    get_output
-    save_outputs
-    Connection.syntax_check
-
-    Examples
-    --------
-    >>> import hpycc
-    >>> conn = hpycc.Connection("user")
-    >>> with open("example.ecl", "r+") as file:
-    ...     file.write("OUTPUT(2);")
-    >>> hpycc.get_outputs(conn, "example.ecl")
-    {Result_1:
-        Result_1
-    0          2
-    }
-
-    >>> import hpycc
-    >>> conn = hpycc.Connection("user")
-    >>> with open("example.ecl", "r+") as file:
-    ...     file.write(
-    ...     "a:= DATASET([{'1', 'a'}],"
-    ...     "{STRING col1; STRING col2});",
-    ...     "OUTPUT(a);")
-    >>> hpycc.get_outputs(conn, "example.ecl")
-    {Result_1:
-       col1 col2
-    0     1    a
-    }
-
-    >>> import hpycc
-    >>> conn = hpycc.Connection("user")
-    >>> with open("example.ecl", "r+") as file:
-    ...     file.write(
-    ...     "a:= DATASET([{'1', 'a'}],"
-    ...     "{STRING col1; STRING col2});",
-    ...     "OUTPUT(a);"
-    ...     "OUTPUT(a);")
-    >>> hpycc.get_outputs(conn, "example.ecl")
-    {Result_1:
-       col1 col2
-    0     1    a,
-    Result_2:
-       col1 col2
-    0     1    a
-    }
-
-    >>> import hpycc
-    >>> conn = hpycc.Connection("user")
-    >>> with open("example.ecl", "r+") as file:
-    ...     file.write(
-    ...     "a:= DATASET([{'1', 'a'}],"
-    ...     "{STRING col1; STRING col2});",
-    ...     "OUTPUT(a);"
-    ...     "OUTPUT(a, NAMED('ds_2'));")
-    >>> hpycc.get_outputs(conn, "example.ecl")
-    {Result_1:
-       col1 col2
-    0     1    a,
-    ds_2:
-       col1 col2
-    0     1    a
-    }
-
-    """
-    result = connection.run_ecl_script(script, syntax_check, delete_workunit,
-                                       stored)
-    regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.*?)</Dataset>"
-
-    result = result.stdout.replace("\r\n", "")
-    results = re.findall(regex, result)
-    if any([i[1] == "" for i in results]):
-        warnings.warn(
-            "One or more of the outputs do not appear to contain a dataset. "
-            "They have been replaced with an empty DataFrame")
-    as_dict = {name.replace(" ", "_"): parse_xml(xml) for name, xml in results}
-
-    return as_dict
+# def get_outputs(connection, script, syntax_check=True, delete_workunit=True,
+#                 stored=None):
+#     """
+#     Return all outputs of an ECL script.
+#
+#     Note that whilst attempts are made to preserve the datatypes of
+#     the result, anything with an ambiguous type will revert to a
+#     string.
+#
+#     Parameters
+#     ----------
+#     connection: hpycc.Connection
+#         HPCC Connection instance, see also `Connection`.
+#     script: str
+#          Path of script to execute.
+#     syntax_check: bool, optional
+#         Should the script be syntax checked before execution? True by
+#         default.
+#     delete_workunit: bool,
+#        Delete the workunit once completed. True by default.
+#     stored : dict or None, optional
+#         Key value pairs to replace stored variables within the
+#         script. Values should be str, int or bool. None by default.
+#
+#     Returns
+#     -------
+#     as_dict: dict of pandas.DataFrames
+#         Outputs of `script` in the form
+#         {output_name: pandas.DataFrame}
+#
+#     Raises
+#     ------
+#     SyntaxError:
+#         If script fails syntax check.
+#
+#     See Also
+#     --------
+#     get_output
+#     save_outputs
+#     Connection.syntax_check
+#
+#     Examples
+#     --------
+#     >>> import hpycc
+#     >>> conn = hpycc.Connection("user")
+#     >>> with open("example.ecl", "r+") as file:
+#     ...     file.write("OUTPUT(2);")
+#     >>> hpycc.get_outputs(conn, "example.ecl")
+#     {Result_1:
+#         Result_1
+#     0          2
+#     }
+#
+#     >>> import hpycc
+#     >>> conn = hpycc.Connection("user")
+#     >>> with open("example.ecl", "r+") as file:
+#     ...     file.write(
+#     ...     "a:= DATASET([{'1', 'a'}],"
+#     ...     "{STRING col1; STRING col2});",
+#     ...     "OUTPUT(a);")
+#     >>> hpycc.get_outputs(conn, "example.ecl")
+#     {Result_1:
+#        col1 col2
+#     0     1    a
+#     }
+#
+#     >>> import hpycc
+#     >>> conn = hpycc.Connection("user")
+#     >>> with open("example.ecl", "r+") as file:
+#     ...     file.write(
+#     ...     "a:= DATASET([{'1', 'a'}],"
+#     ...     "{STRING col1; STRING col2});",
+#     ...     "OUTPUT(a);"
+#     ...     "OUTPUT(a);")
+#     >>> hpycc.get_outputs(conn, "example.ecl")
+#     {Result_1:
+#        col1 col2
+#     0     1    a,
+#     Result_2:
+#        col1 col2
+#     0     1    a
+#     }
+#
+#     >>> import hpycc
+#     >>> conn = hpycc.Connection("user")
+#     >>> with open("example.ecl", "r+") as file:
+#     ...     file.write(
+#     ...     "a:= DATASET([{'1', 'a'}],"
+#     ...     "{STRING col1; STRING col2});",
+#     ...     "OUTPUT(a);"
+#     ...     "OUTPUT(a, NAMED('ds_2'));")
+#     >>> hpycc.get_outputs(conn, "example.ecl")
+#     {Result_1:
+#        col1 col2
+#     0     1    a,
+#     ds_2:
+#        col1 col2
+#     0     1    a
+#     }
+#
+#     """
+#     result = connection.run_ecl_script(script, syntax_check, delete_workunit,
+#                                        stored)
+#     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.*?)</Dataset>"
+#
+#     result = result.stdout.replace("\r\n", "")
+#     results = re.findall(regex, result)
+#     if any([i[1] == "" for i in results]):
+#         warnings.warn(
+#             "One or more of the outputs do not appear to contain a dataset. "
+#             "They have been replaced with an empty DataFrame")
+#     as_dict = {name.replace(" ", "_"): parse_xml(xml) for name, xml in results}
+#
+#     return as_dict
 
 
 def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_attempts=3,
