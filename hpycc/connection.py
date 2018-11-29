@@ -25,6 +25,7 @@ import threading
 from urllib.parse import quote_plus
 from json import JSONDecodeError
 from simplejson.errors import JSONDecodeError as simpleJSONDecodeError
+from math import ceil
 
 from hpycc.utils.parsers import parse_wuid_from_failed_response, \
     parse_wuid_from_xml
@@ -304,7 +305,7 @@ class Connection:
                 delete.delete_workunit(self, wuid)
             return result
 
-    def run_url_request(self, url, max_attempts, max_sleep, min_sleep):
+    def run_url_request(self, url, max_attempts, max_sleep):
         """
         Return the contents of a url.
 
@@ -323,12 +324,8 @@ class Connection:
             case of an exception being raised.
         max_sleep: int
             Maximum time, in seconds, to sleep between attempts.
-            The true sleep time is a random int between 0 and
-            `max_sleep`.
-        min_sleep: int, optional
-            Maximum time, in seconds, to sleep between attempts.
-            The true sleep time is a random int between 'min_sleep' and
-            `max_sleep`.
+            The true sleep time is a random int between  `max_sleep` and
+            `max_sleep` * 0.75.
 
         Returns
         -------
@@ -341,8 +338,7 @@ class Connection:
             If max_attempts is exceeded.
 
         """
-        if min_sleep > max_sleep:
-            raise ValueError("min_sleep cannot be greater than max_sleep")
+        min_sleep = int(ceil(max_sleep*0.75))
         attempts = 0
         while attempts < max_attempts:
             try:
@@ -357,7 +353,7 @@ class Connection:
                     raise RetryError(e)
 
     def get_chunk_from_hpcc(self, logical_file, start_row, n_rows, max_attempts,
-                            max_sleep, min_sleep):
+                            max_sleep):
         """
         Using the HPCC instance at `server`:`port` and the
         credentials `username` and `password`, return the
@@ -378,12 +374,8 @@ class Connection:
             case of an exception being raised.
         max_sleep: int
             Maximum time, in seconds, to sleep between attempts.
-            The true sleep time is a random int between 0 and
-            `max_sleep`.
-        min_sleep: int
-            Maximum time, in seconds, to sleep between attempts.
-            The true sleep time is a random int between 'min_sleep' and
-            `max_sleep`.
+            The true sleep time is a random int between `max_sleep` and
+            `max_sleep` * 0.75.
 
         Returns
         -------
@@ -396,7 +388,7 @@ class Connection:
                "&Cluster=thor&Start={}&Count={}").format(
             self.server, self.port, _make_thorname_html(logical_file), start_row, n_rows)
 
-        resp = self.run_url_request(url, max_attempts, max_sleep, min_sleep)
+        resp = self.run_url_request(url, max_attempts, max_sleep)
         try:
             resp = resp.json()
         except (JSONDecodeError, simpleJSONDecodeError) as exc:
@@ -406,7 +398,7 @@ class Connection:
         return resp
 
     def get_logical_file_chunk(self, logical_file, start_row, n_rows,
-                               max_attempts, max_sleep, min_sleep):
+                               max_attempts, max_sleep):
         """
         Return a chunk of a logical file from an HPCC instance.
 
@@ -429,12 +421,8 @@ class Connection:
             case of an exception being raised.
         max_sleep: int
             Maximum time, in seconds, to sleep between attempts.
-            The true sleep time is a random int between 0 and
-            `max_sleep`.
-        min_sleep: int
-            Maximum time, in seconds, to sleep between attempts.
-            The true sleep time is a random int between 'min_sleep' and
-            `max_sleep`.
+            The true sleep time is a random int between `max_sleep` and
+            `max_sleep` * 0.75.
 
         Returns
         -------
@@ -445,7 +433,7 @@ class Connection:
         """
         # TODO: This should be an internal function.
 
-        resp = self.get_chunk_from_hpcc(logical_file, start_row, n_rows, max_attempts, max_sleep, min_sleep)
+        resp = self.get_chunk_from_hpcc(logical_file, start_row, n_rows, max_attempts, max_sleep)
 
         try:
             resp = resp["WUResultResponse"]["Result"]["Row"]

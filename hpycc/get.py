@@ -9,7 +9,6 @@ Functions
 ---------
 - `get_output` -- Return the first output of an ECL script.
 - `get_outputs` -- Return all outputs of an ECL script.
-- `get_logical_file` -- Deprecated
 - `get_thor_file` -- Return the contents of a thor file.
 
 """
@@ -22,7 +21,6 @@ import pandas as pd
 from hpycc.utils import filechunker
 from hpycc.utils.parsers import parse_xml, parse_schema_from_xml
 from math import ceil
-from json import JSONDecodeError
 
 
 def get_output(connection, script, syntax_check=True, delete_workunit=True,
@@ -245,20 +243,8 @@ def get_outputs(connection, script, syntax_check=True, delete_workunit=True,
     return as_dict
 
 
-def get_logical_file(*args, **kwargs):
-    """
-    .. deprecated:: 0.1.3
-        `get_logical_file` has been deprecated. Use `get_thor_file`.
-
-    """
-    _ = kwargs
-    _ = args
-    raise ImportError("This function has been deprecated, use get_thor_file "
-                      "instead.")
-
-
-def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_attempts=3, max_sleep=60,
-                  min_sleep=50, dtype=None):
+def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_attempts=3,
+                  max_sleep=60, dtype=None):
     """
     Return a thor file as a pandas.DataFrame.
 
@@ -282,14 +268,10 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_
         Maximum number of times a chunk should attempt to be
         downloaded in the case of an exception being raised.
         3 by default.
-    min_sleep: int, optional
-        Maximum time, in seconds, to sleep between attempts.
-        The true sleep time is a random int between 'min_sleep' and
-        `max_sleep`.
     max_sleep: int, optional
         Minimum time, in seconds, to sleep between attempts.
-        The true sleep time is a random int between 'min_sleep' and
-        `max_sleep`.
+        The true sleep time is a random int between `max_sleep` and
+        `max_sleep` * 0.75.
     dtype: type name or dict of col -> type, optional
         Data type for data or columns. E.g. {‘a’: np.float64, ‘b’:
         np.int32}. If converters are specified, they will be applied
@@ -334,7 +316,7 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_
 
     """
 
-    resp = connection.get_chunk_from_hpcc(thor_file, 0, 1, max_attempts, max_sleep, min_sleep)
+    resp = connection.get_chunk_from_hpcc(thor_file, 0, 1, max_attempts, max_sleep)
     try:
         wuresultresponse = resp["WUResultResponse"]
         schema_str = wuresultresponse["Result"]["XmlSchema"]["xml"]
@@ -356,7 +338,7 @@ def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [
             executor.submit(connection.get_logical_file_chunk, thor_file, start_row,
-                            n_rows, max_attempts, max_sleep, min_sleep)
+                            n_rows, max_attempts, max_sleep)
             for start_row, n_rows in chunks
         ]
 

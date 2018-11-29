@@ -34,7 +34,7 @@ def delete_logical_file(connection, logical_file, delete_workunit=True):
                               stored={})
 
 
-def delete_workunit(connection, wuid, max_attempts=3, max_sleep=15, min_sleep=5):
+def delete_workunit(connection, wuid, max_attempts=3, max_sleep=15):
     """
     Delete a workunit
 
@@ -49,12 +49,9 @@ def delete_workunit(connection, wuid, max_attempts=3, max_sleep=15, min_sleep=5)
         case of an exception being raised. 3 by default.
     max_sleep: int, optional
         Maximum time, in seconds, to sleep between attempts.
-        The true sleep time is a random int between 0 and
-        `max_sleep`. 5 by default.
-    min_sleep: int, optional
-        Maximum time, in seconds, to sleep between attempts.
-        The true sleep time is a random int between 'min_sleep' and
-        `max_sleep`.
+        The true sleep time is a random int between  `max_sleep` and
+        `max_sleep` * 0.75. 5 by default.
+
 
     Returns
     -------
@@ -73,7 +70,7 @@ def delete_workunit(connection, wuid, max_attempts=3, max_sleep=15, min_sleep=5)
         "BlockTillFinishTimer=True").format(
         connection.server, connection.port, wuid)
 
-    r = connection.run_url_request(url, max_attempts, max_sleep, min_sleep)
+    r = connection.run_url_request(url, max_attempts, max_sleep)
     rj = r.json()
     if rj == {"WUDeleteResponse": {}}:
         return True

@@ -124,7 +124,7 @@ def save_outputs(connection, script, directory=".", overwrite=True,
 
 def save_thor_file(connection, thor_file, path_or_buf=None,
                    max_workers=15, chunk_size='auto', max_attempts=3,
-                   max_sleep=60, min_sleep=50, dtype=None,
+                   max_sleep=60, dtype=None,
                    **kwargs):
     """
     Save a logical file to disk, see `get_thor_file()` for returning a
@@ -151,13 +151,9 @@ def save_thor_file(connection, thor_file, path_or_buf=None,
         downloaded in the case of an exception being raised.
         3 by default.
     max_sleep: int, optional
-            Maximum time, in seconds, to sleep between attempts.
-            The true sleep time is a random int between `min_sleep` and
-            `max_sleep`.
-    min_sleep: int, optional
-            Maximum time, in seconds, to sleep between attempts.
-            The true sleep time is a random int between `min_sleep` and
-            `max_sleep`.
+        Maximum time, in seconds, to sleep between attempts.
+        The true sleep time is a random int between `max_sleep` and
+        `max_sleep` * 0.75.
     dtype: type name or dict of col -> type, optional
         Data type for data or columns. E.g. {‘a’: np.float64, ‘b’:
         np.int32}. If converters are specified, they will be applied
@@ -178,7 +174,6 @@ def save_thor_file(connection, thor_file, path_or_buf=None,
 
     file = get_thor_file(
         connection, thor_file, max_workers=max_workers, chunk_size=chunk_size,
-        max_attempts=max_attempts, max_sleep=max_sleep, min_sleep=min_sleep,
-        dtype=dtype)
+        max_attempts=max_attempts, max_sleep=max_sleep, dtype=dtype)
 
     return file.to_csv(path_or_buf, **kwargs)
