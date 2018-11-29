@@ -40,14 +40,14 @@ def _get_output_from_ecl_string(
         return res
 
 
-def _get_outputs_from_ecl_string(
-        conn, string, syntax=True, delete_workunit=True, stored=None):
-    with TemporaryDirectory() as d:
-        p = os.path.join(d, "test.ecl")
-        with open(p, "w+") as file:
-            file.write(string)
-        res = hpycc.get_outputs(conn, p, syntax, delete_workunit, stored)
-        return res
+# def _get_outputs_from_ecl_string(
+#         conn, string, syntax=True, delete_workunit=True, stored=None):
+#     with TemporaryDirectory() as d:
+#         p = os.path.join(d, "test.ecl")
+#         with open(p, "w+") as file:
+#             file.write(string)
+#         res = hpycc.get_outputs(conn, p, syntax, delete_workunit, stored)
+#         return res
 
 
 class TestGetOutputWithServer(unittest.TestCase):
@@ -228,173 +228,175 @@ class TestGetOutputWithServer(unittest.TestCase):
         pd.testing.assert_frame_equal(expected, result)
 
 
-class TestGetOutputsWithServer(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.conn = hpycc.Connection("user")
-        script = ("OUTPUT(2);OUTPUT('a');OUTPUT(DATASET([{1, 'a'}], "
-                  "{INTEGER a; STRING b;}), NAMED('ds'));")
-        cls.res = _get_outputs_from_ecl_string(cls.conn, script)
-        a = [
-            {"col": "alltrue", "content": "[{true}, {true}, {true}]",
-             "coltype": "BOOLEAN"},
-            {"col": "allfalse", "content": "[{false}, {false}, {false}]",
-             "coltype": "BOOLEAN"},
-            {"col": "trueandfalse", "content": "[{true}, {false}, {true}]",
-             "coltype": "BOOLEAN"},
-            {"col": "truefalsestrings",
-             "content": "[{'true'}, {'false'}, {'false'}]",
-             "coltype": "STRING"},
-            {"col": "truefalseblank", "content": "[{'true'}, {'false'}, {''}]",
-             "coltype": "STRING"}
-        ]
-        f = [("OUTPUT(DATASET({0[content]}, {{{0[coltype]} {0[col]};}}), "
-             "NAMED('{0[col]}'));").format(i) for i in a]
-        cls.t_f_res = _get_outputs_from_ecl_string(cls.conn, "\n".join(f))
-
-    def test_get_outputs_returns_single_value_int(self):
-        expected = pd.DataFrame({"Result_1": 2}, index=[0])
-        pd.testing.assert_frame_equal(expected, self.res["Result_1"])
-
-    def test_get_outputs_returns_single_value_str(self):
-        expected = pd.DataFrame({"Result_2": 'a'}, index=[0])
-        pd.testing.assert_frame_equal(expected, self.res["Result_2"])
-
-    def test_get_outputs_returns_dataset(self):
-        expected = pd.DataFrame({"a": 1, "b": "a"},
-                                index=[0])
-        pd.testing.assert_frame_equal(expected, self.res["ds"])
-
-    def test_get_outputs_returns_all_outputs(self):
-        self.assertEqual(list(self.res.keys()), ["Result_1", "Result_2", "ds"])
-
-    def test_get_outputs_parses_bools_all_true(self):
-        expected = pd.DataFrame({"alltrue": [True, True, True]})
-        pd.testing.assert_frame_equal(expected, self.t_f_res["alltrue"])
-
-    def test_get_outputs_parses_bools_all_false(self):
-        expected = pd.DataFrame({"allfalse": [False, False, False]})
-        pd.testing.assert_frame_equal(expected, self.t_f_res["allfalse"])
-
-    def test_get_outputs_parses_bools_true_and_false(self):
-        expected = pd.DataFrame({"trueandfalse": [True, False, True]})
-        pd.testing.assert_frame_equal(expected, self.t_f_res["trueandfalse"])
-
-    def test_get_outputs_parses_bools_true_and_false_strings(self):
-        expected = pd.DataFrame({"truefalsestrings": [True, False, False]})
-        pd.testing.assert_frame_equal(
-            expected, self.t_f_res["truefalsestrings"])
-
-    def test_get_outputs_parses_bools_true_and_false_strings_with_blank(self):
-        expected = pd.DataFrame({"truefalseblank": [True, False, np.nan]})
-        pd.testing.assert_frame_equal(expected, self.t_f_res["truefalseblank"])
-
-    def test_get_outputs_parses_blank_string_as_nan(self):
-        script = "OUTPUT(DATASET([{''}], {STRING a;}));"
-        res = _get_outputs_from_ecl_string(self.conn, script)
-        expected = pd.DataFrame({"a": [np.nan]}, index=[0])
-        pd.testing.assert_frame_equal(expected, res["Result_1"])
-
-    def test_get_outputs_parses_ints(self):
-        script = "OUTPUT(DATASET([{1}, {2}], {INTEGER a;}));"
-        res = _get_outputs_from_ecl_string(self.conn, script)
-        expected = pd.DataFrame({"a": [1, 2]})
-        pd.testing.assert_frame_equal(expected, res["Result_1"])
-
-    def test_get_outputs_parses_floats(self):
-        script = "OUTPUT(DATASET([{1.0}, {2.1}], {REAL a;}));"
-        res = _get_outputs_from_ecl_string(self.conn, script)
-        expected = pd.DataFrame({"a": [1.0, 2.1]})
-        pd.testing.assert_frame_equal(expected, res["Result_1"])
-
-    def test_get_outputs_parses_mixed_floats_and_ints(self):
-        script = "OUTPUT(DATASET([{1}, {2.1}], {REAL a;}));"
-        res = _get_outputs_from_ecl_string(self.conn, script)
-        expected = pd.DataFrame({"a": [1, 2.1]})
-        pd.testing.assert_frame_equal(expected, res["Result_1"])
-
-    def test_get_outputs_parses_numbers_as_strings(self):
-        script = "OUTPUT(DATASET([{'1'}, {'2.1'}], {STRING a;}));"
-        res = _get_outputs_from_ecl_string(self.conn, script)
-        expected = pd.DataFrame({"a": [1, 2.1]})
-        pd.testing.assert_frame_equal(expected, res["Result_1"])
-
-    def test_get_outputs_parses_empty_dataset(self):
-        script = ("a := DATASET([{'a'}, {'a'}], {STRING a;});a(a != 'a');"
-                  "OUTPUT(2);")
-
-        with warnings.catch_warnings(record=True) as w:
-            res = _get_outputs_from_ecl_string(self.conn, script)
-            self.assertEqual(len(w), 1)
-            expected_warn = (
-                "One or more of the outputs do not appear to contain a "
-                "dataset. They have been replaced with an empty DataFrame")
-            self.assertEqual(str(w[-1].message), expected_warn)
-        self.assertEqual(list(res.keys()), ["Result_1", "Result_2"])
-        pd.testing.assert_frame_equal(res["Result_1"], pd.DataFrame())
-
-    def test_get_outputs_parses_mixed_columns_as_strings(self):
-        script = "OUTPUT(DATASET([{'1'}, {'a'}], {STRING a;}));"
-        res = _get_outputs_from_ecl_string(self.conn, script)
-        expected = pd.DataFrame({"a": ['1', 'a']})
-        pd.testing.assert_frame_equal(expected, res["Result_1"])
-
-    def test_get_outputs_raises_with_bad_script(self):
-        script = "asa"
-        with self.assertRaises(SyntaxError):
-            _get_outputs_from_ecl_string(self.conn, script)
-
-    @patch.object(hpycc.Connection, "check_syntax")
-    def test_get_outputs_runs_syntax_check_if_true(self, mock):
-        script = "OUTPUT(2);"
-        _get_outputs_from_ecl_string(self.conn, script)
-        mock.assert_called()
-
-    @patch.object(hpycc.Connection, "check_syntax")
-    def test_get_outputs_doesnt_run_syntax_check_if_false(self, mock):
-        script = "OUTPUT(2);"
-        _get_outputs_from_ecl_string(self.conn, script, False)
-        self.assertFalse(mock.called)
-
-    @patch.object(hpycc.connection.delete, "delete_workunit")
-    def test_get_outputs_runs_delete_workunit_if_true(self, mock):
-        script = "OUTPUT(2);"
-        _get_outputs_from_ecl_string(self.conn, script)
-        mock.assert_called()
-
-    @patch.object(hpycc.connection.delete, "delete_workunit")
-    def test_get_outputs_doesnt_run_delete_workunit_if_false(self, mock):
-        script = "OUTPUT(2);"
-        _get_outputs_from_ecl_string(self.conn, script, delete_workunit=False)
-        self.assertFalse(mock.called)
-
-    def test_get_outputs_stored_variables_change_output_same_type(self):
-        script_one = ("a := 'abc' : STORED('a'); b := FALSE : STORED('b'); "
-                      "c := 546 : STORED('c'); a + a; b AND TRUE; c + c;")
-        result = _get_outputs_from_ecl_string(
-            self.conn, script_one,
-            stored={'a': 'Hello', 'b': True, 'c': 24601})
-        expected = {
-            "Result_1": pd.DataFrame({"Result_1": ["HelloHello"]}),
-            "Result_2": pd.DataFrame({"Result_2": [True]}),
-            "Result_3": pd.DataFrame({"Result_3": [49202]})
-                    }
-        for df in expected:
-            pd.testing.assert_frame_equal(result[df], expected[df])
-
-    def test_get_outputs_stored_wrong_key_inputs(self):
-        script_one = ("a := 'abc' : STORED('a'); b := FALSE : STORED('b'); "
-                      "c := 'ghi' : STORED('c'); a; b; c;")
-        result = _get_outputs_from_ecl_string(self.conn, script_one,
-                                              stored={'d': 'Why', 'e': 'Not',
-                                                      'f': 'Zoidberg'})
-        expected = {
-            "Result_1": pd.DataFrame({"Result_1": ["abc"]}),
-            "Result_2": pd.DataFrame({"Result_2": [False]}),
-            "Result_3": pd.DataFrame({"Result_3": ["ghi"]})
-                    }
-        for df in expected:
-            pd.testing.assert_frame_equal(result[df], expected[df])
+# class TestGetOutputsWithServer(unittest.TestCase):
+#     @classmethod
+#     def setUpClass(cls):
+#         cls.conn = hpycc.Connection("user")
+#         script = ("OUTPUT(2);OUTPUT('a');OUTPUT(DATASET([{1, 'a'}], "
+#                   "{INTEGER a; STRING b;}), NAMED('ds'));")
+#         cls.res = _get_outputs_from_ecl_string(cls.conn, script)
+#         a = [
+#             {"col": "alltrue", "content": "[{true}, {true}, {true}]",
+#              "coltype": "BOOLEAN"},
+#             {"col": "allfalse", "content": "[{false}, {false}, {false}]",
+#              "coltype": "BOOLEAN"},
+#             {"col": "trueandfalse", "content": "[{true}, {false}, {true}]",
+#              "coltype": "BOOLEAN"},
+#             {"col": "truefalsestrings",
+#              "content": "[{'true'}, {'false'}, {'false'}]",
+#              "coltype": "STRING"},
+#            {"col": "truefalseblank", "content": "[{'true'}, {'false'}, {''}]",
+#              "coltype": "STRING"}
+#         ]
+#         f = [("OUTPUT(DATASET({0[content]}, {{{0[coltype]} {0[col]};}}), "
+#              "NAMED('{0[col]}'));").format(i) for i in a]
+#         cls.t_f_res = _get_outputs_from_ecl_string(cls.conn, "\n".join(f))
+#
+#     def test_get_outputs_returns_single_value_int(self):
+#         expected = pd.DataFrame({"Result_1": 2}, index=[0])
+#         pd.testing.assert_frame_equal(expected, self.res["Result_1"])
+#
+#     def test_get_outputs_returns_single_value_str(self):
+#         expected = pd.DataFrame({"Result_2": 'a'}, index=[0])
+#         pd.testing.assert_frame_equal(expected, self.res["Result_2"])
+#
+#     def test_get_outputs_returns_dataset(self):
+#         expected = pd.DataFrame({"a": 1, "b": "a"},
+#                                 index=[0])
+#         pd.testing.assert_frame_equal(expected, self.res["ds"])
+#
+#     def test_get_outputs_returns_all_outputs(self):
+#         self.assertEqual(list(self.res.keys()),
+#                         ["Result_1", "Result_2", "ds"])
+#
+#     def test_get_outputs_parses_bools_all_true(self):
+#         expected = pd.DataFrame({"alltrue": [True, True, True]})
+#         pd.testing.assert_frame_equal(expected, self.t_f_res["alltrue"])
+#
+#     def test_get_outputs_parses_bools_all_false(self):
+#         expected = pd.DataFrame({"allfalse": [False, False, False]})
+#         pd.testing.assert_frame_equal(expected, self.t_f_res["allfalse"])
+#
+#     def test_get_outputs_parses_bools_true_and_false(self):
+#         expected = pd.DataFrame({"trueandfalse": [True, False, True]})
+#         pd.testing.assert_frame_equal(expected, self.t_f_res["trueandfalse"])
+#
+#     def test_get_outputs_parses_bools_true_and_false_strings(self):
+#         expected = pd.DataFrame({"truefalsestrings": [True, False, False]})
+#         pd.testing.assert_frame_equal(
+#             expected, self.t_f_res["truefalsestrings"])
+#
+#     def test_get_outputs_parses_bools_true_and_false_strings_with_blank(self):
+#         expected = pd.DataFrame({"truefalseblank": [True, False, np.nan]})
+#         pd.testing.assert_frame_equal(expected,
+#                                       self.t_f_res["truefalseblank"])
+#
+#     def test_get_outputs_parses_blank_string_as_nan(self):
+#         script = "OUTPUT(DATASET([{''}], {STRING a;}));"
+#         res = _get_outputs_from_ecl_string(self.conn, script)
+#         expected = pd.DataFrame({"a": [np.nan]}, index=[0])
+#         pd.testing.assert_frame_equal(expected, res["Result_1"])
+#
+#     def test_get_outputs_parses_ints(self):
+#         script = "OUTPUT(DATASET([{1}, {2}], {INTEGER a;}));"
+#         res = _get_outputs_from_ecl_string(self.conn, script)
+#         expected = pd.DataFrame({"a": [1, 2]})
+#         pd.testing.assert_frame_equal(expected, res["Result_1"])
+#
+#     def test_get_outputs_parses_floats(self):
+#         script = "OUTPUT(DATASET([{1.0}, {2.1}], {REAL a;}));"
+#         res = _get_outputs_from_ecl_string(self.conn, script)
+#         expected = pd.DataFrame({"a": [1.0, 2.1]})
+#         pd.testing.assert_frame_equal(expected, res["Result_1"])
+#
+#     def test_get_outputs_parses_mixed_floats_and_ints(self):
+#         script = "OUTPUT(DATASET([{1}, {2.1}], {REAL a;}));"
+#         res = _get_outputs_from_ecl_string(self.conn, script)
+#         expected = pd.DataFrame({"a": [1, 2.1]})
+#         pd.testing.assert_frame_equal(expected, res["Result_1"])
+#
+#     def test_get_outputs_parses_numbers_as_strings(self):
+#         script = "OUTPUT(DATASET([{'1'}, {'2.1'}], {STRING a;}));"
+#         res = _get_outputs_from_ecl_string(self.conn, script)
+#         expected = pd.DataFrame({"a": [1, 2.1]})
+#         pd.testing.assert_frame_equal(expected, res["Result_1"])
+#
+#     def test_get_outputs_parses_empty_dataset(self):
+#         script = ("a := DATASET([{'a'}, {'a'}], {STRING a;});a(a != 'a');"
+#                   "OUTPUT(2);")
+#
+#         with warnings.catch_warnings(record=True) as w:
+#             res = _get_outputs_from_ecl_string(self.conn, script)
+#             self.assertEqual(len(w), 1)
+#             expected_warn = (
+#                 "One or more of the outputs do not appear to contain a "
+#                 "dataset. They have been replaced with an empty DataFrame")
+#             self.assertEqual(str(w[-1].message), expected_warn)
+#         self.assertEqual(list(res.keys()), ["Result_1", "Result_2"])
+#         pd.testing.assert_frame_equal(res["Result_1"], pd.DataFrame())
+#
+#     def test_get_outputs_parses_mixed_columns_as_strings(self):
+#         script = "OUTPUT(DATASET([{'1'}, {'a'}], {STRING a;}));"
+#         res = _get_outputs_from_ecl_string(self.conn, script)
+#         expected = pd.DataFrame({"a": ['1', 'a']})
+#         pd.testing.assert_frame_equal(expected, res["Result_1"])
+#
+#     def test_get_outputs_raises_with_bad_script(self):
+#         script = "asa"
+#         with self.assertRaises(SyntaxError):
+#             _get_outputs_from_ecl_string(self.conn, script)
+#
+#     @patch.object(hpycc.Connection, "check_syntax")
+#     def test_get_outputs_runs_syntax_check_if_true(self, mock):
+#         script = "OUTPUT(2);"
+#         _get_outputs_from_ecl_string(self.conn, script)
+#         mock.assert_called()
+#
+#     @patch.object(hpycc.Connection, "check_syntax")
+#     def test_get_outputs_doesnt_run_syntax_check_if_false(self, mock):
+#         script = "OUTPUT(2);"
+#         _get_outputs_from_ecl_string(self.conn, script, False)
+#         self.assertFalse(mock.called)
+#
+#     @patch.object(hpycc.connection.delete, "delete_workunit")
+#     def test_get_outputs_runs_delete_workunit_if_true(self, mock):
+#         script = "OUTPUT(2);"
+#         _get_outputs_from_ecl_string(self.conn, script)
+#         mock.assert_called()
+#
+#     @patch.object(hpycc.connection.delete, "delete_workunit")
+#     def test_get_outputs_doesnt_run_delete_workunit_if_false(self, mock):
+#         script = "OUTPUT(2);"
+#         _get_outputs_from_ecl_string(self.conn, script, delete_workunit=False)
+#         self.assertFalse(mock.called)
+#
+#     def test_get_outputs_stored_variables_change_output_same_type(self):
+#         script_one = ("a := 'abc' : STORED('a'); b := FALSE : STORED('b'); "
+#                       "c := 546 : STORED('c'); a + a; b AND TRUE; c + c;")
+#         result = _get_outputs_from_ecl_string(
+#             self.conn, script_one,
+#             stored={'a': 'Hello', 'b': True, 'c': 24601})
+#         expected = {
+#             "Result_1": pd.DataFrame({"Result_1": ["HelloHello"]}),
+#             "Result_2": pd.DataFrame({"Result_2": [True]}),
+#             "Result_3": pd.DataFrame({"Result_3": [49202]})
+#                     }
+#         for df in expected:
+#             pd.testing.assert_frame_equal(result[df], expected[df])
+#
+#     def test_get_outputs_stored_wrong_key_inputs(self):
+#         script_one = ("a := 'abc' : STORED('a'); b := FALSE : STORED('b'); "
+#                       "c := 'ghi' : STORED('c'); a; b; c;")
+#         result = _get_outputs_from_ecl_string(self.conn, script_one,
+#                                               stored={'d': 'Why', 'e': 'Not',
+#                                                       'f': 'Zoidberg'})
+#         expected = {
+#             "Result_1": pd.DataFrame({"Result_1": ["abc"]}),
+#             "Result_2": pd.DataFrame({"Result_2": [False]}),
+#             "Result_3": pd.DataFrame({"Result_3": ["ghi"]})
+#                     }
+#         for df in expected:
+#             pd.testing.assert_frame_equal(result[df], expected[df])
 
 
 class TestGetThorFile(unittest.TestCase):
@@ -429,7 +431,8 @@ class TestGetThorFile(unittest.TestCase):
             thor_file="test_get_thor_file_returns_single_row_dataset")
         expected = pd.DataFrame({"int": [1], "__fileposition__": 0},
                                 dtype=np.int32)
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1),
+                                      res.sort_index(axis=1))
 
     def test_get_thor_file_returns_100_row_dataset(self):
         file_name = '~test_get_thor_file_returns_100_row_dataset'
@@ -446,7 +449,8 @@ class TestGetThorFile(unittest.TestCase):
             "__fileposition__": [i*8 for i in range(100)],
             "int": [1] * 100
         }, dtype=np.int32)
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1),
+                                      res.sort_index(axis=1))
 
     def test_get_thor_file_returns_1000000_row_dataset(self):
         file_name = '~test_get_thor_file_returns_1000000_row_dataset'
@@ -462,7 +466,8 @@ class TestGetThorFile(unittest.TestCase):
         expected = pd.DataFrame({
             "int": [1] * 1000000
         }, dtype=np.int32)
-        pd.testing.assert_series_equal(expected.sort_index(axis=1)["int"], res.sort_index(axis=1)["int"])
+        pd.testing.assert_series_equal(expected.sort_index(axis=1)["int"],
+                                       res.sort_index(axis=1)["int"])
 
     def test_get_thor_file_works_when_num_rows_less_than_chunksize(self):
         file_name = ("test_get_thor_file_works_when_num_rows_less_than_"
@@ -478,7 +483,8 @@ class TestGetThorFile(unittest.TestCase):
             connection=self.conn, thor_file=file_name, chunk_size=2)
         expected = pd.DataFrame({"int": [1], "__fileposition__": 0},
                                 dtype=np.int32)
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1),
+                                      res.sort_index(axis=1))
 
     def test_get_thor_file_works_when_num_rows_equal_to_chunksize(self):
         file_name = "test_get_thor_file_works_when_num_rows_equal_to_chunksize"
@@ -493,7 +499,8 @@ class TestGetThorFile(unittest.TestCase):
             connection=self.conn, thor_file=file_name, chunk_size=2)
         expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]},
                                 dtype=np.int32)
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1),
+                                      res.sort_index(axis=1))
 
     def test_get_thor_file_works_when_num_rows_greater_than_chunksize(self):
         file_name = ("test_get_thor_file_works_when_num_rows_greater_than_"
@@ -505,15 +512,19 @@ class TestGetThorFile(unittest.TestCase):
             True,
             None
         )
-        res = get_thor_file(connection=self.conn, thor_file=file_name, chunk_size=1).sort_index(axis=1)
-        expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]}, dtype=np.int32).sort_index(axis=1)
+        res = get_thor_file(connection=self.conn, thor_file=file_name,
+                            chunk_size=1).sort_index(axis=1)
+        expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 8]},
+                                dtype=np.int32).sort_index(axis=1)
         res = res.sort_values("__fileposition__").reset_index(drop=True)
         pd.testing.assert_frame_equal(
-            expected.sort_index(axis=1), res.sort_index(axis=1), check_dtype=False)
+            expected.sort_index(axis=1), res.sort_index(axis=1),
+            check_dtype=False)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_get_thor_file_chunks_when_num_rows_less_than_chunksize(self, mock):
-        file_name = "test_get_thor_file_chunks_when_num_rows_less_than_chunksize"
+        file_name = "test_get_thor_file_chunks_when_num_" \
+                    "rows_less_than_chunksize"
         mock.return_value = {'int': ['1'], '__fileposition__': ['0']}
         self.conn.run_ecl_string(
             "a := DATASET([{{1}}], {{INTEGER int;}}); "
@@ -541,11 +552,13 @@ class TestGetThorFile(unittest.TestCase):
         mock.assert_called_with(file_name, 1, 1, 3, 60)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
-    def test_get_thor_file_chunks_when_num_rows_greater_than_chunksize(self, mock):
-        file_name = "test_get_thor_file_chunks_when_num_rows_greater_than_chunksize"
+    def test_get_thor_file_chunks_when_num_rows_above_chunksize(self, mock):
+        file_name = "test_get_thor_file_chunks_when_" \
+                    "num_rows_greater_than_chunksize"
         mock.return_value = {'int': ['1'], '__fileposition__': ['0']}
         self.conn.run_ecl_string(
-           "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); OUTPUT(a,,'~{}');".format(file_name),
+           "a := DATASET([{{1}}, {{2}}], {{INTEGER int;}}); "
+           "OUTPUT(a,,'~{}');".format(file_name),
            True,
            True,
            None
@@ -559,8 +572,10 @@ class TestGetThorFile(unittest.TestCase):
         self.assertEqual(expected, mock.call_args_list)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
-    def test_get_thor_file_uses_generates_chunk_size_150000row_2workers(self, mock):
-        file_name = "test_get_thor_file_uses_generates_chunk_size_150000row_2workers"
+    def test_get_thor_file_uses_generates_chunk_size_150000row_2workers(self,
+                                                                        mock):
+        file_name = "test_get_thor_file_uses_generates_" \
+                    "chunk_size_150000row_2workers"
 
         mock.return_value = {'int': ['1'], '__fileposition__': ['0']}
 
@@ -580,8 +595,10 @@ class TestGetThorFile(unittest.TestCase):
         self.assertEqual(expected[1], mock.call_args_list[1])
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
-    def test_get_thor_file_uses_generates_chunk_size_150000row_3workers(self, mock):
-        file_name = "test_get_thor_file_uses_generates_chunk_size_150000row_3workers"
+    def test_get_thor_file_uses_generates_chunk_size_150000row_3workers(self,
+                                                                        mock):
+        file_name = "test_get_thor_file_uses_generates_chunk_" \
+                    "size_150000row_3workers"
 
         mock.return_value = {'int': ['1'], '__fileposition__': ['0']}
 
@@ -603,8 +620,10 @@ class TestGetThorFile(unittest.TestCase):
         self.assertEqual(expected[2], mock.call_args_list[2])
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
-    def test_get_thor_file_uses_generates_chunk_size_325000row_1workers(self, mock):
-        file_name = "test_get_thor_file_uses_generates_chunk_size_325000row_1workers"
+    def test_get_thor_file_uses_generates_chunk_size_325000row_1workers(self,
+                                                                        mock):
+        file_name = "test_get_thor_file_uses_generates_" \
+                    "chunk_size_325000row_1workers"
 
         mock.return_value = {'int': ['1'], '__fileposition__': ['0']}
 
@@ -633,7 +652,8 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         with self.assertRaises(ZeroDivisionError):
-            get_thor_file(connection=self.conn, thor_file=file_name, chunk_size=0)
+            get_thor_file(connection=self.conn, thor_file=file_name,
+                          chunk_size=0)
 
     def test_get_thor_file_parses_column_types_correctly(self):
         i = 1
@@ -694,11 +714,14 @@ class TestGetThorFile(unittest.TestCase):
                 expected_val = t[3]
             except IndexError:
                 expected_val = t[2]
-            a = get_thor_file(connection=self.conn, thor_file=file_name, dtype=None)
+            a = get_thor_file(connection=self.conn, thor_file=file_name,
+                              dtype=None)
             expected = pd.DataFrame(
                 {t[1]: [expected_val], "__fileposition__": [0]}, index=[0])
 
-            pd.testing.assert_frame_equal(expected.sort_index(axis=1), a.sort_index(axis=1), check_dtype=False)
+            pd.testing.assert_frame_equal(expected.sort_index(axis=1),
+                                          a.sort_index(axis=1),
+                                          check_dtype=False)
 
     def test_get_thor_file_parses_set_types_correctly(self):
         i = 1
@@ -755,10 +778,13 @@ class TestGetThorFile(unittest.TestCase):
                 expected_val = t[3]
             except IndexError:
                 expected_val = t[2]
-            a = get_thor_file(connection=self.conn, thor_file=file_name, dtype=None)
+            a = get_thor_file(connection=self.conn, thor_file=file_name,
+                              dtype=None)
             expected = pd.DataFrame(
                 {t[1]: [[expected_val]], "__fileposition__": [0]}, index=[0])
-            pd.testing.assert_frame_equal(expected.sort_index(axis=1), a.sort_index(axis=1), check_dtype=False)
+            pd.testing.assert_frame_equal(expected.sort_index(axis=1),
+                                          a.sort_index(axis=1),
+                                          check_dtype=False)
 
     @patch.object(hpycc.get, "ThreadPoolExecutor")
     def test_get_thor_file_uses_default_max_workers(self, mock):
@@ -831,7 +857,8 @@ class TestGetThorFile(unittest.TestCase):
         expected = pd.DataFrame({"int": [1, 2], "__fileposition__": [0, 5]},
                                 dtype=np.int32)
 
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1),
+                                      res.sort_index(axis=1))
 
     def test_get_thor_file_uses_dict_of_dtypes(self):
         file_name = "test_get_thor_file_uses_dict_of_dtypes"
@@ -843,15 +870,17 @@ class TestGetThorFile(unittest.TestCase):
             True,
             None
         )
-        res = get_thor_file(self.conn, file_name, dtype={"str": int, "bool": bool, "int": str,
-                                                         "__fileposition__": str})
+        res = get_thor_file(self.conn, file_name,
+                            dtype={"str": int, "bool": bool,
+                                   "int": str, "__fileposition__": str})
         expected = pd.DataFrame({
             "int": ["1", "2"],
             "str": [1, 2],
             "bool": [True, False],
             "__fileposition__": ["0", "14"]}).astype(
             {"str": int, "bool": bool, "int": str, "__fileposition__": str})
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1),
+                                      res.sort_index(axis=1))
 
     def test_get_thor_file_uses_dict_of_dtypes_with_missing_cols(self):
         file_name = "test_get_thor_file_uses_dict_of_dtypes_with_missing__cols"
@@ -863,13 +892,15 @@ class TestGetThorFile(unittest.TestCase):
             True,
             None
         )
-        res = get_thor_file(self.conn, file_name, dtype={"bool": bool, "int": str})
+        res = get_thor_file(self.conn, file_name,
+                            dtype={"bool": bool, "int": str})
         expected = pd.DataFrame({
             "int": ["1", "2"],
             "str": ["1", "2"],
             "bool": [True, False],
             "__fileposition__": [0, 14]})
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1), check_dtype=False)
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1),
+                                      res.sort_index(axis=1), check_dtype=False)
 
     def test_get_thor_file_uses_dict_of_dtypes_with_extra_cols(self):
         file_name = "test_get_thor_file_uses_dict_of_dtypes_with_extra_cols"
@@ -882,7 +913,8 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         with self.assertRaises(KeyError):
-            get_thor_file(self.conn, file_name, dtype={"bool": bool, "int": str, "made_up": str})
+            get_thor_file(self.conn, file_name,
+                          dtype={"bool": bool, "int": str, "made_up": str})
 
     def test_get_thor_file_returns_a_set(self):
         file_name = "test_get_thor_file_returns_a_set"
@@ -893,4 +925,5 @@ class TestGetThorFile(unittest.TestCase):
         expected = pd.DataFrame({"set": [[1, 2, 3]], "__fileposition__": 0},
                                 dtype=np.int32)
         self.assertEqual(res.set.values[0], [1, 2, 3])
-        pd.testing.assert_frame_equal(expected.sort_index(axis=1), res.sort_index(axis=1))
+        pd.testing.assert_frame_equal(expected.sort_index(axis=1),
+                                      res.sort_index(axis=1))

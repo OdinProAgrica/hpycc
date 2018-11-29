@@ -70,10 +70,10 @@ def _save_outputs_from_ecl_string(
 
 def _get_a_save(connection, thor_file, path_or_buf=None,
                max_workers=15, chunk_size=10000, max_attempts=3,
-               min_sleep=5, max_sleep=10, dtype=None, **kwargs):
+               max_sleep=10, dtype=None, **kwargs):
     return save_thor_file(connection, thor_file, path_or_buf,
                           max_workers=max_workers, chunk_size=chunk_size, max_attempts=max_attempts,
-                          max_sleep=max_sleep, dtype=dtype, min_sleep=min_sleep, **kwargs)
+                          max_sleep=max_sleep, dtype=dtype, **kwargs)
 
 
 class TestGetOutputWithServer(unittest.TestCase):
@@ -254,181 +254,181 @@ class TestGetOutputWithServer(unittest.TestCase):
         pd.testing.assert_frame_equal(expected, result)
 
 
-class TestGetOutputsWithServer(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.conn = hpycc.Connection("user")
-        script = ("OUTPUT(2);OUTPUT('a');OUTPUT(DATASET([{1, 'a'}], "
-                  "{INTEGER a; STRING b;}), NAMED('ds'));")
-        cls.res = _save_outputs_from_ecl_string(cls.conn, script)
-        a = [
-            {"col": "alltrue",
-             "content": "[{true}, {true}, {true}]",
-             "coltype": "BOOLEAN"},
-            {"col": "allfalse",
-             "content": "[{false}, {false}, {false}]",
-             "coltype": "BOOLEAN"},
-            {"col": "trueandfalse",
-             "content": "[{true}, {false}, {true}]",
-             "coltype": "BOOLEAN"},
-            {"col": "truefalsestrings",
-             "content": "[{'true'}, {'false'}, {'false'}]",
-             "coltype": "STRING"},
-            {"col": "truefalseblank",
-             "content": "[{'true'}, {'false'}, {''}]",
-             "coltype": "STRING"}
-        ]
-        f = [("OUTPUT(DATASET({0[content]}, {{{0[coltype]} {0[col]};}}), "
-              "NAMED('{0[col]}'));").format(i) for i in a]
-        cls.t_f_res = _save_outputs_from_ecl_string(cls.conn, "\n".join(f))
-
-    def test_save_outputs_returns_single_value_int(self):
-        expected = pd.DataFrame({"Result_1": 2}, index=[0])
-        res = self.res
-        res = res["Result_1"]
-        pd.testing.assert_frame_equal(expected, self.res["Result_1"])
-
-    def test_save_outputs_returns_single_value_str(self):
-        expected = pd.DataFrame({"Result_2": 'a'}, index=[0])
-        pd.testing.assert_frame_equal(expected, self.res["Result_2"])
-
-    def test_save_outputs_returns_dataset(self):
-        expected = pd.DataFrame({"a": 1, "b": "a"}, index=[0])
-        pd.testing.assert_frame_equal(expected, self.res["ds"])
-
-    def test_save_outputs_returns_all_outputs(self):
-        self.assertEqual(list(self.res.keys()), ["Result_1", "Result_2", "ds"])
-
-    def test_save_outputs_parses_bools_all_true(self):
-        expected = pd.DataFrame({"alltrue": [True, True, True]})
-        pd.testing.assert_frame_equal(expected, self.t_f_res["alltrue"])
-
-    def test_save_outputs_parses_bools_all_false(self):
-        expected = pd.DataFrame({"allfalse": [False, False, False]})
-        res = self.t_f_res
-        res = res["allfalse"]
-        pd.testing.assert_frame_equal(expected, res)
-
-    def test_save_outputs_parses_bools_true_and_false(self):
-        expected = pd.DataFrame({"trueandfalse": [True, False, True]})
-        pd.testing.assert_frame_equal(expected, self.t_f_res["trueandfalse"])
-
-    def test_save_outputs_parses_bools_true_and_false_strings(self):
-        expected = pd.DataFrame({"truefalsestrings": [True, False, False]})
-        pd.testing.assert_frame_equal(
-            expected, self.t_f_res["truefalsestrings"])
-
-    def test_save_outputs_parses_bools_true_and_false_strings_with_blank(self):
-        expected = pd.DataFrame({"truefalseblank": [True, False, np.nan]})
-        pd.testing.assert_frame_equal(expected, self.t_f_res["truefalseblank"])
-
-    def test_save_outputs_parses_blank_string_as_nan(self):
-        script = "OUTPUT(DATASET([{''}], {STRING a;}));"
-        res = _save_outputs_from_ecl_string(self.conn, script)
-        expected = pd.DataFrame({"a": [np.nan]}, index=[0])
-        pd.testing.assert_frame_equal(expected, res['Result_1'])
-
-    def test_save_outputs_parses_ints(self):
-        script = "OUTPUT(DATASET([{1}, {2}], {INTEGER a;}));"
-        res = _save_outputs_from_ecl_string(self.conn, script)
-        expected = pd.DataFrame({"a": [1, 2]})
-        pd.testing.assert_frame_equal(expected, res['Result_1'])
-
-    def test_save_outputs_parses_floats(self):
-        script = "OUTPUT(DATASET([{1.0}, {2.1}], {REAL a;}));"
-        res = _save_outputs_from_ecl_string(self.conn, script)
-        expected = pd.DataFrame({"a": [1.0, 2.1]})
-        pd.testing.assert_frame_equal(expected, res['Result_1'])
-
-    def test_save_outputs_parses_mixed_floats_and_ints(self):
-        script = "OUTPUT(DATASET([{1}, {2.1}], {REAL a;}));"
-        res = _save_outputs_from_ecl_string(self.conn, script)
-        expected = pd.DataFrame({"a": [1, 2.1]})
-        pd.testing.assert_frame_equal(expected, res['Result_1'])
-
-    def test_save_outputs_parses_numbers_as_strings(self):
-        script = "OUTPUT(DATASET([{'1'}, {'2.1'}], {STRING a;}));"
-        res = _save_outputs_from_ecl_string(self.conn, script)
-        expected = pd.DataFrame({"a": [1, 2.1]})
-        pd.testing.assert_frame_equal(expected, res['Result_1'])
-
-    def test_save_outputs_parses_empty_dataset(self):
-        script = ("a := DATASET([{'a'}, {'a'}], {STRING a;});a(a != 'a');"
-                  "OUTPUT(2);")
-
-        with warnings.catch_warnings(record=True) as w:
-            res = _save_outputs_from_ecl_string(self.conn, script)
-            self.assertEqual(len(w), 1)
-            expected_warn = (
-                "One or more of the outputs do not appear to contain a "
-                "dataset. They have been replaced with an empty DataFrame")
-            self.assertEqual(str(w[-1].message), expected_warn)
-        self.assertEqual(list(res.keys()), ["Result_1", "Result_2"])
-        pd.testing.assert_frame_equal(res["Result_1"], pd.DataFrame())
-
-    def test_save_outputs_parses_mixed_columns_as_strings(self):
-        script = "OUTPUT(DATASET([{'1'}, {'a'}], {STRING a;}));"
-        res = _save_outputs_from_ecl_string(self.conn, script)
-        expected = pd.DataFrame({"a": ['1', 'a']})
-        pd.testing.assert_frame_equal(expected, res["Result_1"])
-
-    def test_save_outputs_raises_with_bad_script(self):
-        script = "asa"
-        with self.assertRaises(SyntaxError):
-            _save_outputs_from_ecl_string(self.conn, script)
-
-    @patch.object(hpycc.Connection, "check_syntax")
-    def test_save_outputs_runs_syntax_check_if_true(self, mock):
-        script = "OUTPUT(2);"
-        _save_outputs_from_ecl_string(self.conn, script)
-        mock.assert_called()
-
-    @patch.object(hpycc.Connection, "check_syntax")
-    def test_save_outputs_doesnt_run_syntax_check_if_false(self, mock):
-        script = "OUTPUT(2);"
-        _save_outputs_from_ecl_string(self.conn, script, False)
-        self.assertFalse(mock.called)
-
-    @patch.object(hpycc.connection.delete, "delete_workunit")
-    def test_save_outputs_runs_delete_workunit_if_true(self, mock):
-        script = "OUTPUT(2);"
-        _save_outputs_from_ecl_string(self.conn, script)
-        mock.assert_called()
-
-    @patch.object(hpycc.connection.delete, "delete_workunit")
-    def test_save_outputs_doesnt_run_delete_workunit_if_false(self, mock):
-        script = "OUTPUT(2);"
-        _save_outputs_from_ecl_string(self.conn, script, delete_workunit=False)
-        self.assertFalse(mock.called)
-
-    def test_save_outputs_stored_variables_change_output_same_type(self):
-        script_one = ("a := 'abc' : STORED('a'); b := FALSE : STORED('b'); "
-                      "c := 546 : STORED('c'); a + a; b AND TRUE; c + c;")
-        result = _save_outputs_from_ecl_string(
-            self.conn, script_one,
-            stored={'a': 'Hello', 'b': True, 'c': 24601})
-        expected = {
-            "Result_1": pd.DataFrame({"Result_1": ["HelloHello"]}),
-            "Result_2": pd.DataFrame({"Result_2": [True]}),
-            "Result_3": pd.DataFrame({"Result_3": [49202]})
-        }
-
-        for df in expected:
-            pd.testing.assert_frame_equal(result[df], expected[df])
-
-    def test_save_outputs_stored_wrong_key_inputs(self):
-        script_one = ("a := 'abc' : STORED('a'); b := FALSE : STORED('b'); "
-                      "c := 'ghi' : STORED('c'); a; b; c;")
-        result = _save_outputs_from_ecl_string(self.conn, script_one,
-                                               stored={'d': 'Why', 'e': 'Not',
-                                                       'f': 'Zoidberg'})
-        expected = {
-            "Result_1": pd.DataFrame({"Result_1": ["abc"]}),
-            "Result_2": pd.DataFrame({"Result_2": [False]}),
-            "Result_3": pd.DataFrame({"Result_3": ["ghi"]})
-        }
-        for df in expected:
-            pd.testing.assert_frame_equal(result[df], expected[df])
+# class TestGetOutputsWithServer(unittest.TestCase):
+#     @classmethod
+#     def setUpClass(cls):
+#         cls.conn = hpycc.Connection("user")
+#         script = ("OUTPUT(2);OUTPUT('a');OUTPUT(DATASET([{1, 'a'}], "
+#                   "{INTEGER a; STRING b;}), NAMED('ds'));")
+#         cls.res = _save_outputs_from_ecl_string(cls.conn, script)
+#         a = [
+#             {"col": "alltrue",
+#              "content": "[{true}, {true}, {true}]",
+#              "coltype": "BOOLEAN"},
+#             {"col": "allfalse",
+#              "content": "[{false}, {false}, {false}]",
+#              "coltype": "BOOLEAN"},
+#             {"col": "trueandfalse",
+#              "content": "[{true}, {false}, {true}]",
+#              "coltype": "BOOLEAN"},
+#             {"col": "truefalsestrings",
+#              "content": "[{'true'}, {'false'}, {'false'}]",
+#              "coltype": "STRING"},
+#             {"col": "truefalseblank",
+#              "content": "[{'true'}, {'false'}, {''}]",
+#              "coltype": "STRING"}
+#         ]
+#         f = [("OUTPUT(DATASET({0[content]}, {{{0[coltype]} {0[col]};}}), "
+#               "NAMED('{0[col]}'));").format(i) for i in a]
+#         cls.t_f_res = _save_outputs_from_ecl_string(cls.conn, "\n".join(f))
+#
+#     def test_save_outputs_returns_single_value_int(self):
+#         expected = pd.DataFrame({"Result_1": 2}, index=[0])
+#         res = self.res
+#         res = res["Result_1"]
+#         pd.testing.assert_frame_equal(expected, self.res["Result_1"])
+#
+#     def test_save_outputs_returns_single_value_str(self):
+#         expected = pd.DataFrame({"Result_2": 'a'}, index=[0])
+#         pd.testing.assert_frame_equal(expected, self.res["Result_2"])
+#
+#     def test_save_outputs_returns_dataset(self):
+#         expected = pd.DataFrame({"a": 1, "b": "a"}, index=[0])
+#         pd.testing.assert_frame_equal(expected, self.res["ds"])
+#
+#     def test_save_outputs_returns_all_outputs(self):
+#         self.assertEqual(list(self.res.keys()), ["Result_1", "Result_2", "ds"])
+#
+#     def test_save_outputs_parses_bools_all_true(self):
+#         expected = pd.DataFrame({"alltrue": [True, True, True]})
+#         pd.testing.assert_frame_equal(expected, self.t_f_res["alltrue"])
+#
+#     def test_save_outputs_parses_bools_all_false(self):
+#         expected = pd.DataFrame({"allfalse": [False, False, False]})
+#         res = self.t_f_res
+#         res = res["allfalse"]
+#         pd.testing.assert_frame_equal(expected, res)
+#
+#     def test_save_outputs_parses_bools_true_and_false(self):
+#         expected = pd.DataFrame({"trueandfalse": [True, False, True]})
+#         pd.testing.assert_frame_equal(expected, self.t_f_res["trueandfalse"])
+#
+#     def test_save_outputs_parses_bools_true_and_false_strings(self):
+#         expected = pd.DataFrame({"truefalsestrings": [True, False, False]})
+#         pd.testing.assert_frame_equal(
+#             expected, self.t_f_res["truefalsestrings"])
+#
+#     def test_save_outputs_parses_bools_true_and_false_strings_with_blank(self):
+#         expected = pd.DataFrame({"truefalseblank": [True, False, np.nan]})
+#         pd.testing.assert_frame_equal(expected, self.t_f_res["truefalseblank"])
+#
+#     def test_save_outputs_parses_blank_string_as_nan(self):
+#         script = "OUTPUT(DATASET([{''}], {STRING a;}));"
+#         res = _save_outputs_from_ecl_string(self.conn, script)
+#         expected = pd.DataFrame({"a": [np.nan]}, index=[0])
+#         pd.testing.assert_frame_equal(expected, res['Result_1'])
+#
+#     def test_save_outputs_parses_ints(self):
+#         script = "OUTPUT(DATASET([{1}, {2}], {INTEGER a;}));"
+#         res = _save_outputs_from_ecl_string(self.conn, script)
+#         expected = pd.DataFrame({"a": [1, 2]})
+#         pd.testing.assert_frame_equal(expected, res['Result_1'])
+#
+#     def test_save_outputs_parses_floats(self):
+#         script = "OUTPUT(DATASET([{1.0}, {2.1}], {REAL a;}));"
+#         res = _save_outputs_from_ecl_string(self.conn, script)
+#         expected = pd.DataFrame({"a": [1.0, 2.1]})
+#         pd.testing.assert_frame_equal(expected, res['Result_1'])
+#
+#     def test_save_outputs_parses_mixed_floats_and_ints(self):
+#         script = "OUTPUT(DATASET([{1}, {2.1}], {REAL a;}));"
+#         res = _save_outputs_from_ecl_string(self.conn, script)
+#         expected = pd.DataFrame({"a": [1, 2.1]})
+#         pd.testing.assert_frame_equal(expected, res['Result_1'])
+#
+#     def test_save_outputs_parses_numbers_as_strings(self):
+#         script = "OUTPUT(DATASET([{'1'}, {'2.1'}], {STRING a;}));"
+#         res = _save_outputs_from_ecl_string(self.conn, script)
+#         expected = pd.DataFrame({"a": [1, 2.1]})
+#         pd.testing.assert_frame_equal(expected, res['Result_1'])
+#
+#     def test_save_outputs_parses_empty_dataset(self):
+#         script = ("a := DATASET([{'a'}, {'a'}], {STRING a;});a(a != 'a');"
+#                   "OUTPUT(2);")
+#
+#         with warnings.catch_warnings(record=True) as w:
+#             res = _save_outputs_from_ecl_string(self.conn, script)
+#             self.assertEqual(len(w), 1)
+#             expected_warn = (
+#                 "One or more of the outputs do not appear to contain a "
+#                 "dataset. They have been replaced with an empty DataFrame")
+#             self.assertEqual(str(w[-1].message), expected_warn)
+#         self.assertEqual(list(res.keys()), ["Result_1", "Result_2"])
+#         pd.testing.assert_frame_equal(res["Result_1"], pd.DataFrame())
+#
+#     def test_save_outputs_parses_mixed_columns_as_strings(self):
+#         script = "OUTPUT(DATASET([{'1'}, {'a'}], {STRING a;}));"
+#         res = _save_outputs_from_ecl_string(self.conn, script)
+#         expected = pd.DataFrame({"a": ['1', 'a']})
+#         pd.testing.assert_frame_equal(expected, res["Result_1"])
+#
+#     def test_save_outputs_raises_with_bad_script(self):
+#         script = "asa"
+#         with self.assertRaises(SyntaxError):
+#             _save_outputs_from_ecl_string(self.conn, script)
+#
+#     @patch.object(hpycc.Connection, "check_syntax")
+#     def test_save_outputs_runs_syntax_check_if_true(self, mock):
+#         script = "OUTPUT(2);"
+#         _save_outputs_from_ecl_string(self.conn, script)
+#         mock.assert_called()
+#
+#     @patch.object(hpycc.Connection, "check_syntax")
+#     def test_save_outputs_doesnt_run_syntax_check_if_false(self, mock):
+#         script = "OUTPUT(2);"
+#         _save_outputs_from_ecl_string(self.conn, script, False)
+#         self.assertFalse(mock.called)
+#
+#     @patch.object(hpycc.connection.delete, "delete_workunit")
+#     def test_save_outputs_runs_delete_workunit_if_true(self, mock):
+#         script = "OUTPUT(2);"
+#         _save_outputs_from_ecl_string(self.conn, script)
+#         mock.assert_called()
+#
+#     @patch.object(hpycc.connection.delete, "delete_workunit")
+#     def test_save_outputs_doesnt_run_delete_workunit_if_false(self, mock):
+#         script = "OUTPUT(2);"
+#         _save_outputs_from_ecl_string(self.conn, script, delete_workunit=False)
+#         self.assertFalse(mock.called)
+#
+#     def test_save_outputs_stored_variables_change_output_same_type(self):
+#         script_one = ("a := 'abc' : STORED('a'); b := FALSE : STORED('b'); "
+#                       "c := 546 : STORED('c'); a + a; b AND TRUE; c + c;")
+#         result = _save_outputs_from_ecl_string(
+#             self.conn, script_one,
+#             stored={'a': 'Hello', 'b': True, 'c': 24601})
+#         expected = {
+#             "Result_1": pd.DataFrame({"Result_1": ["HelloHello"]}),
+#             "Result_2": pd.DataFrame({"Result_2": [True]}),
+#             "Result_3": pd.DataFrame({"Result_3": [49202]})
+#         }
+#
+#         for df in expected:
+#             pd.testing.assert_frame_equal(result[df], expected[df])
+#
+#     def test_save_outputs_stored_wrong_key_inputs(self):
+#         script_one = ("a := 'abc' : STORED('a'); b := FALSE : STORED('b'); "
+#                       "c := 'ghi' : STORED('c'); a; b; c;")
+#         result = _save_outputs_from_ecl_string(self.conn, script_one,
+#                                                stored={'d': 'Why', 'e': 'Not',
+#                                                        'f': 'Zoidberg'})
+#         expected = {
+#             "Result_1": pd.DataFrame({"Result_1": ["abc"]}),
+#             "Result_2": pd.DataFrame({"Result_2": [False]}),
+#             "Result_3": pd.DataFrame({"Result_3": ["ghi"]})
+#         }
+#         for df in expected:
+#             pd.testing.assert_frame_equal(result[df], expected[df])
 
 
 class TestGetThorFile(unittest.TestCase):
@@ -448,16 +448,20 @@ class TestGetThorFile(unittest.TestCase):
         self.assertEqual(expected.to_csv(), res)
 
     def test_save_thor_file_returns_single_row_dataset(self):
+
+        file_name = "test_save_thor_file_returns_single_row_dataset"
         self.conn.run_ecl_string(
             "a := DATASET([{1}], {INTEGER int;}); "
-            "OUTPUT(a,,'~test_save_thor_file_returns_single_row_dataset');",
+            "OUTPUT(a,,'~%s');" % file_name,
             True,
             True,
             None
         )
 
-        res = _get_a_save(connection=self.conn, thor_file="test_save_thor_file_returns_single_row_dataset", index=False)
-        expected = pd.DataFrame({"int": [1], "__fileposition__": [0]}, dtype=np.int64).to_csv(index=False)
+        res = _get_a_save(connection=self.conn,
+                          thor_file=file_name, index=False)
+        expected = pd.DataFrame({"int": [1], "__fileposition__": [0]},
+                                dtype=np.int64).to_csv(index=False)
         self.assertEqual(expected, res)
 
     def test_save_thor_file_returns_100_row_dataset(self):
