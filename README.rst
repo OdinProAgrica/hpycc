@@ -58,8 +58,8 @@ get_output(connection, script, ...) & save_output(connection, script, path, ...)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Run a given ECL script and either return the first result as a pandas dataframe or save it to file.
 
-get_outputs(connection, script, ...) & save_outputs(connection, script, server, dir, ...)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+get_outputs(connection, script, ...)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Run a given ECL script and return all results as a dict of pandas dataframes or save them to files.
 
 get_thor_file(connection, logical_file, path, ...) & save_thor_file(connection, logical_file, path, ...)
