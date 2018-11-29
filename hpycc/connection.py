@@ -22,7 +22,7 @@ from tempfile import TemporaryDirectory
 from time import sleep
 from warnings import warn
 import threading
-from urllib.parse import quote_plus as _make_thorname_html
+from urllib import parse
 from json import JSONDecodeError
 from simplejson.errors import JSONDecodeError as simpleJSONDecodeError
 from math import ceil
@@ -379,7 +379,7 @@ class Connection:
 
         url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
                "&Cluster=thor&Start={}&Count={}").format(
-            self.server, self.port, _make_thorname_html(logical_file), start_row, n_rows)
+            self.server, self.port, parse.quote_plus(logical_file), start_row, n_rows)
 
         resp = self.run_url_request(url, max_attempts, max_sleep)
         try:
