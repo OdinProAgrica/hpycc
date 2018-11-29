@@ -80,7 +80,7 @@ class Testconcatenatelogicalfiles(unittest.TestCase):
 
         _concatenate_logical_files(conn, output_names,
                                    thor_file,
-                                  'STRING a; STRING b;',
+                                   'STRING a; STRING b;',
                                    overwrite, expire, delete_workunit)
 
         res = get_thor_file(connection=conn, thor_file=thor_file)[['a', 'b']].sort_values("a")

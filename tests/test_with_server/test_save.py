@@ -539,7 +539,7 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         save_thor_file(connection=self.conn, thor_file=file_name, chunk_size=3)
-        mock.assert_called_with(file_name, 0, 1, 3, 60, 50)
+        mock.assert_called_with(file_name, 0, 1, 3, 60)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_save_thor_file_chunks_when_num_rows_equal_to_chunksize(self, mock):
@@ -553,7 +553,7 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         save_thor_file(connection=self.conn, thor_file=file_name, chunk_size=2)
-        mock.assert_called_with(file_name, 0, 2, 3, 60, 50)
+        mock.assert_called_with(file_name, 0, 2, 3, 60)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_save_thor_file_chunks_when_num_rows_greater_than_chunksize(
@@ -569,8 +569,8 @@ class TestGetThorFile(unittest.TestCase):
         )
         save_thor_file(connection=self.conn, thor_file=file_name, chunk_size=1)
         expected = [
-            unittest.mock.call(file_name, 0, 1, 3, 60, 50),
-            unittest.mock.call(file_name, 1, 1, 3, 60, 50)
+            unittest.mock.call(file_name, 0, 1, 3, 60),
+            unittest.mock.call(file_name, 1, 1, 3, 60)
         ]
         self.assertEqual(expected, mock.call_args_list)
 
@@ -587,8 +587,8 @@ class TestGetThorFile(unittest.TestCase):
         )
         save_thor_file(connection=self.conn, thor_file=file_name, max_workers=2)
         expected = [
-            unittest.mock.call(file_name, 0, 150000, 3, 60, 50),
-            unittest.mock.call(file_name, 150000, 150000, 3, 60, 50)
+            unittest.mock.call(file_name, 0, 150000, 3, 60),
+            unittest.mock.call(file_name, 150000, 150000, 3, 60)
         ]
         self.assertEqual(expected, mock.call_args_list)
 
@@ -770,7 +770,7 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         save_thor_file(self.conn, file_name)
-        mock.assert_called_with(file_name, 0, 2, 3, 60, 50)
+        mock.assert_called_with(file_name, 0, 2, 3, 60)
 
     @patch.object(hpycc.connection.Connection, "get_logical_file_chunk")
     def test_save_thor_file_uses_max_sleep(self, mock):
@@ -784,7 +784,7 @@ class TestGetThorFile(unittest.TestCase):
             None
         )
         save_thor_file(self.conn, file_name, max_sleep=120)
-        mock.assert_called_with(file_name, 0, 2, 3, 120, 50)
+        mock.assert_called_with(file_name, 0, 2, 3, 120)
 
     # test the dtype
     def test_save_thor_file_uses_single_dtype(self):

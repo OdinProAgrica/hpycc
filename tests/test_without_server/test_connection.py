@@ -348,7 +348,7 @@ class TestConnectionGetLogicalFileChunk(unittest.TestCase):
         conn = hpycc.Connection("user", server="aa", port=123, test_conn=False)
         with TemporaryDirectory() as td:
             p = os.path.join(td, "data.csv")
-            conn.get_logical_file_chunk("file", 1, 2, 1, 0, 0)
+            conn.get_logical_file_chunk("file", 1, 2, 1, 0)
             mock.assert_called()
 
     @patch.object(hpycc.Connection, "run_url_request")
@@ -358,7 +358,7 @@ class TestConnectionGetLogicalFileChunk(unittest.TestCase):
         with TemporaryDirectory() as td:
             p = os.path.join(td, "data.csv")
             with self.assertRaises(simpleJSONDecodeError):
-                conn.get_logical_file_chunk("file", 1, 2, 1, 0, 0)
+                conn.get_logical_file_chunk("file", 1, 2, 1, 0)
 
 
 class TestConnectionRunURLRequest(unittest.TestCase):
@@ -369,7 +369,7 @@ class TestConnectionRunURLRequest(unittest.TestCase):
         side_effects = (ValueError, ValueError, ValueError, ValueError, final_response)
         mock.side_effect = side_effects
         conn = hpycc.Connection("user", test_conn=False)
-        conn.run_url_request("dfsd.dfd", max_attempts=5, max_sleep=3, min_sleep=1)
+        conn.run_url_request("dfsd.dfd", max_attempts=5, max_sleep=3)
         self.assertEqual(mock.call_count, 5)
 
     @patch.object(requests, "get")
@@ -379,7 +379,7 @@ class TestConnectionRunURLRequest(unittest.TestCase):
         mock.return_value = bad_response
         conn = hpycc.Connection("user", test_conn=False)
         with self.assertRaises(requests.exceptions.RetryError):
-            conn.run_url_request("dfsd.dfd", max_attempts=2, max_sleep=0, min_sleep=0)
+            conn.run_url_request("dfsd.dfd", max_attempts=2, max_sleep=0)
 
     @patch.object(requests, "get")
     def test_run_url_request_counts_500_as_error(self, mock):
@@ -388,19 +388,19 @@ class TestConnectionRunURLRequest(unittest.TestCase):
         mock.return_value = bad_response
         conn = hpycc.Connection("user", test_conn=False)
         with self.assertRaises(requests.exceptions.RetryError):
-            conn.run_url_request("dfsd.dfd", max_attempts=2, max_sleep=0, min_sleep=0)
+            conn.run_url_request("dfsd.dfd", max_attempts=2, max_sleep=0)
 
     @patch.object(requests, "get")
     def test_run_url_request_uses_auth(self, mock):
         conn = hpycc.Connection("user", test_conn=False)
-        conn.run_url_request("dfsd.dfd", max_attempts=5, max_sleep=0, min_sleep=0)
+        conn.run_url_request("dfsd.dfd", max_attempts=5, max_sleep=0)
         mock.assert_called_with('dfsd.dfd', auth=('user', "password"))
 
     @patch.object(random, "randint")
     def test_run_url_request_uses_custom_max_sleep(self, mock):
         conn = hpycc.Connection("user", test_conn=False)
         with self.assertRaises(requests.exceptions.RetryError):
-            conn.run_url_request("dfsd.dfd", max_attempts=1, max_sleep=0, min_sleep=0)
+            conn.run_url_request("dfsd.dfd", max_attempts=1, max_sleep=0)
         mock.assert_called_with(0, 0)
 
     @patch.object(requests, "get")
@@ -408,7 +408,7 @@ class TestConnectionRunURLRequest(unittest.TestCase):
         conn = hpycc.Connection("user", test_conn=False)
         mock.side_effect = ValueError
         with self.assertRaises(requests.exceptions.RetryError):
-            conn.run_url_request("dfsd.dfd", max_attempts=3, max_sleep=0, min_sleep=0)
+            conn.run_url_request("dfsd.dfd", max_attempts=3, max_sleep=0)
         self.assertEqual(mock.call_count, 3)
 
     @patch.object(requests, "get")
@@ -416,7 +416,7 @@ class TestConnectionRunURLRequest(unittest.TestCase):
         conn = hpycc.Connection("user", test_conn=False)
         mock.side_effect = ValueError
         with self.assertRaises(requests.exceptions.RetryError):
-            conn.run_url_request("dfsd.dfd", max_attempts=4, max_sleep=0, min_sleep=0)
+            conn.run_url_request("dfsd.dfd", max_attempts=4, max_sleep=0)
         self.assertEqual(mock.call_count, 4)
 
     @patch.object(requests, "get")
@@ -424,7 +424,7 @@ class TestConnectionRunURLRequest(unittest.TestCase):
         conn = hpycc.Connection("user", test_conn=False)
         mock.side_effect = ValueError
         with self.assertRaises(requests.exceptions.RetryError):
-            conn.run_url_request("dfsd.dfd", max_attempts=1, max_sleep=0, min_sleep=0)
+            conn.run_url_request("dfsd.dfd", max_attempts=1, max_sleep=0)
 
     @patch.object(requests, "get")
     def test_run_url_request_returns_response_after_single_error(self, mock):
@@ -432,7 +432,7 @@ class TestConnectionRunURLRequest(unittest.TestCase):
         r.status_code = 200
         mock.side_effect = (ValueError, r)
         conn = hpycc.Connection("user", test_conn=False)
-        result = conn.run_url_request("dfsd.dfd", max_attempts=3, max_sleep=0, min_sleep=0)
+        result = conn.run_url_request("dfsd.dfd", max_attempts=3, max_sleep=0)
         self.assertIsInstance(result, requests.Response)
 
 

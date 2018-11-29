@@ -229,6 +229,18 @@ class TestParseSchemaFromXML(unittest.TestCase):
 
         self.assertEqual(res, expected)
 
+    def test_apply_custom_dtypes_raises_if_not_dict(self):
+        schema = {
+            'int': {'type': str, 'is_a_set': False},
+            'set_int': {'type': float, 'is_a_set': True},
+            '__fileposition__': {'type': int, 'is_a_set': False}
+        }
+
+        dtype = {'int': int, 'set_int': str}
+
+        with self.assertRaises(ValueError):
+            _ = apply_custom_dtypes(schema, dtype)
+
 
 class TestGetPythonTypeFromECLType(unittest.TestCase):
     def test_get_python_type_from_ecl_type_parses_column_types(self):

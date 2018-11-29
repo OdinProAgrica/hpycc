@@ -34,9 +34,9 @@ class TestRunWithServer(unittest.TestCase):
             res = conn.run_ecl_script(p, syntax_check=True,
                                       delete_workunit=False, stored={})
             self.assertTrue(res)
-            res = conn.get_logical_file_chunk("thor::testrunscriptsaveslogicalfile", 0, 1, 3, 1, 0)
+            res = conn.get_logical_file_chunk("thor::testrunscriptsaveslogicalfile", 0, 1, 3, 1)
 
-        expected ={"a": ["1"], "b": ["a"], "__fileposition__": ["0"]}
+        expected = {"a": ["1"], "b": ["a"], "__fileposition__": ["0"]}
         self.assertEqual(expected, res)
 
     def test_run_script_deletes_workunit(self):

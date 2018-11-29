@@ -256,7 +256,7 @@ class TestRunURLRequestWithServer(unittest.TestCase):
     def test_run_url_request_returns_response(self):
         conn = hpycc.Connection("user", test_conn=False)
         result = conn.run_url_request("http://localhost:8010", max_attempts=1,
-                                      max_sleep=0, min_sleep=0)
+                                      max_sleep=0)
         self.assertIsInstance(result, requests.Response)
 
 
@@ -272,7 +272,7 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
             hpycc.spray_file(conn, p, lf_name, chunk_size=3, delete_workunit=False)
 
         result = conn.get_logical_file_chunk(
-            "thor::{}".format(lf_name), 0, 2, 3, 2, 0)
+            "thor::{}".format(lf_name), 0, 2, 3, 2)
         _ = result.pop("__fileposition__")
 
         self.assertEqual(expected_result, result)
@@ -287,9 +287,10 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
             df.to_csv(p, index=False)
             hpycc.spray_file(conn, p, "data", chunk_size=3, delete_workunit=False)
 
-        result = conn.get_logical_file_chunk("thor::data", 0, 1, 3, 0, 0)
+        result = conn.get_logical_file_chunk("thor::data", 0, 1, 3, 0)
 
         self.assertEqual(result, expected_result)
+
 
 class TestConnectionRunECLStringWithServer(unittest.TestCase):
     def test_run_ecl_string_returns_result_of_run_ecl_script(self):
