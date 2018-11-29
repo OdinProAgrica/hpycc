@@ -174,17 +174,17 @@ def parse_schema_from_xml(xml):
 
 def apply_custom_dtypes(schema, dtypes):
 
-    # elif dtypes and not isinstance(dtypes, dict):  # assuming it's a single type for everything
-    #     for key in schema.keys():
-    #         schema[key]['type'] = dtypes
-    if dtypes and isinstance(dtypes, dict):
-        if any([dtype_col not in schema.keys() for dtype_col in dtypes.keys()]):  # Check that all columns passed exist
+    if isinstance(dtypes, dict):
+        if set(dtypes.keys()).difference(schema.keys()):  # Check that all columns passed exist
             raise KeyError('Not all dtype columns exist in the logical file!\nFound: %s\nGiven: %s' %
                            (schema.keys(), dtypes))
+
         for name in dtypes.keys():
             schema[name]['type'] = dtypes[name]
-    elif dtypes:
-        raise ValueError("dtype should be a dict of the form {'col1': dtype1, ....}, not %s" % type(dtypes))
+
+    elif dtypes:  # assuming it's a single type for everything
+        for key in schema.keys():
+            schema[key]['type'] = dtypes
 
     return schema
 
