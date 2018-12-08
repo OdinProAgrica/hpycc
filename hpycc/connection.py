@@ -21,17 +21,13 @@ import subprocess
 from tempfile import TemporaryDirectory
 from time import sleep
 from warnings import warn
-import threading
 from urllib import parse
 from json import JSONDecodeError
 from simplejson.errors import JSONDecodeError as simpleJSONDecodeError
 from math import ceil
 
-from hpycc.utils.parsers import parse_wuid_from_failed_response, \
-    parse_wuid_from_xml
+from hpycc.utils.parsers import parse_wuid_from_xml
 from hpycc import delete
-
-lock = threading.Lock()
 
 
 def check_ecl_cmd(cmd='ecl'):
