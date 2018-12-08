@@ -32,7 +32,8 @@ setup(
         'docker',
         'numpy',
         "passlib",
-        "pypiwin32=220"
+        "pypiwin32=220",
+        "simplejson==3.16.0"
     ],
     project_urls={
         'Bug Reports': 'https://github.com/OdinProAgrica/hpycc/issues',
