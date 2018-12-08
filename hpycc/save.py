@@ -15,9 +15,6 @@ Functions
 
 """
 
-import os
-
-import hpycc.utils.parsers
 from hpycc import get_output, get_thor_file
 
 
@@ -62,64 +59,64 @@ def save_output(connection, script, path_or_buf=None, syntax_check=True,
     return result.to_csv(path_or_buf=path_or_buf, **kwargs)
 
 
-def save_outputs(connection, script, directory=".", overwrite=True,
-                 prefix='', syntax_check=True, delete_workunit=True,
-                 stored=None, **kwargs):
-    """
-    Save all outputs of an ECL script as csvs. See get_outputs()
-    for returning DataFrames and save_output() for writing a single
-    output to file. Names of CSVs are inhereted from the result
-    names of your OUTPUT statements. Use NAME() in ECL to specify.
-    A list of assigned names will be returned for reference.
-
-    Parameters
-    ----------
-    connection : hpycc.Connection
-        HPCC Connection instance, see also `Connection`.
-    script : str
-         Path of script to execute.
-    directory : str, optional
-        Directory to save output files in. "." by default.
-    overwrite : bool
-        Should files be overwritten if they already exist? True by
-        default. Because you should know better.
-    prefix : str, optional
-        Prefix to prepend to all file names. None by default.
-    syntax_check : bool, optional
-        Should the script be syntax checked before execution. True by
-        default.
-    delete_workunit : bool, optional
-        Delete workunit once completed. True by default.
-    stored : dict or None, optional
-        Key value pairs to replace stored variables within the
-        script. Values should be str, int or bool. None by default.
-    kwargs
-        Additional parameters to be provided to
-        pandas.DataFrame.to_csv().
-
-
-    Returns
-    -------
-    str
-        list of written CSVs
-
-    Raises
-    ------
-    IndexError
-        If `filenames` is of different length to the number of
-        outputs.
-    """
-    results = hpycc.get_outputs(
-        connection, script, syntax_check, delete_workunit, stored)
-
-    paths = [os.path.join(directory, prefix + res + ".csv") for res in results]
-    if not overwrite and any([os.path.isfile(f) for f in paths]):
-        raise FileExistsError("Target file already exists and overwrite is False. Aborting.")
-
-    for path, result in zip(paths, results.items()):
-        result[1].to_csv(path, **kwargs)
-
-    return paths
+# def save_outputs(connection, script, directory=".", overwrite=True,
+#                  prefix='', syntax_check=True, delete_workunit=True,
+#                  stored=None, **kwargs):
+#     """
+#     Save all outputs of an ECL script as csvs. See get_outputs()
+#     for returning DataFrames and save_output() for writing a single
+#     output to file. Names of CSVs are inhereted from the result
+#     names of your OUTPUT statements. Use NAME() in ECL to specify.
+#     A list of assigned names will be returned for reference.
+#
+#     Parameters
+#     ----------
+#     connection : hpycc.Connection
+#         HPCC Connection instance, see also `Connection`.
+#     script : str
+#          Path of script to execute.
+#     directory : str, optional
+#         Directory to save output files in. "." by default.
+#     overwrite : bool
+#         Should files be overwritten if they already exist? True by
+#         default. Because you should know better.
+#     prefix : str, optional
+#         Prefix to prepend to all file names. None by default.
+#     syntax_check : bool, optional
+#         Should the script be syntax checked before execution. True by
+#         default.
+#     delete_workunit : bool, optional
+#         Delete workunit once completed. True by default.
+#     stored : dict or None, optional
+#         Key value pairs to replace stored variables within the
+#         script. Values should be str, int or bool. None by default.
+#     kwargs
+#         Additional parameters to be provided to
+#         pandas.DataFrame.to_csv().
+#
+#
+#     Returns
+#     -------
+#     str
+#         list of written CSVs
+#
+#     Raises
+#     ------
+#     IndexError
+#         If `filenames` is of different length to the number of
+#         outputs.
+#     """
+#     results = hpycc.get_outputs(
+#         connection, script, syntax_check, delete_workunit, stored)
+#
+#     paths = [os.path.join(directory, prefix + res + ".csv") for res in results]
+#     if not overwrite and any([os.path.isfile(f) for f in paths]):
+#         raise FileExistsError("Target file already exists and overwrite is False. Aborting.")
+#
+#     for path, result in zip(paths, results.items()):
+#         result[1].to_csv(path, **kwargs)
+#
+#     return paths
 
 
 def save_thor_file(connection, thor_file, path_or_buf=None,
