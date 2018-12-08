@@ -40,7 +40,7 @@ There is a dependency for client tools to run ECL scripts (you need ecl.exe and 
 Make sure you install the right client tools for your HPCC version and add the dir to your system path,
 e.g. C:\\Program Files (x86)\\HPCCSystems\\X.X.X\\clienttools\\bin.
 
-Tests and docker contianer functions require docker to spin up HPCC environments.
+Tests and docker container functions require docker to spin up HPCC environments.
 
 Main Functions
 --------------
