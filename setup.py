@@ -5,7 +5,7 @@ with open("README.rst", "r") as fh:
 
 setup(
     name='hpycc',
-    version='0.1.4.1',
+    version='0.2.0',
     description='Download THOR files, run ECL scripts and download their results.',
     long_description=long_description,
     url='https://github.com/OdinProAgrica/hpycc',
