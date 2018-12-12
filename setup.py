@@ -5,7 +5,7 @@ with open("README.rst", "r") as fh:
 
 setup(
     name='hpycc',
-    version='0.1.4',
+    version='0.1.4.1',
     description='Download THOR files, run ECL scripts and download their results.',
     long_description=long_description,
     url='https://github.com/OdinProAgrica/hpycc',
@@ -31,7 +31,9 @@ setup(
         'requests>=2.18.4',
         'docker',
         'numpy',
-        "passlib"
+        "passlib",
+        "pypiwin32=220",
+        "simplejson==3.16.0"
     ],
     project_urls={
         'Bug Reports': 'https://github.com/OdinProAgrica/hpycc/issues',

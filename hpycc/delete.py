@@ -1,3 +1,14 @@
+"""
+Functions to delete things in HPCC.  The first input to all
+functions is an instance of `Connection`.
+
+functions
+---------
+- `delete_logical_file` -- delete given logical file
+- `delete_workunit` -- delete given workunit (based on WUID)
+"""
+
+
 # noinspection PyShadowingNames
 def delete_logical_file(connection, logical_file, delete_workunit=True):
     """
@@ -23,7 +34,7 @@ def delete_logical_file(connection, logical_file, delete_workunit=True):
                               stored={})
 
 
-def delete_workunit(connection, wuid, max_attempts=3, max_sleep=5):
+def delete_workunit(connection, wuid, max_attempts=3, max_sleep=15):
     """
     Delete a workunit
 
@@ -38,8 +49,9 @@ def delete_workunit(connection, wuid, max_attempts=3, max_sleep=5):
         case of an exception being raised. 3 by default.
     max_sleep: int, optional
         Maximum time, in seconds, to sleep between attempts.
-        The true sleep time is a random int between 0 and
-        `max_sleep`. 5 by default.
+        The true sleep time is a random int between  `max_sleep` and
+        `max_sleep` * 0.75. 5 by default.
+
 
     Returns
     -------

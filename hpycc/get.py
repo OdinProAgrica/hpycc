@@ -9,20 +9,18 @@ Functions
 ---------
 - `get_output` -- Return the first output of an ECL script.
 - `get_outputs` -- Return all outputs of an ECL script.
-- `get_logical_file` -- Return the contents of a logical file.
 - `get_thor_file` -- Return the contents of a thor file.
 
 """
-__all__ = ["get_output", "get_outputs", "get_thor_file", "get_logical_file"]
+__all__ = ["get_output", "get_outputs", "get_thor_file"]
 
-from concurrent.futures import ThreadPoolExecutor, wait
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import re
 import warnings
-
 import pandas as pd
-
 from hpycc.utils import filechunker
-from hpycc.utils.parsers import parse_xml, parse_schema_from_xml, Schema
+from hpycc.utils.parsers import parse_xml, parse_schema_from_xml, apply_custom_dtypes
+from math import ceil
 
 
 def get_output(connection, script, syntax_check=True, delete_workunit=True,
@@ -112,20 +110,21 @@ def get_output(connection, script, syntax_check=True, delete_workunit=True,
 
     result = connection.run_ecl_script(script, syntax_check, delete_workunit,
                                        stored)
-
     result = result.stdout.replace("\r\n", "")
 
     regex = "<Dataset name='(?P<name>.+?)'>(?P<content>.+?)</Dataset>"
     match = re.search(regex, result)
+    warn_msg = "The output does not appear to contain a dataset. Returning an empty DataFrame."
     try:
         match_content = match.group()
-    except AttributeError:
-        warnings.warn("The output does not appear to contain a dataset. "
-                      "Returning an empty DataFrame.")
-        return pd.DataFrame()
-    else:
         parsed = parse_xml(match_content)
-        return parsed
+    except AttributeError:
+        parsed = pd.DataFrame()
+
+    if len(parsed) == 0:
+        warnings.warn(warn_msg)
+
+    return parsed
 
 
 def get_outputs(connection, script, syntax_check=True, delete_workunit=True,
@@ -244,20 +243,8 @@ def get_outputs(connection, script, syntax_check=True, delete_workunit=True,
     return as_dict
 
 
-def get_logical_file(*args, **kwargs):
-    """
-    .. deprecated:: 0.1.3
-        `get_logical_file` has been deprecated. Use `get_thor_file`.
-
-    """
-    _ = kwargs
-    _ = args
-    raise ImportError("This function has been deprecated, use get_thor_file "
-                      "instead.")
-
-
-def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10000,
-                  max_attempts=3, max_sleep=10, dtype=None):
+def get_thor_file(connection, thor_file, max_workers=10, chunk_size='auto', max_attempts=3,
+                  max_sleep=60, dtype=None):
     """
     Return a thor file as a pandas.DataFrame.
 
@@ -272,19 +259,19 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10000,
         Name of thor file to be downloaded.
     max_workers: int, optional
         Number of concurrent threads to use when downloading file.
-        Warning: too many may cause either your machine or
-        your cluster to crash! 15 by default.
+        Warning: too many may cause instability! 10 by default.
     chunk_size: int, optional
-        Size of chunks to use when downloading file. 10000 by
-        default.
+        Size of chunks to use when downloading file. If auto
+        this is rows / workers (bounded between 100,000 and
+        400,000). If give then no limits are enforced.
     max_attempts: int, optional
         Maximum number of times a chunk should attempt to be
         downloaded in the case of an exception being raised.
         3 by default.
     max_sleep: int, optional
-            Maximum time, in seconds, to sleep between attempts.
-            The true sleep time is a random int between 0 and
-            `max_sleep`.
+        Minimum time, in seconds, to sleep between attempts.
+        The true sleep time is a random int between `max_sleep` and
+        `max_sleep` * 0.75.
     dtype: type name or dict of col -> type, optional
         Data type for data or columns. E.g. {‘a’: np.float64, ‘b’:
         np.int32}. If converters are specified, they will be applied
@@ -309,7 +296,7 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10000,
     >>> df = pandas.DataFrame({"col1": [1, 2, 3]})
     >>> df.to_csv("example.csv", index=False)
     >>> hpycc.spray_file(conn,"example.csv","example")
-    >>> hpycc.get_logical_file(conn, "example")
+    >>> hpycc.get_thor_file(conn, "example")
         col1
     0     1
     1     2
@@ -321,66 +308,57 @@ def get_thor_file(connection, thor_file, max_workers=15, chunk_size=10000,
     >>> df = pandas.DataFrame({"col1": [1, 2, 3]})
     >>> df.to_csv("example.csv", index=False)
     >>> hpycc.spray_file(conn,"example.csv","example")
-    >>> hpycc.get_logical_file(conn, "example", dtype=str)
+    >>> hpycc.get_thor_file(conn, "example", dtype=str)
         col1
     0     '1'
     1     '2'
     2     '3'
 
     """
-    url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
-           "&Cluster=thor&Start={}&Count={}").format(
-        connection.server, connection.port, thor_file, 0, 1)
-    r = connection.run_url_request(url, max_attempts, max_sleep)
-    rj = r.json()
+
+    resp = connection.get_chunk_from_hpcc(thor_file, 0, 1, max_attempts, max_sleep)
     try:
-        wuresultresponse = rj["WUResultResponse"]
-    except KeyError:
-        raise KeyError("json: {}".format(rj))
-    schema_str = wuresultresponse["Result"]["XmlSchema"]["xml"]
+        wuresultresponse = resp["WUResultResponse"]
+        schema_str = wuresultresponse["Result"]["XmlSchema"]["xml"]
+        schema = parse_schema_from_xml(schema_str)
+        schema = apply_custom_dtypes(schema, dtype)
+        num_rows = wuresultresponse["Total"]
+    except (KeyError, TypeError) as exc:
+        msg = "Can't find schema in returned json: {}".format(resp)
+        raise type(exc)(msg) from exc
 
-    # get the schema as named tuples of (name, is_set, type)
-    schema = parse_schema_from_xml(schema_str)
+    if chunk_size == 'auto':  # Automagically optimise. TODO: we could use width too.
+        suggested_size = ceil(num_rows/max_workers)
+        chunk_size = num_rows if suggested_size < 10000 else suggested_size  # Don't chunk small stuff.
+        chunk_size = 325000 if suggested_size > 325000 else chunk_size  # More chunks than workers for big stuff.
 
-    num_rows = wuresultresponse["Total"]
-
-    # if there are no rows to go and get, we should return an empty dataframe
-    if not num_rows:
-        cols = [c.name for c in schema]
-        return pd.DataFrame(columns=cols)
+    if not num_rows or num_rows == 0:  # if there are no rows to go and get, we should return an empty dataframe
+        return pd.DataFrame(columns=schema.keys())
 
     chunks = filechunker.make_chunks(num_rows, chunk_size)
-
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [
-            executor.submit(connection.get_logical_file_chunk, thor_file,
-                            start_row, n_rows, max_attempts, max_sleep)
+            executor.submit(connection.get_logical_file_chunk, thor_file, start_row,
+                            n_rows, max_attempts, max_sleep)
             for start_row, n_rows in chunks
         ]
 
-        finished, _ = wait(futures)
+    results = {key: [] for key in schema.keys()}
+    for result in as_completed(futures):
+        result = result.result()
+        [results[k].extend(result[k]) for k in results.keys()]
+        del result
+    results = pd.DataFrame(results)
 
-    results = [i.result() for i in finished]
-    flat_list = (item for sublist in results for item in sublist)
-
-    df = pd.DataFrame(flat_list)
-
-    # dtype is a dict
-    # we replace all those in the dict, then those not specified with schema
-    if not isinstance(dtype, dict) and dtype:
-            return df.astype(dtype)
-
-    schema_dict = {i.name: i for i in schema}
-
-    if dtype:
-        i = {col: Schema(col, False, dtype[col]) for col in dtype}
-        schema_dict.update(i)
-
-    for col in schema_dict:
-        c = schema_dict[col]
-        if c.is_set:
-            df[c.name] = df[c.name].map(
-                lambda x: [c.type(i) for i in x["Item"]])
+    for col in schema.keys():
+        c = schema[col]
+        nam = col
+        typ = c['type']
+        if c['is_a_set']:  # TODO: Nested DF are also caught here. Open issue to fix
+            results[nam] = results[nam].map(lambda x: [typ(i) for i in x["Item"]])
         else:
-            df[c.name] = df[c.name].astype(c.type)
-    return df
+            try:
+                results[nam] = results[nam].astype(typ)
+            except OverflowError:  # An int that is horrifically long cannot be converted properly. Use float instead
+                results[nam] = results[nam].astype('float')
+    return results

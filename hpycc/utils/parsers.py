@@ -1,7 +1,6 @@
-from collections import namedtuple
 import re
 from xml.etree import ElementTree
-
+from collections import OrderedDict
 import pandas as pd
 import numpy as np
 
@@ -141,9 +140,6 @@ def parse_wuid_from_xml(result):
     return wuid.group(0)
 
 
-Schema = namedtuple("Schema", ["name", "is_set", "type"])
-
-
 def parse_schema_from_xml(xml):
     """
     Parse an ECL schema into python types.
@@ -156,19 +152,41 @@ def parse_schema_from_xml(xml):
 
     Returns
     -------
+    OrderedDict
+        dict of column stats, in the form {name: Str, type: Str, is_a_set: Bool}.
     list
-        List of namedtuples in form [(name, is_set, type)].
+        Column names in order of occurrence.
 
     """
     x = xml.replace("\n", "")
     xml = ElementTree.fromstring(x)
     schema = xml[0][0][0][0][0][0]
 
-    return (Schema(
-        child.attrib["name"],
-        "type" not in child.keys(),
-        get_python_type_from_ecl_type(child)
-    ) for child in schema)
+    schema_out = OrderedDict()
+    for child in schema:
+        name = child.attrib["name"]
+        is_set = "type" not in child.keys()
+        typ = get_python_type_from_ecl_type(child)
+        schema_out[name] = {'type': typ, 'is_a_set': is_set}
+
+    return schema_out
+
+
+def apply_custom_dtypes(schema, dtypes):
+
+    if isinstance(dtypes, dict):
+        if set(dtypes.keys()).difference(schema.keys()):  # Check that all columns passed exist
+            raise KeyError('Not all dtype columns exist in the logical file!\nFound: %s\nGiven: %s' %
+                           (schema.keys(), dtypes))
+
+        for name in dtypes.keys():
+            schema[name]['type'] = dtypes[name]
+
+    elif dtypes:  # assuming it's a single type for everything
+        for key in schema.keys():
+            schema[key]['type'] = dtypes
+
+    return schema
 
 
 def get_python_type_from_ecl_type(child):
@@ -197,4 +215,4 @@ def get_python_type_from_ecl_type(child):
 
     c = max([z.attrib.get("type", "") for z in child.iter()]).lower()
     typed = re.sub("[0-9_]|(xs:)", "", c)
-    return translated_type.get(typed, str)
+    return translated_type.get(typed, str)  # Return type, default to string.

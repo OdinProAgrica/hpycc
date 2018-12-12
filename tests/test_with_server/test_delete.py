@@ -30,15 +30,23 @@ class TestDeleteWorkunitWithServer(unittest.TestCase):
 
     def test_delete_workunit_actually_deletes_workunit(self):
         string = "OUTPUT(2);"
-        result = self.conn.run_ecl_string(string, syntax_check=True,
-                                          delete_workunit=False, stored={})
+        result = self.conn.run_ecl_string(string, syntax_check=True, delete_workunit=False, stored={})
         result = result.stdout.replace("\r\n", "")
+
         wuid = hpycc.utils.parsers.parse_wuid_from_xml(result)
+        before = self.conn.run_ecl_string("IMPORT STD; STD.System.Workunit.WorkunitExists('{}')".format(wuid),
+                                          syntax_check=True, delete_workunit=False, stored={})
+        before = re.findall('<Result_1>([a-z]+)<\/Result_1>', str(before))[0]
+
         res = hpycc.delete_workunit(self.conn, wuid)
+
+        after = self.conn.run_ecl_string("IMPORT STD; STD.System.Workunit.WorkunitExists('{}')".format(wuid),
+                                         syntax_check=True, delete_workunit=False, stored={})
+        after = re.findall('<Result_1>([a-z]+)<\/Result_1>', str(after))[0]
+
         self.assertTrue(res)
-        a = self.conn._run_command("ecl getname --wuid {}".format(wuid))
-        self.assertEqual("", a.stdout)
-        self.assertEqual("", a.stderr)
+        self.assertEqual(before, 'true')
+        self.assertEqual(after, 'false')
 
     def test_delete_workunit_fails_on_nonexistent_workunit(self):
         wuid = 'IReallyHopeThisIsNotARealWorkunitID'
@@ -58,8 +66,7 @@ class TestDeleteLogicalFile(unittest.TestCase):
 
     def test_delete_logical_file_deletes(self):
         string = "a := DATASET([{1}], {INTEGER int;}); OUTPUT(a,,'~test_delete_logical_file_deletes1');"
-        self.conn.run_ecl_string(string, syntax_check=True,
-                                     delete_workunit=True, stored={})
+        self.conn.run_ecl_string(string, syntax_check=True, delete_workunit=True, stored={})
 
         res1 = check_file_exists(self.conn, '~test_delete_logical_file_deletes1')
         delete_logical_file(self.conn, '~test_delete_logical_file_deletes1')
@@ -68,14 +75,13 @@ class TestDeleteLogicalFile(unittest.TestCase):
         self.assertTrue(res1)
         self.assertFalse(res2)
 
-
     def test_delete_logical_file_doesnt_delete_other_files(self):
         string = "a := DATASET([{1}], {INTEGER int;}); OUTPUT(a,,'~test_delete_logical_file_doesnt_delete1');"
         self.conn.run_ecl_string(string, syntax_check=True,
-                                     delete_workunit=True, stored={})
+                                 delete_workunit=True, stored={})
         string = "a := DATASET([{1}], {INTEGER int;}); OUTPUT(a,,'~test_delete_logical_file_doesnt_delete2');"
         self.conn.run_ecl_string(string, syntax_check=True,
-                                     delete_workunit=True, stored={})
+                                 delete_workunit=True, stored={})
 
         res1 = check_file_exists(self.conn, '~test_delete_logical_file_doesnt_delete1')
         res2 = check_file_exists(self.conn, '~test_delete_logical_file_doesnt_delete2')

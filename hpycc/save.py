@@ -1,8 +1,21 @@
-import os
+"""
+Functions to get data out of an HPCC instance and save
+them to disk.
 
-import hpycc.get
-import hpycc.utils.parsers
-from hpycc import get_output, get
+This modules functions closely mirror those in `get`.
+In fact all they really do is wrap `get`'s functions
+around csv writing tasks. The first input to all
+functions is an instance of `Connection`.
+
+Functions
+---------
+- `save_output` -- Save the first output of an ECL script.
+- `save_outputs` -- Save all outputs of an ECL script.
+- `save_thor_file` -- Save the contents of a thor file.
+
+"""
+
+from hpycc import get_output, get_thor_file
 
 
 def save_output(connection, script, path_or_buf=None, syntax_check=True,
@@ -46,86 +59,72 @@ def save_output(connection, script, path_or_buf=None, syntax_check=True,
     return result.to_csv(path_or_buf=path_or_buf, **kwargs)
 
 
-def save_outputs(connection, script, directory=".", filenames=None,
-                 prefix=None, syntax_check=True, delete_workunit=True,
-                 stored=None, **kwargs):
+# def save_outputs(connection, script, directory=".", overwrite=True,
+#                  prefix='', syntax_check=True, delete_workunit=True,
+#                  stored=None, **kwargs):
+#     """
+#     Save all outputs of an ECL script as csvs. See get_outputs()
+#     for returning DataFrames and save_output() for writing a single
+#     output to file. Names of CSVs are inhereted from the result
+#     names of your OUTPUT statements. Use NAME() in ECL to specify.
+#     A list of assigned names will be returned for reference.
+#
+#     Parameters
+#     ----------
+#     connection : hpycc.Connection
+#         HPCC Connection instance, see also `Connection`.
+#     script : str
+#          Path of script to execute.
+#     directory : str, optional
+#         Directory to save output files in. "." by default.
+#     overwrite : bool
+#         Should files be overwritten if they already exist? True by
+#         default. Because you should know better.
+#     prefix : str, optional
+#         Prefix to prepend to all file names. None by default.
+#     syntax_check : bool, optional
+#         Should the script be syntax checked before execution. True by
+#         default.
+#     delete_workunit : bool, optional
+#         Delete workunit once completed. True by default.
+#     stored : dict or None, optional
+#         Key value pairs to replace stored variables within the
+#         script. Values should be str, int or bool. None by default.
+#     kwargs
+#         Additional parameters to be provided to
+#         pandas.DataFrame.to_csv().
+#
+#
+#     Returns
+#     -------
+#     str
+#         list of written CSVs
+#
+#     Raises
+#     ------
+#     IndexError
+#         If `filenames` is of different length to the number of
+#         outputs.
+#     """
+#     results = hpycc.get_outputs(
+#         connection, script, syntax_check, delete_workunit, stored)
+#
+#     paths = [os.path.join(directory, prefix + res + ".csv") for res in results]
+#     if not overwrite and any([os.path.isfile(f) for f in paths]):
+#         raise FileExistsError("Target file already exists and overwrite is False. Aborting.")
+#
+#     for path, result in zip(paths, results.items()):
+#         result[1].to_csv(path, **kwargs)
+#
+#     return paths
+
+
+def save_thor_file(connection, thor_file, path_or_buf=None,
+                   max_workers=15, chunk_size='auto', max_attempts=3,
+                   max_sleep=60, dtype=None,
+                   **kwargs):
     """
-    Save all outputs of an ECL script as csvs. See get_outputs()
-    for returning DataFrames and save_output() for writing a single
-    output to file.
-
-    Parameters
-    ----------
-    connection : hpycc.Connection
-        HPCC Connection instance, see also `Connection`.
-    script : str
-         Path of script to execute.
-    directory : str, optional
-        Directory to save output files in. "." by default.
-    filenames : list or None, optional
-        File names to save results as. If None, files will
-        be named as their output name assigned by the ECL script.
-        An IndexError will be raised if this is a different length
-        to the number of outputs. None by default.
-    prefix : str or None, optional
-        Prefix to prepend to all file names. None by default.
-    syntax_check : bool, optional
-        Should the script be syntax checked before execution. True by
-        default.
-    delete_workunit : bool, optional
-        Delete workunit once completed. True by default.
-    stored : dict or None, optional
-        Key value pairs to replace stored variables within the
-        script. Values should be str, int or bool. None by default.
-    kwargs
-        Additional parameters to be provided to
-        pandas.DataFrame.to_csv().
-
-
-    Returns
-    -------
-    None
-
-    Raises
-    ------
-    IndexError
-        If `filenames` is of different length to the number of
-        outputs.
-    """
-    results = hpycc.get_outputs(
-        connection, script, syntax_check, delete_workunit, stored)
-
-    parsed_filenames = ["{}.csv".format(res) for res in results]
-
-    # if filenames was none, use parsed filenames
-    # if filenames is given and it is the wrong length - raise
-    # if filenames is given adn right length - use it
-
-    if not filenames:
-        chosen_filenames = parsed_filenames
-    elif len(filenames) == len(parsed_filenames):
-        chosen_filenames = filenames
-    else:
-        msg = (
-            "{0} filenames were specified. Only {1} outputs were returned. "
-            "Filenames should either be of length {1} or None").format(
-            len(filenames), len(parsed_filenames)
-        )
-        raise IndexError(msg)
-
-    if prefix:
-        chosen_filenames = [prefix + name for name in chosen_filenames]
-
-    for name, result in zip(chosen_filenames, results.items()):
-        path = os.path.join(directory, name)
-        result[1].to_csv(path, **kwargs)
-
-
-def save_thor_file(connection, thor_file, path_or_buf,
-                   max_workers=15, chunk_size=10000, max_attempts=3,
-                   max_sleep=10, dtype=None, **kwargs):
-    """
-    Save a logical file to disk, see get_file() for returning a
+    Save a logical file to disk, see `get_thor_file()` for returning a
     DataFrame.
 
     Parameters
@@ -149,9 +148,9 @@ def save_thor_file(connection, thor_file, path_or_buf,
         downloaded in the case of an exception being raised.
         3 by default.
     max_sleep: int, optional
-            Maximum time, in seconds, to sleep between attempts.
-            The true sleep time is a random int between 0 and
-            `max_sleep`.
+        Maximum time, in seconds, to sleep between attempts.
+        The true sleep time is a random int between `max_sleep` and
+        `max_sleep` * 0.75.
     dtype: type name or dict of col -> type, optional
         Data type for data or columns. E.g. {‘a’: np.float64, ‘b’:
         np.int32}. If converters are specified, they will be applied
@@ -170,8 +169,8 @@ def save_thor_file(connection, thor_file, path_or_buf,
 
     """
 
-    file = get.get_thor_file(connection, thor_file, max_workers,
-                             chunk_size, max_attempts, max_sleep,
-                             dtype)
+    file = get_thor_file(
+        connection, thor_file, max_workers=max_workers, chunk_size=chunk_size,
+        max_attempts=max_attempts, max_sleep=max_sleep, dtype=dtype)
 
     return file.to_csv(path_or_buf, **kwargs)

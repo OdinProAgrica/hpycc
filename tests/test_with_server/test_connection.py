@@ -261,29 +261,25 @@ class TestRunURLRequestWithServer(unittest.TestCase):
 
 
 class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
-    def test_get_logical_file_chunk_returns_correct_json(self):
-        expected_result = [
-            {'a': '1', 'b': 'a'},
-            {'a': '2', 'b': 'b'},
-        ]
+    def test_get_logical_file_chunk_returns_correct_dict(self):
+        expected_result = {'a': ['1', '2'], 'b': ['a', 'b']}
         conn = hpycc.Connection("user")
-        df = pd.DataFrame({"a": [1, 2, 3], "b": ["a", "b", "c"]})
+        dic = {"a": [1, 2, 3], "b": ["a", "b", "c"]}
         with TemporaryDirectory() as d:
             p = os.path.join(d, "data.csv")
-            df.to_csv(p, index=False)
-            lf_name = "test_get_logical_file_chunk_returns_correct_json"
+            pd.DataFrame(dic).to_csv(p, index=False)
+            lf_name = "test_get_logical_file_chunk_returns_correct_json_1"
             hpycc.spray_file(conn, p, lf_name, chunk_size=3, delete_workunit=False)
 
         result = conn.get_logical_file_chunk(
             "thor::{}".format(lf_name), 0, 2, 3, 2)
-        for i in result:
-            i.pop("__fileposition__")
+        _ = result.pop("__fileposition__")
+
         self.assertEqual(expected_result, result)
 
     def test_get_logical_file_chunk_is_zero_indexed(self):
-        expected_result = [
-            {'__fileposition__': '0', 'a': '1', 'b': 'a'}
-        ]
+        expected_result = {'a': ['1'], 'b': ['a'], '__fileposition__': ['0']}
+
         conn = hpycc.Connection("user")
         df = pd.DataFrame({"a": [1, 2, 3], "b": ["a", "b", "c"]})
         with TemporaryDirectory() as d:
@@ -292,8 +288,7 @@ class TestConnectionGetLogicalFileChunkWithServer(unittest.TestCase):
             hpycc.spray_file(conn, p, "data", chunk_size=3, delete_workunit=False)
 
         result = conn.get_logical_file_chunk("thor::data", 0, 1, 3, 0)
-        self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], dict)
+
         self.assertEqual(result, expected_result)
 
 

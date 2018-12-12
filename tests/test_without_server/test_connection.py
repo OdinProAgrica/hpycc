@@ -1,11 +1,12 @@
 from collections import namedtuple
-from json.decoder import JSONDecodeError
 import os
 import random
 import subprocess
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
+from json import JSONDecodeError
+from simplejson.errors import JSONDecodeError as simpleJSONDecodeError
 
 import requests
 from requests import HTTPError
@@ -110,32 +111,27 @@ class TestConnectionRunCommand(unittest.TestCase):
 
 class TestConnectionCheckSyntax(unittest.TestCase):
     @patch.object(hpycc.Connection, "_run_command")
-    def test_check_syntax_builds_correct_path_with_no_legacy_or_repo(
-            self, mock):
-        conn = hpycc.Connection("user", legacy=False, repo=None,
-                                test_conn=False)
+    def test_check_syntax_builds_correct_path_with_no_legacy_or_repo(self, mock):
+        conn = hpycc.Connection("user", legacy=False, repo=None, test_conn=False)
         conn.check_syntax("non.ecl")
         mock.assert_called_with(["eclcc", "-syntax", "non.ecl"])
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_check_syntax_builds_correct_path_with_legacy(self, mock):
-        conn = hpycc.Connection("user", legacy=True, repo=None,
-                                test_conn=False)
+        conn = hpycc.Connection("user", legacy=True, repo=None, test_conn=False)
         conn.check_syntax("non.ecl")
         mock.assert_called_with(["eclcc", "-syntax", "-legacy", "non.ecl"])
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_check_syntax_builds_correct_path_with_legacy_and_repo(self, mock):
-        conn = hpycc.Connection("user", legacy=True, repo="./dir",
-                                test_conn=False)
+        conn = hpycc.Connection("user", legacy=True, repo="./dir", test_conn=False)
         conn.check_syntax("non.ecl")
         mock.assert_called_with(["eclcc", "-syntax", "-legacy", "-I=./dir",
                                  "non.ecl"])
 
     @patch.object(hpycc.Connection, "_run_command")
     def test_check_syntax_builds_correct_path_with_repo(self, mock):
-        conn = hpycc.Connection("user", legacy=False, repo="./dir",
-                                test_conn=False)
+        conn = hpycc.Connection("user", legacy=False, repo="./dir", test_conn=False)
         conn.check_syntax("non.ecl")
         mock.assert_called_with(["eclcc", "-syntax", "-I=./dir", "non.ecl"])
 
@@ -157,8 +153,7 @@ class TestConnectionCheckSyntax(unittest.TestCase):
     def test_check_syntax_uses_repo_if_list(self, mock):
         conn = hpycc.Connection("user", test_conn=False, repo=["C:", "D:"])
         conn.check_syntax("test.ecl")
-        mock.assert_called_with(['eclcc', '-syntax', "-I=C:", "-I=D:",
-                                 'test.ecl'])
+        mock.assert_called_with(['eclcc', '-syntax', "-I=C:", "-I=D:", 'test.ecl'])
 
     def test_check_syntax_passes_with_warnings(self):
         conn = hpycc.Connection("user", test_conn=False)
@@ -319,8 +314,7 @@ class TestConnectionRunECLScript(unittest.TestCase):
             p = os.path.join(d, "test.ecl")
             with open(p, "w+") as file:
                 file.write(good_script)
-            conn.run_ecl_script(p, syntax_check=True, delete_workunit=False,
-                                stored={})
+            conn.run_ecl_script(p, syntax_check=True, delete_workunit=False, stored={})
         mock.assert_called()
 
     @patch.object(hpycc.Connection, "_run_command")
@@ -352,15 +346,19 @@ class TestConnectionGetLogicalFileChunk(unittest.TestCase):
     def test_get_logical_file_chunk_uses_correct_url(self, mock):
         mock.json.return_value = {"WUResultResponse": 123}
         conn = hpycc.Connection("user", server="aa", port=123, test_conn=False)
-        conn.get_logical_file_chunk("file", 1, 2, 1, 0)
-        mock.assert_called()
+        with TemporaryDirectory() as td:
+            p = os.path.join(td, "data.csv")
+            conn.get_logical_file_chunk("file", 1, 2, 1, 0)
+            mock.assert_called()
 
     @patch.object(hpycc.Connection, "run_url_request")
     def test_get_logical_file_chunk_fails_with_no_json(self, mock):
         mock.return_value = requests.Response()
         conn = hpycc.Connection("user", server="aa", port=123, test_conn=False)
-        with self.assertRaises(JSONDecodeError):
-            conn.get_logical_file_chunk("file", 1, 2, 1, 0)
+        with TemporaryDirectory() as td:
+            p = os.path.join(td, "data.csv")
+            with self.assertRaises(simpleJSONDecodeError):
+                conn.get_logical_file_chunk("file", 1, 2, 1, 0)
 
 
 class TestConnectionRunURLRequest(unittest.TestCase):
@@ -368,11 +366,10 @@ class TestConnectionRunURLRequest(unittest.TestCase):
     def test_run_url_request_uses_all_attempts(self, mock):
         final_response = requests.Response()
         final_response.status_code = 200
-        side_effects = (ValueError, ValueError, ValueError, ValueError,
-                        final_response)
+        side_effects = (ValueError, ValueError, ValueError, ValueError, final_response)
         mock.side_effect = side_effects
         conn = hpycc.Connection("user", test_conn=False)
-        conn.run_url_request("dfsd.dfd", max_attempts=5, max_sleep=0)
+        conn.run_url_request("dfsd.dfd", max_attempts=5, max_sleep=3)
         self.assertEqual(mock.call_count, 5)
 
     @patch.object(requests, "get")
@@ -411,7 +408,7 @@ class TestConnectionRunURLRequest(unittest.TestCase):
         conn = hpycc.Connection("user", test_conn=False)
         mock.side_effect = ValueError
         with self.assertRaises(requests.exceptions.RetryError):
-            conn.run_url_request("dfsd.dfd", max_sleep=0, max_attempts=3)
+            conn.run_url_request("dfsd.dfd", max_attempts=3, max_sleep=0)
         self.assertEqual(mock.call_count, 3)
 
     @patch.object(requests, "get")
@@ -427,7 +424,7 @@ class TestConnectionRunURLRequest(unittest.TestCase):
         conn = hpycc.Connection("user", test_conn=False)
         mock.side_effect = ValueError
         with self.assertRaises(requests.exceptions.RetryError):
-            conn.run_url_request("dfsd.dfd", max_sleep=0, max_attempts=1)
+            conn.run_url_request("dfsd.dfd", max_attempts=1, max_sleep=0)
 
     @patch.object(requests, "get")
     def test_run_url_request_returns_response_after_single_error(self, mock):
@@ -435,7 +432,7 @@ class TestConnectionRunURLRequest(unittest.TestCase):
         r.status_code = 200
         mock.side_effect = (ValueError, r)
         conn = hpycc.Connection("user", test_conn=False)
-        result = conn.run_url_request("dfsd.dfd", max_sleep=0, max_attempts=3)
+        result = conn.run_url_request("dfsd.dfd", max_attempts=3, max_sleep=0)
         self.assertIsInstance(result, requests.Response)
 
 
@@ -443,7 +440,6 @@ class TestConnectionTestConnectionWithAuth(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         docker_tools.HPCCContainer(tag="6.4.26-1", users=("madeup", "complicated_password"))
-
         cls.error_string = ("401 Client Error: Unauthorized for url: "
                             "http://localhost:8010/")
 

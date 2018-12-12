@@ -1,5 +1,10 @@
 """
 The module contains functions to send files to HPCC.
+
+Functions
+---------
+- `spray_file` -- Spray a given csv or pandas DataFrame to HPCC.
+
 """
 from concurrent.futures import ThreadPoolExecutor, wait
 
@@ -63,6 +68,7 @@ def _get_type(typ):
         ECL data type.
     """
     typ = str(typ)
+    #  TODO: Can we make this work again? Non-nullable data types are a pain!
     if 'float' in typ:
         # return 'DECIMAL32_12'
         pass
@@ -117,10 +123,10 @@ def _stringify_rows(df, start_row, num_rows):
 
 
 def spray_file(connection, source_file, logical_file, overwrite=False,
-               expire=None, chunk_size=10000, max_workers=3,
+               expire=None, chunk_size=100000, max_workers=5,
                delete_workunit=True):
     """
-    Spray a file to a HPCC logical file.
+    Spray a file to a HPCC logical file, bypassing the landing zone.
 
     Parameters
     ----------
@@ -134,7 +140,7 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
         Should the file overwrite any pre-existing logical file.
         False by default.
     chunk_size: int, optional
-        Size of chunks to use when spraying file. 10000 by
+        Size of chunks to use when spraying file. 100000 by
         default.
     max_workers: int, optional
         Number of concurrent threads to use when spraying.
@@ -180,7 +186,7 @@ def spray_file(connection, source_file, logical_file, overwrite=False,
             for row, name in zip(stringified_rows, target_names)]
         _, __ = wait(futures)
 
-    concatenate_logical_files(connection, target_names, logical_file, record_set, overwrite, expire, delete_workunit)
+    _concatenate_logical_files(connection, target_names, logical_file, record_set, overwrite, expire, delete_workunit)
 
     for tmp in target_names:
         delete_logical_file(connection, tmp, delete_workunit)
@@ -206,8 +212,8 @@ def _make_record_set(df):
     return record_set
 
 
-def concatenate_logical_files(connection, to_concat, logical_file, record_set,
-                              overwrite, expire, delete_workunit):
+def _concatenate_logical_files(connection, to_concat, logical_file, record_set,
+                               overwrite, expire, delete_workunit):
     """
     Concatenate a list of logical files (with the same recordset)
     into a single logical file.
@@ -246,5 +252,4 @@ def concatenate_logical_files(connection, to_concat, logical_file, record_set,
     script += ");"
     script = script.format(read_files, logical_file)
 
-    connection.run_ecl_string(script, True, delete_workunit=delete_workunit,
-                              stored=None)
+    connection.run_ecl_string(script, True, delete_workunit=delete_workunit, stored=None)

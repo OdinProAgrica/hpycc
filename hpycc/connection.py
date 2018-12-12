@@ -21,20 +21,35 @@ import subprocess
 from tempfile import TemporaryDirectory
 from time import sleep
 from warnings import warn
+from urllib import parse
+from json import JSONDecodeError
+from simplejson.errors import JSONDecodeError as simpleJSONDecodeError
+from math import ceil
 
-from hpycc.utils.parsers import parse_wuid_from_failed_response, \
-    parse_wuid_from_xml
+from hpycc.utils.parsers import parse_wuid_from_xml
 from hpycc import delete
 
 
 def check_ecl_cmd(cmd='ecl'):
+    """
+    Check that executionable is on the system path
+    """
+
     try:
         subprocess.run(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             stdin=subprocess.PIPE, shell=False)
     except FileNotFoundError:
-        warn("ecl is not on the system path! You may continue but functionality will be limited"
-             "to get and save_thor_file and deleting workunits. All other tasks will likely fail")
+        if cmd == 'ecl':
+            warn("ecl is not on the system path! You may continue but "
+                 "functionality will be limited to get and save_thor_file and "
+                 "deleting workunits. All other tasks will likely fail.")
+        elif cmd == 'eclcc':
+            warn("eclcc is not on the system path! You may continue but "
+                 "you will be unable to syntax check")
+        else:
+            warn("Command line check for %s failed" % cmd)
+
 
 class Connection:
     def __init__(self, username, server="localhost", port=8010, repo=None,
@@ -53,7 +68,7 @@ class Connection:
             The username to provide to HPCC.
         server : str, optional
             The ip address of the HPCC instance in the form
-            `XX.XX.XX.XX`. Note that neither `http://` nor the port
+            `XX.XX.XX.XX`. Neither `http://` nor the port
             number should be included. 'localhost' by default.
         port : int, optional
             The port number ECL Watch is running on on the HPCC
@@ -111,7 +126,8 @@ class Connection:
         if test_conn:
             self.test_connection()
 
-        check_ecl_cmd()
+        check_ecl_cmd('ecl')
+        check_ecl_cmd('eclcc')
 
     def test_connection(self):
         """
@@ -141,13 +157,18 @@ class Connection:
 
     @staticmethod
     def _run_command(cmd):
+        """
+        Run a command line process.
+        """
         result = subprocess.run(cmd, stderr=subprocess.PIPE,
                                 stdout=subprocess.PIPE)
 
         stderr = result.stderr.decode('utf-8')
 
         if result.returncode:
-            raise subprocess.SubprocessError(stderr)
+            msg = 'Failed Workunit or command line call! Response: {}'.format(
+                result)
+            raise subprocess.SubprocessError(msg)
 
         stdout = result.stdout.decode("utf-8")
 
@@ -204,8 +225,7 @@ class Connection:
         else:
             return []
 
-    def run_ecl_script(self, script, syntax_check, delete_workunit,
-                       stored):
+    def run_ecl_script(self, script, syntax_check, delete_workunit, stored):
         """
         Run an ECL script and return the stdout and stderr.
 
@@ -266,10 +286,8 @@ class Connection:
         try:
             result = self._run_command(base_cmd)
         except subprocess.SubprocessError as e:
-            if delete_workunit:
-                wuid = parse_wuid_from_failed_response(e.args[0].decode())
-                delete.delete_workunit(self, wuid)
-            raise e
+            msg = "Failed to run ecl command"
+            raise subprocess.SubprocessError(msg) from e
         else:
             if delete_workunit:
                 wuid = parse_wuid_from_xml(result.stdout)
@@ -295,8 +313,8 @@ class Connection:
             case of an exception being raised.
         max_sleep: int
             Maximum time, in seconds, to sleep between attempts.
-            The true sleep time is a random int between 0 and
-            `max_sleep`.
+            The true sleep time is a random int between  `max_sleep` and
+            `max_sleep` * 0.75.
 
         Returns
         -------
@@ -309,6 +327,7 @@ class Connection:
             If max_attempts is exceeded.
 
         """
+        min_sleep = int(ceil(max_sleep*0.75))
         attempts = 0
         while attempts < max_attempts:
             try:
@@ -317,15 +336,60 @@ class Connection:
                 return r
             except (HTTPError, ValueError) as e:
                 attempts += 1
-                time_to_sleep = random.randint(0, max_sleep)
+                time_to_sleep = random.randint(min_sleep, max_sleep)
                 sleep(time_to_sleep)
                 if attempts == max_attempts:
                     raise RetryError(e)
 
+    def get_chunk_from_hpcc(self, logical_file, start_row, n_rows, max_attempts,
+                            max_sleep):
+        """
+        Using the HPCC instance at `server`:`port` and the
+        credentials `username` and `password`, return the
+        JSON response to a request for a part of a `logical_file`.
+        Starting at `start row` and `n_rows` long.
+
+        Parameters
+        ----------
+        logical_file: str
+            Name of logical file.
+        start_row: int
+            First row to return where 0 is the first row of the
+            dataset.
+        n_rows: int
+            Number of rows to return.
+        max_attempts: int
+            Maximum number of times url should be queried in the
+            case of an exception being raised.
+        max_sleep: int
+            Maximum time, in seconds, to sleep between attempts.
+            The true sleep time is a random int between `max_sleep` and
+            `max_sleep` * 0.75.
+
+        Returns
+        -------
+        resp: json
+            JSON formatted response containing rows and all associated
+            metadata.
+        """
+
+        url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
+               "&Cluster=thor&Start={}&Count={}").format(
+            self.server, self.port, parse.quote_plus(logical_file), start_row, n_rows)
+
+        resp = self.run_url_request(url, max_attempts, max_sleep)
+        try:
+            resp = resp.json()
+        except (JSONDecodeError, simpleJSONDecodeError) as exc:
+            msg = ("response can't be parsed as JSON:\n{}".format(resp))
+            raise type(exc)(msg, exc.doc, exc.pos) from exc
+
+        return resp
+
     def get_logical_file_chunk(self, logical_file, start_row, n_rows,
                                max_attempts, max_sleep):
         """
-        Return a chunk of a logical file from a HPCC instance.
+        Return a chunk of a logical file from an HPCC instance.
 
         Using the HPCC instance at `server`:`port` and the
         credentials `username` and `password`, return a chunk of
@@ -346,26 +410,27 @@ class Connection:
             case of an exception being raised.
         max_sleep: int
             Maximum time, in seconds, to sleep between attempts.
-            The true sleep time is a random int between 0 and
-            `max_sleep`.
+            The true sleep time is a random int between `max_sleep` and
+            `max_sleep` * 0.75.
 
         Returns
         -------
-        result_response: list of dicts
+        result_response: pd.DataFrame, str
             Rows of logical file as list of dicts. In the form
             [{"col1": 1, "col2": 2}, {"col1": 1, "col2": 2}, ...].
 
         """
-        url = ("http://{}:{}/WsWorkunits/WUResult.json?LogicalName={}"
-               "&Cluster=thor&Start={}&Count={}").format(
-            self.server, self.port, logical_file, start_row, n_rows)
-        r = self.run_url_request(url, max_attempts, max_sleep)
-        rj = r.json()
+        # TODO: This should be an internal function.
+
+        resp = self.get_chunk_from_hpcc(logical_file, start_row, n_rows, max_attempts, max_sleep)
+
         try:
-            result_response = rj["WUResultResponse"]["Result"]["Row"]
-        except KeyError:
-            raise KeyError("json is : {}".format(rj))
-        return result_response
+            resp = resp["WUResultResponse"]["Result"]["Row"]
+        except (KeyError, TypeError) as exc:
+            msg = ("json can't be parsed as a WU:\n{}".format(resp))
+            raise type(exc)(msg) from exc
+
+        return {key: [a_dict[key] for a_dict in resp] for key in resp[0]}
 
     def run_ecl_string(self, string, syntax_check, delete_workunit, stored):
         """
