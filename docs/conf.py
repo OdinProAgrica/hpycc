@@ -179,14 +179,4 @@ epub_copyright = copyright
 epub_exclude_files = ['search.html']
 
 
-## Mocking C modukes
-import sys
-from unittest.mock import MagicMock
-
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-        return MagicMock()
-
-MOCK_MODULES = ['pypiwin32', 'numpy', 'pandas']
-sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+autodoc_mock_imports = ['pypiwin32']
