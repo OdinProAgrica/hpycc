@@ -40,8 +40,7 @@ class HPCCContainer:
                 raise e
 
     def pull_image(self):
-        for line in self.client.api.pull(self.image,
-                                         tag=self.tag, stream=True):
+        for line in self.client.api.pull(self.image, tag=self.tag, stream=True):
             print(line.decode())
 
     def stop_container(self):
